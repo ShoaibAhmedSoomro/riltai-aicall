@@ -162,7 +162,7 @@
         embedMode: configData.settings?.embedMode || 'floating',
         containerId: configData.settings?.containerId || 'social-cangaroo-inline-container',
         position: configData.position || DEFAULT_CONFIG.position,
-        buttonColor: configData.settings?.buttonColor || '#10b981',
+        buttonColor: configData.settings?.buttonColor || '#f1924e',
         buttonText: configData.settings?.buttonText || (widgetType === 'chat' ? 'Chat with Agent' : 'Talk to Agent'),
         callToActionText: configData.settings?.callToActionText || (widgetType === 'chat' ? 'Click to start chatting' : 'Click to start voice conversation'),
         autoStart: configData.auto_start || false,
@@ -358,7 +358,7 @@
       }
       .social-cangaroo-widget-cta:active { transform: scale(0.98); }
 
-      .social-cangaroo-widget-cta.social-cangaroo-state-connecting { background: #f59e0b !important; animation: social-cangaroo-pulse 1.6s infinite; }
+      .social-cangaroo-widget-cta.social-cangaroo-state-connecting { background: #d97a35 !important; animation: social-cangaroo-pulse 1.6s infinite; }
       .social-cangaroo-widget-cta.social-cangaroo-state-connected  { background: #ef4444 !important; }
       .social-cangaroo-widget-cta.social-cangaroo-state-failed     { background: #ef4444 !important; opacity: 0.85; }
 
@@ -560,7 +560,7 @@
       }
 
       .social-cangaroo-inline-btn-start {
-        background: #10b981;
+        background: #f1924e;
       }
 
       /* The start button carries the owner's configured color as an inline
@@ -1489,7 +1489,7 @@
       .social-cangaroo-chat-restart {
         border: none;
         background: none;
-        color: #1d4ed8;
+        color: #b35f1e;
         font-size: 12px;
         font-weight: 600;
         cursor: pointer;
@@ -1589,7 +1589,7 @@
       .social-cangaroo-chat-send:hover,
       .social-cangaroo-chat-inline-start:hover { color: #ffffff !important; }
       .social-cangaroo-chat-end-confirm-cancel:hover { color: #374151 !important; }
-      .social-cangaroo-chat-restart:hover { color: #1d4ed8 !important; }
+      .social-cangaroo-chat-restart:hover { color: #b35f1e !important; }
     `;
 
     const styleSheet = document.createElement('style');

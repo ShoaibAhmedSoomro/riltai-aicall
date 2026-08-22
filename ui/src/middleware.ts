@@ -80,7 +80,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public static assets (anything with a file extension, e.g. /social-cangaroo-logo.png)
+     * - public static assets (anything with a file extension, e.g. /social-cangaroo-logo.svg)
      */
     '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpe?g|gif|svg|webp|avif|ico|woff2?|ttf|otf)).*)',
   ],

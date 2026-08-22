@@ -46,84 +46,101 @@
   --color-cta-foreground: var(--cta-foreground);
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Palette derived from the brand lockup (logo-socialcangaroo/):
+     #f1924e  oklch(0.747 0.142 54)  kangaroo orange — the single accent
+     #2b2b2b  oklch(0.289 0.006 54)  wordmark ink — text, primary surfaces
+
+   The logo's own structure sets the rule: near-black carries the weight, the
+   orange appears once. So ink drives `--primary`/`--foreground` and orange is
+   reserved for `--cta`, focus rings, and the first chart series. Neutrals carry
+   a deliberate sliver of chroma at the orange's hue (54) so the greys read as
+   part of the same family rather than stock shadcn slate.
+   ──────────────────────────────────────────────────────────────────────────── */
 :root {
   --radius: 0.625rem;
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.289 0.006 54);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.289 0.006 54);
+  --primary: oklch(0.289 0.006 54);
+  --primary-foreground: oklch(0.985 0.003 54);
+  --secondary: oklch(0.968 0.006 54);
+  --secondary-foreground: oklch(0.289 0.006 54);
+  --muted: oklch(0.968 0.006 54);
+  --muted-foreground: oklch(0.552 0.012 54);
+  --accent: oklch(0.962 0.014 54);
+  --accent-foreground: oklch(0.289 0.006 54);
+  /* semantic, deliberately outside the brand hue so danger still reads danger */
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --border: oklch(0.916 0.007 54);
+  --input: oklch(0.916 0.007 54);
+  --ring: oklch(0.747 0.142 54);
+  /* categorical series anchored on the brand orange, then spread by hue so
+     adjacent series stay separable (not a gradient of one colour) */
+  --chart-1: oklch(0.747 0.142 54);
+  --chart-2: oklch(0.60 0.105 200);
+  --chart-3: oklch(0.455 0.09 265);
+  --chart-4: oklch(0.83 0.14 88);
+  --chart-5: oklch(0.585 0.16 12);
+  --sidebar: oklch(0.985 0.004 54);
+  --sidebar-foreground: oklch(0.289 0.006 54);
+  --sidebar-primary: oklch(0.747 0.142 54);
+  --sidebar-primary-foreground: oklch(0.19 0.025 54);
+  --sidebar-accent: oklch(0.962 0.014 54);
+  --sidebar-accent-foreground: oklch(0.289 0.006 54);
+  --sidebar-border: oklch(0.916 0.007 54);
+  --sidebar-ring: oklch(0.747 0.142 54);
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  /* Single restrained warm accent — used only on primary CTAs + focus rings. */
-  --cta: oklch(0.72 0.15 65);
-  --cta-foreground: oklch(0.16 0.02 60);
-  /* Giant faded "Social Cangaroo" wordmark (text-rendered SVG; replace with traced
-     from the brand logo PNG — the font is commercial, so the lettering ships
-     as static artwork in /public; fill + 0.9% opacity are baked into the
-     files). Theme-switched here; consumed by .app-surface and .auth-imprint. */
+  --foreground: oklch(0.289 0.006 54);
+  /* The one bold move: brand orange on primary CTAs and focus rings. Its
+     foreground is ink, not white — white on #f1924e is about 2.3:1 and fails
+     AA, while ink clears 6:1. */
+  --cta: oklch(0.747 0.142 54);
+  --cta-foreground: oklch(0.19 0.025 54);
+  /* Giant faded wordmark, generated from the real lockup in
+     logo-socialcangaroo/ with fill + opacity baked in. Theme-switched here;
+     consumed by .app-surface and .auth-imprint. */
   --brand-imprint: url("/brand-imprint-light.svg");
 }
 
+/* Dark is now opt-in (the app defaults to light — see ThemeProvider in
+   app/layout.tsx). Same family: warm near-blacks at the brand hue, and the
+   orange lifted slightly so it holds up against a dark ground. */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: oklch(0.185 0.006 54);
+  --foreground: oklch(0.975 0.004 54);
+  --card: oklch(0.235 0.008 54);
+  --card-foreground: oklch(0.975 0.004 54);
+  --popover: oklch(0.235 0.008 54);
+  --popover-foreground: oklch(0.975 0.004 54);
+  --primary: oklch(0.93 0.006 54);
+  --primary-foreground: oklch(0.235 0.008 54);
+  --secondary: oklch(0.29 0.010 54);
+  --secondary-foreground: oklch(0.975 0.004 54);
+  --muted: oklch(0.29 0.010 54);
+  --muted-foreground: oklch(0.715 0.014 54);
+  --accent: oklch(0.315 0.016 54);
+  --accent-foreground: oklch(0.975 0.004 54);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.775 0.145 54);
+  --chart-1: oklch(0.775 0.145 54);
+  --chart-2: oklch(0.685 0.115 200);
+  --chart-3: oklch(0.605 0.115 265);
+  --chart-4: oklch(0.855 0.145 88);
+  --chart-5: oklch(0.665 0.165 12);
+  --sidebar: oklch(0.235 0.008 54);
+  --sidebar-foreground: oklch(0.975 0.004 54);
+  --sidebar-primary: oklch(0.775 0.145 54);
+  --sidebar-primary-foreground: oklch(0.19 0.025 54);
+  --sidebar-accent: oklch(0.315 0.016 54);
+  --sidebar-accent-foreground: oklch(0.975 0.004 54);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-  /* Warm accent, slightly brighter against the near-black surfaces. */
-  --cta: oklch(0.78 0.16 67);
-  --cta-foreground: oklch(0.16 0.02 60);
+  --sidebar-ring: oklch(0.775 0.145 54);
+  --cta: oklch(0.775 0.145 54);
+  --cta-foreground: oklch(0.19 0.025 54);
   --brand-imprint: url("/brand-imprint-dark.svg");
 }
 

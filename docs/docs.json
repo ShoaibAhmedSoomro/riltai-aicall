@@ -3,11 +3,11 @@
   "theme": "mint",
   "name": "Social Cangaroo AI",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#f1924e",
+    "light": "#f1924e",
+    "dark": "#b35f1e"
   },
-  "favicon": "/favicon.ico",
+  "favicon": "/favicon.svg",
   "navigation": {
     "tabs": [
       {
@@ -30,11 +30,11 @@
           {
             "group": "Build your First Agent",
             "pages": [
-                  "getting-started/first-agent",
-                  "getting-started/trigger-calls-from-your-backend",
-                  "getting-started/send-call-data-with-webhooks",
-                  "getting-started/connect-telephony",
-                  "getting-started/add-tools-and-knowledge-base"
+              "getting-started/first-agent",
+              "getting-started/trigger-calls-from-your-backend",
+              "getting-started/send-call-data-with-webhooks",
+              "getting-started/connect-telephony",
+              "getting-started/add-tools-and-knowledge-base"
             ]
           },
           {
@@ -301,7 +301,7 @@
     }
   },
   "banner": {
-    "content": "🎉 **New: MCP Server & SDKs Released** — Drive Social Cangaroo from Claude, Cursor, or your own Python/TypeScript code. [MCP →](/integrations/mcp) · [SDKs →](/sdks/introduction)",
+    "content": "\ud83c\udf89 **New: MCP Server & SDKs Released** \u2014 Drive Social Cangaroo from Claude, Cursor, or your own Python/TypeScript code. [MCP \u2192](/integrations/mcp) \u00b7 [SDKs \u2192](/sdks/introduction)",
     "dismissible": true
   },
   "search": {
