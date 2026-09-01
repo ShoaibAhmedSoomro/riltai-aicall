@@ -29,6 +29,7 @@ class MinioFileSystem(BaseFileSystem):
         bucket_name: str = "voice-audio",
         secure: bool = False,
         public_endpoint: Optional[str] = None,
+        region: str = "us-east-1",
     ):
         if not public_endpoint:
             raise ValueError(
@@ -50,9 +51,22 @@ class MinioFileSystem(BaseFileSystem):
         self.access_key = access_key
         self.secret_key = secret_key
 
-        # Client for internal operations (uploads, stat, copy).
+        self.region = region
+
+        # `region` is pinned on BOTH clients on purpose. Without it the SDK
+        # resolves the bucket's region over the network on every presign
+        # (GET /<bucket>?location=). On the signing client that request would
+        # go to the *public* endpoint -- i.e. the container hairpinning an
+        # HTTPS call out through the proxy and back to itself on every
+        # recording playback, which is slow and outright fails on cloud NAT
+        # setups that don't support hairpinning. MinIO reports us-east-1;
+        # pinning it makes signing purely local.
         self.client = Minio(
-            endpoint, access_key=access_key, secret_key=secret_key, secure=secure
+            endpoint,
+            access_key=access_key,
+            secret_key=secret_key,
+            secure=secure,
+            region=region,
         )
 
         # Second client used ONLY to sign URLs that browsers will fetch.
@@ -69,6 +83,7 @@ class MinioFileSystem(BaseFileSystem):
             access_key=access_key,
             secret_key=secret_key,
             secure=(public.scheme == "https"),
+            region=region,
         )
 
         # Ensure the bucket exists and is PRIVATE.

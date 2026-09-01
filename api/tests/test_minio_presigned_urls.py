@@ -13,8 +13,12 @@ public Host. nginx forwards the original Host untouched, so browser-bound URLs
 must be signed for the public endpoint and server-side ones for the internal
 endpoint. Getting that backwards yields 403s that look like a storage outage.
 
-No network needed: presigning is pure local crypto, and the bucket probe in
-__init__ is already wrapped in try/except.
+Signing is only local because `region` is pinned on both clients. Left unset,
+the SDK resolves the bucket region over the network on every presign
+(GET /<bucket>?location=) -- on the signing client that means the container
+hairpinning an HTTPS request out through the proxy and back to itself for every
+playback url. `test_signing_needs_no_network` pins that behaviour by signing
+against a deliberately unresolvable host.
 """
 
 from urllib.parse import parse_qs, urlparse
@@ -105,6 +109,16 @@ async def test_upload_url_is_signed_not_anonymous(fs):
     assert parsed.hostname == "calls.example.com"
     assert "X-Amz-Signature" in qs, "unsigned upload URL: anyone could write here"
     assert int(qs["X-Amz-Expires"][0]) == 900
+
+
+async def test_signing_needs_no_network(fs):
+    """`calls.example.com` does not resolve. If this ever starts failing, the
+    region pin was lost and every playback url now costs a hairpin round trip
+    to the public endpoint -- which fails outright on NAT without hairpinning."""
+    assert fs.region == "us-east-1"
+    url = await fs.aget_signed_url("a/b.wav")
+    assert url is not None, "presign hit the network instead of signing locally"
+    assert "X-Amz-Signature" in url
 
 
 async def test_urls_are_not_bare_public_paths(fs):
