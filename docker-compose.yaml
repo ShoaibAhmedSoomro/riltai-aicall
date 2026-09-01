@@ -15,6 +15,9 @@
 services:
   postgres:
     image: pgvector/pgvector:pg17
+    # Survive a host reboot. Previously absent, so a reboot left the
+    # whole stack down until someone ran remote_up.sh by hand.
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       # Sourced from .env. Defaults to "postgres"
@@ -42,6 +45,9 @@ services:
 
   redis:
     image: redis:7
+    # Survive a host reboot. Previously absent, so a reboot left the
+    # whole stack down until someone ran remote_up.sh by hand.
+    restart: unless-stopped
     ports:
       - "6379:6379"
     command: >
@@ -58,6 +64,9 @@ services:
 
   minio:
     image: minio/minio
+    # Survive a host reboot. Previously absent, so a reboot left the
+    # whole stack down until someone ran remote_up.sh by hand.
+    restart: unless-stopped
     container_name: minio
     command: server /data --console-address ":9001"
     environment:
@@ -102,6 +111,9 @@ services:
 
   nginx:
     image: nginx:alpine
+    # Survive a host reboot. Previously absent, so a reboot left the
+    # whole stack down until someone ran remote_up.sh by hand.
+    restart: unless-stopped
     container_name: nginx_https
     profiles: ["remote"]
     depends_on:
@@ -142,6 +154,9 @@ services:
 
   api:
     image: ${REGISTRY:-socialcangaroo}/social-cangaroo-api:latest
+    # Survive a host reboot. Previously absent, so a reboot left the
+    # whole stack down until someone ran remote_up.sh by hand.
+    restart: unless-stopped
     environment:
       # Core application config
       ENVIRONMENT: "${ENVIRONMENT:-local}"
@@ -149,6 +164,17 @@ services:
 
       # Set to "false" in .env to disable public signup (invite-only installs).
       ENABLE_SIGNUP: "${ENABLE_SIGNUP:-true}"
+
+      # Gates the operational endpoints /health/active-calls and
+      # /health/autoscale-metric (api/routes/main.py). This was absent, so both
+      # returned 503 and the drain used by scripts/drain_web.sh and
+      # scripts/rolling_update.sh could not work at all -- every deploy cut
+      # live calls with no way to wait them out.
+      SOCIAL_CANGAROO_DEVOPS_SECRET: "${SOCIAL_CANGAROO_DEVOPS_SECRET:-}"
+
+      # Background job concurrency. Defaulted to 1 inside the container, which
+      # silently serialised post-call usage/cost/billing jobs and webhooks.
+      ARQ_WORKERS: "${ARQ_WORKERS:-2}"
 
       # Public origin for this deployment. The API derives BACKEND_API_ENDPOINT,
       # MINIO_PUBLIC_ENDPOINT and TURN_HOST from PUBLIC_BASE_URL / PUBLIC_HOST when
@@ -282,6 +308,9 @@ services:
 
   ui:
     image: ${REGISTRY:-socialcangaroo}/social-cangaroo-ui:latest
+    # Survive a host reboot. Previously absent, so a reboot left the
+    # whole stack down until someone ran remote_up.sh by hand.
+    restart: unless-stopped
     environment:
       # Bind the Next.js standalone server to all interfaces
       HOSTNAME: "0.0.0.0"

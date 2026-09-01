@@ -1,7 +1,8 @@
 import asyncio
 import io
-import json
+from datetime import timedelta
 from typing import Any, Dict, Optional
+from urllib.parse import urlparse
 
 from loguru import logger
 from minio import Minio
@@ -49,46 +50,52 @@ class MinioFileSystem(BaseFileSystem):
         self.access_key = access_key
         self.secret_key = secret_key
 
-        # Client for internal operations (uploads, etc.)
+        # Client for internal operations (uploads, stat, copy).
         self.client = Minio(
             endpoint, access_key=access_key, secret_key=secret_key, secure=secure
         )
 
-        # Ensure bucket exists and configure anonymous access (using internal client)
+        # Second client used ONLY to sign URLs that browsers will fetch.
+        #
+        # SigV4 covers the Host header, so a URL signed against the internal
+        # endpoint (minio:9000) is rejected when the browser sends the public
+        # Host. The reverse proxy forwards the original Host untouched
+        # (`proxy_set_header Host $host` on /voice-audio/ in
+        # deploy/templates/nginx.remote.conf.template), so signing against the
+        # public endpoint is what actually validates.
+        public = urlparse(self.public_endpoint)
+        self._signing_client = Minio(
+            public.netloc,
+            access_key=access_key,
+            secret_key=secret_key,
+            secure=(public.scheme == "https"),
+        )
+
+        # Ensure the bucket exists and is PRIVATE.
+        #
+        # This previously installed an anonymous policy granting GetObject,
+        # PutObject, DeleteObject and ListBucket to Principal "*" -- on every
+        # init, with its own comment saying not to use it in production. Since
+        # the proxy exposes /voice-audio/ publicly, that made every call
+        # recording world-readable AND enumerable via ?list-type=2. Recordings
+        # are now reached exclusively through time-limited presigned URLs, so
+        # any inherited public policy is actively removed rather than just
+        # left unset.
         try:
             if not self.client.bucket_exists(self.bucket_name):
                 self.client.make_bucket(self.bucket_name)
-
-            # Set public read/write policy for local development
-            # This allows:
-            # 1. Anonymous downloads (s3:GetObject)
-            # 2. Anonymous uploads (s3:PutObject) - bypasses presigned URL signature issues
-            # 3. List bucket contents (s3:ListBucket) for debugging
-            # Note: This is set on every initialization to ensure policy is correct
-            # WARNING: Only use in local development, not production!
-            policy = {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Effect": "Allow",
-                        "Principal": {"AWS": "*"},
-                        "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
-                        "Resource": [f"arn:aws:s3:::{self.bucket_name}/*"],
-                    },
-                    {
-                        "Effect": "Allow",
-                        "Principal": {"AWS": "*"},
-                        "Action": ["s3:ListBucket"],
-                        "Resource": [f"arn:aws:s3:::{self.bucket_name}"],
-                    },
-                ],
-            }
-
-            self.client.set_bucket_policy(self.bucket_name, json.dumps(policy))
+            try:
+                self.client.delete_bucket_policy(self.bucket_name)
+                logger.info(
+                    f"MinIO bucket '{self.bucket_name}': anonymous access policy removed; "
+                    "objects are served via presigned URLs only"
+                )
+            except S3Error as e:
+                # NoSuchBucketPolicy just means it was already private.
+                if e.code not in ("NoSuchBucketPolicy", "NoSuchBucketPolicyException"):
+                    raise
         except Exception as e:
-            # Bucket might already exist or we might be in a restricted environment
-            logger.debug(f"Bucket setup note: {e}")
-            pass
+            logger.warning(f"MinIO bucket setup: {e}")
 
     async def acreate_file(self, file_path: str, content: AsyncReadable) -> bool:
         try:
@@ -119,6 +126,14 @@ class MinioFileSystem(BaseFileSystem):
         except S3Error:
             return False
 
+    # Inline-viewable types, mirroring the S3 backend's force_inline handling
+    # so a transcript or recording opens in the browser instead of downloading.
+    _INLINE_CONTENT_TYPES = {
+        ".txt": "text/plain",
+        ".wav": "audio/wav",
+        ".mp3": "audio/mpeg",
+    }
+
     async def aget_signed_url(
         self,
         file_path: str,
@@ -126,15 +141,34 @@ class MinioFileSystem(BaseFileSystem):
         force_inline: bool = False,
         use_internal_endpoint: bool = False,
     ) -> Optional[str]:
+        """Presigned GET url. Was an unsigned public url before the bucket was
+        made private; it now carries a real signature and expires."""
+        response_headers = None
+        if force_inline:
+            for suffix, content_type in self._INLINE_CONTENT_TYPES.items():
+                if file_path.endswith(suffix):
+                    response_headers = {
+                        "response-content-type": content_type,
+                        "response-content-disposition": "inline",
+                    }
+                    break
+
+        # Server-side fetches go straight to minio:9000 and must be signed for
+        # that host; browser-bound URLs are signed for the public host.
+        client = self.client if use_internal_endpoint else self._signing_client
         try:
-            if use_internal_endpoint:
-                protocol = "https" if self.secure else "http"
-                base = f"{protocol}://{self.endpoint}"
-            else:
-                base = self.public_endpoint
-            return f"{base}/{self.bucket_name}/{file_path}"
+
+            def _presign():
+                return client.presigned_get_object(
+                    self.bucket_name,
+                    file_path,
+                    expires=timedelta(seconds=expiration),
+                    response_headers=response_headers,
+                )
+
+            return await asyncio.to_thread(_presign)
         except Exception as e:
-            logger.error(f"Error generating MinIO URL: {e}")
+            logger.error(f"Error generating MinIO presigned GET url: {e}")
             return None
 
     async def aget_file_metadata(self, file_path: str) -> Optional[Dict[str, Any]]:
@@ -163,21 +197,30 @@ class MinioFileSystem(BaseFileSystem):
         content_type: str = "text/csv",
         max_size: int = 10_485_760,
     ) -> Optional[str]:
-        """Generate an unsigned URL for direct file upload.
+        """Presigned PUT url for direct browser upload.
 
-        For local MinIO development with anonymous upload enabled, we return
-        a simple unsigned URL instead of a presigned URL. This avoids signature
-        mismatch issues when the internal endpoint (minio:9000) differs from
-        the public endpoint (localhost:9000).
+        Previously an unsigned url that worked only because the bucket granted
+        anonymous PutObject to everyone -- which also let anyone overwrite or
+        delete any object. Signed against the public host for the same reason
+        as aget_signed_url.
 
-        The bucket policy allows anonymous s3:PutObject, so no signature is needed.
+        ponytail: max_size is not enforced here. The MinIO SDK's presigned PUT
+        cannot bound the body length (that needs a POST policy). Callers still
+        validate size server-side; upgrade to presigned_post_policy if
+        client-side enforcement is ever required.
         """
         try:
-            url = f"{self.public_endpoint}/{self.bucket_name}/{file_path}"
-            logger.debug(f"Generated unsigned upload URL: {url}")
-            return url
+
+            def _presign():
+                return self._signing_client.presigned_put_object(
+                    self.bucket_name,
+                    file_path,
+                    expires=timedelta(seconds=expiration),
+                )
+
+            return await asyncio.to_thread(_presign)
         except Exception as e:
-            logger.error(f"Error generating MinIO upload URL: {e}")
+            logger.error(f"Error generating MinIO presigned PUT url: {e}")
             return None
 
     async def adownload_file(self, source_path: str, local_path: str) -> bool:
