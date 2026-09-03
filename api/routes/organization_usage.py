@@ -22,7 +22,8 @@ router = APIRouter(prefix="/organizations")
 class CurrentUsageResponse(BaseModel):
     period_start: str
     period_end: str
-    used_dograh_tokens: float
+    # frozen wire name; title set so the API reference does not surface it
+    used_dograh_tokens: float = Field(title="Used RiltAI Tokens")
     total_duration_seconds: int
     used_amount_usd: Optional[float] = None
     currency: Optional[str] = None
@@ -89,7 +90,7 @@ class WorkflowRunUsageResponse(BaseModel):
     workflow_name: Optional[str]
     name: str
     created_at: str
-    rilt_token_usage: float
+    rilt_token_usage: float = Field(title="RiltAI Token Usage")
     call_duration_seconds: int
     recording_url: Optional[str] = None
     transcript_url: Optional[str] = None
@@ -118,7 +119,7 @@ class WorkflowRunUsageResponse(BaseModel):
 
 class UsageHistoryResponse(BaseModel):
     runs: List[WorkflowRunUsageResponse]
-    total_rilt_tokens: float
+    total_rilt_tokens: float = Field(title="Total RiltAI Tokens")
     total_duration_seconds: int
     total_count: int
     page: int
@@ -130,7 +131,7 @@ class DailyUsageItem(BaseModel):
     date: str
     minutes: float
     cost_usd: Optional[float] = None
-    rilt_tokens: float
+    rilt_tokens: float = Field(title="RiltAI Tokens")
     call_count: int
 
 
@@ -138,7 +139,7 @@ class DailyUsageBreakdownResponse(BaseModel):
     breakdown: List[DailyUsageItem]
     total_minutes: float
     total_cost_usd: Optional[float] = None
-    total_rilt_tokens: float
+    total_rilt_tokens: float = Field(title="Total RiltAI Tokens")
     currency: Optional[str] = None
 
 
