@@ -218,9 +218,6 @@
 }
 
 @layer components {
-
-  @media (prefers-reduced-motion: reduce) {
-  
   /* Matte app background — flat charcoal (dark) / soft paper (light), NO
      gradients, with one subtle graphic in BOTH themes: the giant faded
      "AICall" wordmark (--brand-imprint, defined in :root/.dark) pinned to
