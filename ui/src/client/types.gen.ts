@@ -1750,7 +1750,7 @@ export type CurrentUsageResponse = {
      */
     period_end: string;
     /**
-     * Used RiltAI Tokens
+     * Used Dograh Tokens
      */
     used_dograh_tokens: number;
     /**
@@ -1824,7 +1824,7 @@ export type DailyUsageBreakdownResponse = {
      */
     total_cost_usd?: number | null;
     /**
-     * Total RiltAI Tokens
+     * Total Rilt Tokens
      */
     total_rilt_tokens: number;
     /**
@@ -1850,7 +1850,7 @@ export type DailyUsageItem = {
      */
     cost_usd?: number | null;
     /**
-     * RiltAI Tokens
+     * Rilt Tokens
      */
     rilt_tokens: number;
     /**
@@ -2170,126 +2170,6 @@ export type DocumentUploadResponseSchema = {
      * S3 key where file should be uploaded
      */
     s3_key: string;
-};
-
-/**
- * AICall
- */
-export type RiltEmbeddingsConfiguration = {
-    /**
-     * Provider
-     */
-    provider?: 'dograh';
-    /**
-     * Api Key
-     */
-    api_key: string | Array<string>;
-    /**
-     * Model
-     *
-     * RiltAI-managed embedding model.
-     */
-    model?: string;
-};
-
-/**
- * AICall
- */
-export type RiltLlmService = {
-    /**
-     * Provider
-     */
-    provider?: 'dograh';
-    /**
-     * Api Key
-     */
-    api_key: string | Array<string>;
-    /**
-     * Model
-     *
-     * Rilt-hosted model tier.
-     */
-    model?: string;
-};
-
-/**
- * RiltManagedAIModelConfiguration
- */
-export type RiltManagedAiModelConfiguration = {
-    /**
-     * Api Key
-     */
-    api_key: string;
-    /**
-     * Voice
-     */
-    voice?: string;
-    /**
-     * Speed
-     */
-    speed?: number;
-    /**
-     * Language
-     */
-    language?: string;
-};
-
-/**
- * AICall
- */
-export type RiltSttService = {
-    /**
-     * Provider
-     */
-    provider?: 'dograh';
-    /**
-     * Api Key
-     */
-    api_key: string | Array<string>;
-    /**
-     * Model
-     *
-     * AICall STT tier.
-     */
-    model?: string;
-    /**
-     * Language
-     *
-     * Language code; use 'multi' for auto-detect.
-     */
-    language?: string;
-};
-
-/**
- * AICall
- */
-export type RiltTtsService = {
-    /**
-     * Provider
-     */
-    provider?: 'dograh';
-    /**
-     * Api Key
-     */
-    api_key: string | Array<string>;
-    /**
-     * Model
-     *
-     * AICall TTS tier.
-     */
-    model?: string;
-    /**
-     * Voice
-     *
-     * Voice preset.
-     */
-    voice?: string;
-    /**
-     * Speed
-     *
-     * Speed of the voice.
-     */
-    speed?: number;
 };
 
 /**
@@ -3921,6 +3801,18 @@ export type ModelConfigurationMetricPrice = {
  * ModelConfigurationPricingResponse
  *
  * MPS-owned effective prices relevant to model configuration choices.
+ *
+ * This model is validated directly against the MPS response body
+ * (``model_validate(pricing)`` below), so its field NAMES are an inbound wire
+ * contract with a service that is not built from this repo. MPS lives on the
+ * frozen ``services.dograh.com`` host and has now outlived two renames of
+ * this app, so the managed-model key has been spelled three different ways
+ * over time and a mismatch fails silently as ``None`` rather than raising.
+ *
+ * ``validation_alias`` accepts all three spellings so the field populates
+ * whichever one MPS actually sends, while ``serialization_alias`` keeps this
+ * app's own outbound JSON on the current name. Drop the older aliases only
+ * once the live payload has been confirmed against MPS.
  */
 export type ModelConfigurationPricingResponse = {
     platform_usage?: ModelConfigurationMetricPrice | null;
@@ -5216,6 +5108,126 @@ export type RewindTextChatSessionRequest = {
      * Expected Revision
      */
     expected_revision?: number | null;
+};
+
+/**
+ * AICall
+ */
+export type RiltEmbeddingsConfiguration = {
+    /**
+     * Provider
+     */
+    provider?: 'dograh';
+    /**
+     * Api Key
+     */
+    api_key: string | Array<string>;
+    /**
+     * Model
+     *
+     * RiltAI-managed embedding model.
+     */
+    model?: string;
+};
+
+/**
+ * AICall
+ */
+export type RiltLlmService = {
+    /**
+     * Provider
+     */
+    provider?: 'dograh';
+    /**
+     * Api Key
+     */
+    api_key: string | Array<string>;
+    /**
+     * Model
+     *
+     * Rilt-hosted model tier.
+     */
+    model?: string;
+};
+
+/**
+ * RiltManagedAIModelConfiguration
+ */
+export type RiltManagedAiModelConfiguration = {
+    /**
+     * Api Key
+     */
+    api_key: string;
+    /**
+     * Voice
+     */
+    voice?: string;
+    /**
+     * Speed
+     */
+    speed?: number;
+    /**
+     * Language
+     */
+    language?: string;
+};
+
+/**
+ * AICall
+ */
+export type RiltSttService = {
+    /**
+     * Provider
+     */
+    provider?: 'dograh';
+    /**
+     * Api Key
+     */
+    api_key: string | Array<string>;
+    /**
+     * Model
+     *
+     * AICall STT tier.
+     */
+    model?: string;
+    /**
+     * Language
+     *
+     * Language code; use 'multi' for auto-detect.
+     */
+    language?: string;
+};
+
+/**
+ * AICall
+ */
+export type RiltTtsService = {
+    /**
+     * Provider
+     */
+    provider?: 'dograh';
+    /**
+     * Api Key
+     */
+    api_key: string | Array<string>;
+    /**
+     * Model
+     *
+     * AICall TTS tier.
+     */
+    model?: string;
+    /**
+     * Voice
+     *
+     * Voice preset.
+     */
+    voice?: string;
+    /**
+     * Speed
+     *
+     * Speed of the voice.
+     */
+    speed?: number;
 };
 
 /**
@@ -6881,7 +6893,7 @@ export type UsageHistoryResponse = {
      */
     runs: Array<WorkflowRunUsageResponse>;
     /**
-     * Total RiltAI Tokens
+     * Total Rilt Tokens
      */
     total_rilt_tokens: number;
     /**
@@ -7790,7 +7802,7 @@ export type WorkflowRunUsageResponse = {
      */
     created_at: string;
     /**
-     * RiltAI Token Usage
+     * Rilt Token Usage
      */
     rilt_token_usage: number;
     /**
