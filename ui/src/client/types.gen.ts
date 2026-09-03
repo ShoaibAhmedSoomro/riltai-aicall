@@ -1750,7 +1750,7 @@ export type CurrentUsageResponse = {
      */
     period_end: string;
     /**
-     * Used Dograh Tokens
+     * Used RiltAI Tokens
      */
     used_dograh_tokens: number;
     /**
@@ -1824,7 +1824,7 @@ export type DailyUsageBreakdownResponse = {
      */
     total_cost_usd?: number | null;
     /**
-     * Total Rilt Tokens
+     * Total RiltAI Tokens
      */
     total_rilt_tokens: number;
     /**
@@ -1850,7 +1850,7 @@ export type DailyUsageItem = {
      */
     cost_usd?: number | null;
     /**
-     * Rilt Tokens
+     * RiltAI Tokens
      */
     rilt_tokens: number;
     /**
@@ -3805,14 +3805,16 @@ export type ModelConfigurationMetricPrice = {
  * This model is validated directly against the MPS response body
  * (``model_validate(pricing)`` below), so its field NAMES are an inbound wire
  * contract with a service that is not built from this repo. MPS lives on the
- * frozen ``services.dograh.com`` host and has now outlived two renames of
- * this app, so the managed-model key has been spelled three different ways
- * over time and a mismatch fails silently as ``None`` rather than raising.
+ * frozen ``services.dograh.com`` host and predates every rename of this app,
+ * so a key renamed on our side alone fails silently as ``None`` rather than
+ * raising.
  *
- * ``validation_alias`` accepts all three spellings so the field populates
- * whichever one MPS actually sends, while ``serialization_alias`` keeps this
- * app's own outbound JSON on the current name. Drop the older aliases only
- * once the live payload has been confirmed against MPS.
+ * ``validation_alias`` therefore also accepts ``dograh_model``, the spelling
+ * MPS would have been built against, while ``serialization_alias`` keeps this
+ * app's own outbound JSON on the current name. Only these two are listed: the
+ * intermediate spelling this repo briefly used never reached the wire, since
+ * MPS has no knowledge of any of our renames. Drop the older alias once the
+ * live payload has been confirmed against MPS.
  */
 export type ModelConfigurationPricingResponse = {
     platform_usage?: ModelConfigurationMetricPrice | null;
@@ -6893,7 +6895,7 @@ export type UsageHistoryResponse = {
      */
     runs: Array<WorkflowRunUsageResponse>;
     /**
-     * Total Rilt Tokens
+     * Total RiltAI Tokens
      */
     total_rilt_tokens: number;
     /**
@@ -7802,7 +7804,7 @@ export type WorkflowRunUsageResponse = {
      */
     created_at: string;
     /**
-     * Rilt Token Usage
+     * RiltAI Token Usage
      */
     rilt_token_usage: number;
     /**

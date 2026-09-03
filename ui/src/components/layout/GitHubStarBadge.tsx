@@ -18,7 +18,7 @@ export function GitHubStarBadge({ className, label, showCount, source }: GitHubS
 
   useEffect(() => {
     if (!showCount) return;
-    fetch("https://api.github.com/repos/ShoaibAhmedSoomro/rilt")
+    fetch("https://api.github.com/repos/ShoaibAhmedSoomro/riltai-aicall")
       .then((res) => res.json())
       .then((data) => {
         if (data.stargazers_count != null) {
