@@ -13,6 +13,7 @@ import { LeadFormsProvider } from "@/context/LeadFormsContext";
 
 import { AppSidebar } from "./AppSidebar";
 import { PeriodUsageMeter } from "./PeriodUsageMeter";
+import { QuickActionsMenu } from "./QuickActionsMenu";
 
 function AppHeader() {
   const { toggleSidebar } = useSidebar();
@@ -25,9 +26,9 @@ function AppHeader() {
         </Button>
         <Link href="/" className="text-lg font-bold md:hidden">AICall</Link>
       </div>
-      {/* The operator's own numbers, not outbound promotion. This slot used to
-          hold a community invite and a GitHub star badge; neither told anyone
-          anything about their account. */}
+      {/* The operator's own account and actions. This slot used to hold a
+          community invite and a GitHub star badge; neither told anyone anything
+          about their account or let them do anything. */}
       <div className="flex items-center gap-2">
         <PeriodUsageMeter />
         <Tooltip>
@@ -47,6 +48,7 @@ function AppHeader() {
             <p>Documentation</p>
           </TooltipContent>
         </Tooltip>
+        <QuickActionsMenu />
       </div>
     </header>
   );

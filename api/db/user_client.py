@@ -190,6 +190,43 @@ class UserClient(BaseDBClient):
             await session.execute(stmt)
             await session.commit()
 
+    async def update_user_profile(
+        self,
+        user_id: int,
+        *,
+        name: str | None = None,
+        email: str | None = None,
+        password_hash: str | None = None,
+    ) -> UserModel | None:
+        """Apply a partial profile update and return the fresh row.
+
+        Only the fields passed are written, so clearing the display name and
+        leaving the email alone are distinguishable from each other. Callers
+        signal "clear the name" by passing an empty string, which is stored as
+        NULL; passing None means "do not touch".
+        """
+        values: dict = {}
+        if name is not None:
+            values["name"] = name.strip() or None
+        if email is not None:
+            values["email"] = email.strip().lower()
+        if password_hash is not None:
+            values["password_hash"] = password_hash
+
+        async with self.async_session() as session:
+            from sqlalchemy import update
+
+            if values:
+                await session.execute(
+                    update(UserModel).where(UserModel.id == user_id).values(**values)
+                )
+                await session.commit()
+
+            result = await session.execute(
+                select(UserModel).where(UserModel.id == user_id)
+            )
+            return result.scalar_one_or_none()
+
     async def get_user_by_email(self, email: str) -> UserModel | None:
         """Fetch a user by their email address (case-insensitive).
 
@@ -214,6 +251,9 @@ class UserClient(BaseDBClient):
                 provider_id=f"oss_{int(datetime.now(timezone.utc).timestamp())}_{uuid.uuid4()}",
                 email=email.lower(),
                 password_hash=password_hash,
+                # Previously accepted and silently dropped: there was no column
+                # to hold it, so the name in the signup response was fiction.
+                name=(name or "").strip() or None,
             )
             session.add(user)
             await session.commit()

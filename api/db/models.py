@@ -70,6 +70,10 @@ class UserModel(Base):
     is_superuser = Column(Boolean, default=False)
     email = Column(String, nullable=True)
     password_hash = Column(String, nullable=True)
+    # Display name. Nullable because the hosted auth provider owns the identity
+    # and never writes here; the local provider populates it at signup and lets
+    # the user change it afterwards.
+    name = Column(String, nullable=True)
 
     __table_args__ = (
         Index(

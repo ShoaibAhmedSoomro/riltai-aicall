@@ -4,7 +4,13 @@ from api.constants import ENABLE_SIGNUP
 from api.db import db_client
 from api.db.models import UserModel
 from api.enums import PostHogEvent
-from api.schemas.auth import AuthResponse, LoginRequest, SignupRequest, UserResponse
+from api.schemas.auth import (
+    AuthResponse,
+    LoginRequest,
+    ProfileUpdateRequest,
+    SignupRequest,
+    UserResponse,
+)
 from api.services.auth.depends import get_user, require_local_auth
 from api.services.organization_bootstrap import ensure_organization_bootstrapped
 from api.services.posthog_client import capture_event
@@ -114,6 +120,7 @@ async def login(request: LoginRequest):
         user=UserResponse(
             id=user.id,
             email=user.email,
+            name=user.name,
             organization_id=user.selected_organization_id,
             provider_id=user.provider_id,
         ),
@@ -125,6 +132,74 @@ async def get_current_user(user: UserModel = Depends(get_user)):
     return UserResponse(
         id=user.id,
         email=user.email,
+        name=user.name,
         organization_id=user.selected_organization_id,
         provider_id=user.provider_id,
+    )
+
+
+@router.patch(
+    "/profile",
+    response_model=AuthResponse,
+    dependencies=[Depends(require_local_auth)],
+)
+async def update_profile(
+    request: ProfileUpdateRequest, user: UserModel = Depends(get_user)
+):
+    """Update the signed-in user's own display name, email or password.
+
+    Local auth only. The hosted provider owns its users' identities and has its
+    own account UI, so this route 404s there rather than writing rows the
+    identity provider would then overwrite.
+
+    Returns a fresh token because the JWT carries the email (api/utils/auth.py
+    create_jwt_token): after an email change the old token describes a user who
+    no longer exists under that address, and the OSS session cookie is a
+    write-once snapshot, so the client needs a new one to stop showing stale
+    details.
+    """
+    changing_password = request.new_password is not None
+
+    if changing_password:
+        if not user.password_hash:
+            # A user created before email/password auth, or via another path,
+            # has nothing to verify against.
+            raise HTTPException(
+                status_code=400, detail="This account has no password set"
+            )
+        if not request.current_password:
+            raise HTTPException(
+                status_code=400, detail="Current password is required to set a new one"
+            )
+        if not verify_password(request.current_password, user.password_hash):
+            raise HTTPException(status_code=401, detail="Current password is incorrect")
+
+    if (
+        request.email is not None
+        and request.email.lower() != (user.email or "").lower()
+    ):
+        existing = await db_client.get_user_by_email(request.email)
+        if existing and existing.id != user.id:
+            raise HTTPException(status_code=409, detail="Email already registered")
+
+    updated = await db_client.update_user_profile(
+        user.id,
+        name=request.name,
+        email=request.email,
+        password_hash=hash_password(request.new_password)
+        if changing_password
+        else None,
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return AuthResponse(
+        token=create_jwt_token(updated.id, updated.email),
+        user=UserResponse(
+            id=updated.id,
+            email=updated.email,
+            name=updated.name,
+            organization_id=updated.selected_organization_id,
+            provider_id=updated.provider_id,
+        ),
     )
