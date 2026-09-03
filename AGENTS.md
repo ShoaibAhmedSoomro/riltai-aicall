@@ -5,7 +5,7 @@ AICall is a voice AI platform for building and deploying conversational AI agent
 ## Project Structure
 
 ```
-rilt/
+riltai-aicall/
 ├── api/              # Backend - FastAPI application
 ├── ui/               # Frontend - Next.js application
 ├── scripts/          # Helper scripts for local development
