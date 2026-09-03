@@ -4577,6 +4577,38 @@ export type ProcessDocumentRequestSchema = {
 };
 
 /**
+ * ProfileUpdateRequest
+ *
+ * A partial profile update for the local auth provider.
+ *
+ * Every field is optional and only the ones present are applied, so changing
+ * a display name does not require re-sending the email. An empty string in
+ * ``name`` clears it; omitting the field leaves it alone.
+ *
+ * A password change requires ``current_password`` as well: possessing a valid
+ * session is not treated as proof of the old password, so a stolen token
+ * cannot be used to lock the owner out.
+ */
+export type ProfileUpdateRequest = {
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Email
+     */
+    email?: string | null;
+    /**
+     * Current Password
+     */
+    current_password?: string | null;
+    /**
+     * New Password
+     */
+    new_password?: string | null;
+};
+
+/**
  * PropertyLayoutOptions
  *
  * Renderer layout hints for a property in the node editor.
@@ -15255,6 +15287,45 @@ export type GetCurrentUserApiV1AuthMeGetResponses = {
 };
 
 export type GetCurrentUserApiV1AuthMeGetResponse = GetCurrentUserApiV1AuthMeGetResponses[keyof GetCurrentUserApiV1AuthMeGetResponses];
+
+export type UpdateProfileApiV1AuthProfilePatchData = {
+    body: ProfileUpdateRequest;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/profile';
+};
+
+export type UpdateProfileApiV1AuthProfilePatchErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateProfileApiV1AuthProfilePatchError = UpdateProfileApiV1AuthProfilePatchErrors[keyof UpdateProfileApiV1AuthProfilePatchErrors];
+
+export type UpdateProfileApiV1AuthProfilePatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: AuthResponse;
+};
+
+export type UpdateProfileApiV1AuthProfilePatchResponse = UpdateProfileApiV1AuthProfilePatchResponses[keyof UpdateProfileApiV1AuthProfilePatchResponses];
 
 export type ListNodeTypesApiV1NodeTypesGetData = {
     body?: never;

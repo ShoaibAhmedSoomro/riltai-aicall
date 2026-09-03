@@ -13,6 +13,7 @@ import { LeadFormsProvider } from "@/context/LeadFormsContext";
 
 import { AppSidebar } from "./AppSidebar";
 import { PeriodUsageMeter } from "./PeriodUsageMeter";
+import { ProfileMenu } from "./ProfileMenu";
 import { QuickActionsMenu } from "./QuickActionsMenu";
 
 function AppHeader() {
@@ -49,6 +50,7 @@ function AppHeader() {
           </TooltipContent>
         </Tooltip>
         <QuickActionsMenu />
+        <ProfileMenu />
       </div>
     </header>
   );
