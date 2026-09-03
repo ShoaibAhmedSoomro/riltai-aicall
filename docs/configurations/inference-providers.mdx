@@ -1,15 +1,15 @@
 ---
 title: "Model Configurations"
-description: "Configure the speech-to-speech, Social-Cangaroo-managed, or bring-your-own-key models your Social Cangaroo agents use."
+description: "Configure the speech-to-speech, RiltAI-managed, or bring-your-own-key models your AICall agents use."
 ---
 
 ## How model configurations work
 
 Model Configurations define the default AI model setup for your organization. Agents use this configuration unless you set agent-level model overrides in the agent settings.
 
-To configure models, open **Models** in your Social Cangaroo dashboard:
+To configure models, open **Models** in your AICall dashboard:
 
-- **Hosted:** `https://app.socialcangaroo.com/model-configurations`
+- **Hosted:** `https://aicall.rilt.ai/model-configurations`
 - **Self-hosted:** `http://localhost:3010/model-configurations`
 - **Local development:** `http://localhost:3000/model-configurations`
 
@@ -18,7 +18,7 @@ The Models page has three top-level sections:
 | Section | When to use it |
 |---------|----------------|
 | **Speech to Speech** | Use a realtime speech-to-speech model for the live conversation. You still configure an LLM alongside it for variable extraction and QA. |
-| **Social Cangaroo** | Use Social-Cangaroo-managed LLM, voice, and transcriber models behind one Social Cangaroo Service Key. |
+| **AICall** | Use RiltAI-managed LLM, voice, and transcriber models behind one AICall Service Key. |
 | **BYOK** | Bring your own provider keys and configure LLM, Voice, Transcriber, and Embedding models separately. |
 
 <Note>
@@ -40,23 +40,23 @@ The Speech to Speech section has nested tabs:
 | **Embedding** | An embedding model used by features that need embeddings, such as retrieval from knowledge base content. |
 
 <Warning>
-An LLM is still required when you use Speech to Speech. The realtime model handles the live voice conversation, but Social Cangaroo uses the LLM for analysis tasks that happen outside the live audio stream.
+An LLM is still required when you use Speech to Speech. The realtime model handles the live voice conversation, but AICall uses the LLM for analysis tasks that happen outside the live audio stream.
 </Warning>
 
-## Social Cangaroo
+## AICall
 
-Use **Social Cangaroo** when you want Social Cangaroo to manage the model providers for you. This path uses one Social Cangaroo Service Key for Social-Cangaroo-managed models instead of separate provider keys for LLM, Voice, and Transcriber.
+Use **AICall** when you want AICall to manage the model providers for you. This path uses one AICall Service Key for RiltAI-managed models instead of separate provider keys for LLM, Voice, and Transcriber.
 
-![Social Cangaroo model configuration](../images/model-configuration-social-cangaroo.png)
+![AICall model configuration](../images/model-configuration-rilt.png)
 
 Configure:
 
 | Field | What it controls |
 |-------|------------------|
-| **Voice** | The Social-Cangaroo-managed voice to use. |
+| **Voice** | The RiltAI-managed voice to use. |
 | **Speed** | The voice playback speed. |
 | **Language** | The language behavior, including multilingual auto-detect when available. |
-| **API Key** | Your Social Cangaroo Service Key. Create Service Keys from **Developers**. |
+| **API Key** | Your AICall Service Key. Create Service Keys from **Developers**. |
 
 For details on creating and using Service Keys, see [API Keys and Service Keys](api-keys#service-keys).
 
@@ -65,7 +65,7 @@ For details on creating and using Service Keys, see [API Keys and Service Keys](
 Use **BYOK** when you want to bring your own provider accounts and API keys. This gives you separate control over each model category.
 
 <Warning>
-When you use BYOK or external model providers, Social Cangaroo sends only the data required for the selected service to operate. Depending on the provider and service type, this may include prompts, conversation history, transcripts, audio, generated text, tool/function definitions, tool inputs or results, and request metadata.
+When you use BYOK or external model providers, AICall sends only the data required for the selected service to operate. Depending on the provider and service type, this may include prompts, conversation history, transcripts, audio, generated text, tool/function definitions, tool inputs or results, and request metadata.
 
 Provider data handling varies. Review each provider's data processing, retention, model training, and regional hosting policies before using sensitive data.
 </Warning>

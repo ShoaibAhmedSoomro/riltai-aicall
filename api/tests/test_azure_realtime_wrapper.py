@@ -8,12 +8,12 @@ from pipecat.processors.frame_processor import FrameDirection
 from pipecat.services.openai.realtime import events
 
 from api.services.pipecat.realtime.azure_realtime import (
-    SocialCangarooAzureRealtimeLLMService,
+    RiltAzureRealtimeLLMService,
 )
 
 
-def _make_service() -> SocialCangarooAzureRealtimeLLMService:
-    service = SocialCangarooAzureRealtimeLLMService(
+def _make_service() -> RiltAzureRealtimeLLMService:
+    service = RiltAzureRealtimeLLMService(
         api_key="test-key",
         base_url="wss://example.test/openai/realtime",
     )
@@ -58,13 +58,13 @@ async def test_tts_greeting_waits_for_session_updated_before_sending_prompt():
     service._context = LLMContext([{"role": "user", "content": "Existing context"}])
 
     await service.process_frame(
-        TTSSpeakFrame("Hello from Social Cangaroo.", append_to_context=True),
+        TTSSpeakFrame("Hello from AICall.", append_to_context=True),
         FrameDirection.DOWNSTREAM,
     )
 
     assert service._handled_initial_context is True
     assert service._run_llm_when_api_session_ready is True
-    assert service._pending_initial_greeting_text == "Hello from Social Cangaroo."
+    assert service._pending_initial_greeting_text == "Hello from AICall."
 
     service.send_client_event = AsyncMock()
     service.push_frame = AsyncMock()
@@ -81,7 +81,7 @@ async def test_tts_greeting_waits_for_session_updated_before_sending_prompt():
     assert isinstance(response_event, events.ResponseCreateEvent)
     assert response_event.response.tool_choice == "none"
     prompt = response_event.response.instructions
-    assert prompt.endswith('"Hello from Social Cangaroo."')
+    assert prompt.endswith('"Hello from AICall."')
     assert service._run_llm_when_api_session_ready is False
     assert service._pending_initial_greeting_text is None
     assert service._llm_needs_conversation_setup is False

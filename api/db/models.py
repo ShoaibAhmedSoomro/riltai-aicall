@@ -280,10 +280,10 @@ class TelephonyTrunkModel(Base):
     single route through that account — a primary carrier, a failover, a second
     region.
 
-    Only providers whose Social Cangaroo integration declares ``trunk_settings_cls`` get
+    Only providers whose AICall integration declares ``trunk_settings_cls`` get
     rows here. That is a statement about our integration, not about the vendor:
     Twilio, Plivo and Telnyx all sell SIP trunking and let you assign numbers to
-    a trunk in their own consoles, but Social Cangaroo drives them through their
+    a trunk in their own consoles, but AICall drives them through their
     call-control APIs, where the account itself is the only route. Their numbers
     carry a null trunk.
 
@@ -309,8 +309,8 @@ class TelephonyTrunkModel(Base):
     # Provider-specific payload, validated by the provider's trunk settings
     # schema: region and sip_domain for Cloudonix, endpoint details for ARI.
     settings = Column(JSON, nullable=False, default=dict)
-    # The provider's own identifier for this trunk, recorded when Social Cangaroo
-    # provisions it remotely. Kept out of ``settings`` because it is Social Cangaroo's
+    # The provider's own identifier for this trunk, recorded when AICall
+    # provisions it remotely. Kept out of ``settings`` because it is AICall's
     # bookkeeping rather than operator input, and is stripped from responses.
     external_id = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))

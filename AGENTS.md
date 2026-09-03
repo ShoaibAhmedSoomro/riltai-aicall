@@ -1,11 +1,11 @@
-# Social Cangaroo - Project Overview
+# AICall - Project Overview
 
-Social Cangaroo is a voice AI platform for building and deploying conversational AI agents with telephony and WebRTC support.
+AICall is a voice AI platform for building and deploying conversational AI agents with telephony and WebRTC support.
 
 ## Project Structure
 
 ```
-social-cangaroo/
+rilt/
 ├── api/              # Backend - FastAPI application
 ├── ui/               # Frontend - Next.js application
 ├── scripts/          # Helper scripts for local development

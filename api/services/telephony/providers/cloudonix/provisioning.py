@@ -103,7 +103,7 @@ async def ensure_managed_cloudonix_configuration(
             name=MANAGED_CONFIGURATION_NAME,
             provider="cloudonix",
             credentials=credentials,
-            # Social Cangaroo provisions this row; the customer did not ask for it and
+            # AICall provisions this row; the customer did not ask for it and
             # it cannot carry a call until they connect their own carrier.
             # Making it the org default would point campaigns and API triggers
             # at the one configuration guaranteed not to work.

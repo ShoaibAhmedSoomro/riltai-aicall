@@ -14,7 +14,7 @@ BOOTSTRAP_LIB=""
 
 if [[ ! -f "$LIB_PATH" ]]; then
     BOOTSTRAP_LIB="$(mktemp)"
-    curl -fsSL -o "$BOOTSTRAP_LIB" "https://raw.githubusercontent.com/ShoaibAhmedSoomro/social-cangaroo/main/scripts/lib/setup_common.sh"
+    curl -fsSL -o "$BOOTSTRAP_LIB" "https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/scripts/lib/setup_common.sh"
     LIB_PATH="$BOOTSTRAP_LIB"
 fi
 
@@ -28,9 +28,9 @@ cleanup() {
     # invoked sudo; a no-op for unprivileged runs and real root, where SUDO_UID
     # is unset. Runs from the EXIT trap so a mid-update failure also leaves
     # ownership fixed.
-    if [[ -n "${SUDO_UID:-}" && -n "${SUDO_GID:-}" && -n "${SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR:-}" && -d "$SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR" ]]; then
-        echo -e "${BLUE}Restoring ownership of $SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR to ${SUDO_USER:-uid $SUDO_UID}...${NC}"
-        chown -R "$SUDO_UID:$SUDO_GID" "$SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR" || true
+    if [[ -n "${SUDO_UID:-}" && -n "${SUDO_GID:-}" && -n "${RILT_DEPLOY_PROJECT_DIR:-}" && -d "$RILT_DEPLOY_PROJECT_DIR" ]]; then
+        echo -e "${BLUE}Restoring ownership of $RILT_DEPLOY_PROJECT_DIR to ${SUDO_USER:-uid $SUDO_UID}...${NC}"
+        chown -R "$SUDO_UID:$SUDO_GID" "$RILT_DEPLOY_PROJECT_DIR" || true
     fi
 }
 trap cleanup EXIT
@@ -38,7 +38,7 @@ trap cleanup EXIT
 # shellcheck disable=SC1090
 . "$LIB_PATH"
 
-REPO="ShoaibAhmedSoomro/social-cangaroo"
+REPO="ShoaibAhmedSoomro/rilt"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 generate_secret() {
@@ -54,22 +54,22 @@ generate_secret() {
         return
     fi
 
-    social_cangaroo_fail "Could not generate a secret. Install python3 or openssl, or set missing secrets manually in .env."
+    rilt_fail "Could not generate a secret. Install python3 or openssl, or set missing secrets manually in .env."
 }
 
 generate_minio_root_user() {
-    printf 'social-cangaroo%s\n' "$(generate_secret | cut -c1-12)"
+    printf 'rilt%s\n' "$(generate_secret | cut -c1-12)"
 }
 
 echo -e "${BLUE}"
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║                  Social Cangaroo Remote Update                        ║"
+echo "║                  AICall Remote Update                        ║"
 echo "║  Refresh deployment files and validate runtime config        ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
 
-[[ -f docker-compose.yaml ]] || social_cangaroo_fail "docker-compose.yaml not found in $(pwd)"
-[[ -f .env ]] || social_cangaroo_fail ".env not found in $(pwd)"
+[[ -f docker-compose.yaml ]] || rilt_fail "docker-compose.yaml not found in $(pwd)"
+[[ -f .env ]] || rilt_fail ".env not found in $(pwd)"
 
 if [[ -f docker-compose.override.yaml ]]; then
     echo -e "${YELLOW}Build-mode install detected (docker-compose.override.yaml present).${NC}"
@@ -81,17 +81,17 @@ if [[ -f docker-compose.override.yaml ]]; then
     echo -e "  ${BLUE}git submodule update --init --recursive${NC}"
     echo -e "  ${BLUE}./remote_up.sh --build${NC}"
     echo ""
-    echo -e "${YELLOW}See https://docs.socialcangaroo.com/deployment/update#updating-a-source-build${NC}"
+    echo -e "${YELLOW}See https://docs.rilt.ai/deployment/update#updating-a-source-build${NC}"
     exit 1
 fi
 
 _caller_FASTAPI_WORKERS="${FASTAPI_WORKERS:-}"
 _caller_TARGET_VERSION="${TARGET_VERSION:-}"
 
-SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR="$(pwd)"
-social_cangaroo_load_env_file .env
+RILT_DEPLOY_PROJECT_DIR="$(pwd)"
+rilt_load_env_file .env
 
-[[ -n "${TURN_SECRET:-}" ]] || social_cangaroo_fail "TURN_SECRET not found in .env"
+[[ -n "${TURN_SECRET:-}" ]] || rilt_fail "TURN_SECRET not found in .env"
 
 if [[ -n "$_caller_FASTAPI_WORKERS" ]]; then
     FASTAPI_WORKERS="$_caller_FASTAPI_WORKERS"
@@ -108,25 +108,25 @@ if [[ -z "${FASTAPI_WORKERS:-}" ]]; then
     fi
 fi
 
-[[ "$FASTAPI_WORKERS" =~ ^[1-9][0-9]*$ ]] || social_cangaroo_fail "FASTAPI_WORKERS must be a positive integer (got: $FASTAPI_WORKERS)"
+[[ "$FASTAPI_WORKERS" =~ ^[1-9][0-9]*$ ]] || rilt_fail "FASTAPI_WORKERS must be a positive integer (got: $FASTAPI_WORKERS)"
 
 TARGET_VERSION="${_caller_TARGET_VERSION:-${TARGET_VERSION:-}}"
 
 if [[ -z "$TARGET_VERSION" ]]; then
-    social_cangaroo_info "Fetching latest release tag from GitHub..."
+    rilt_info "Fetching latest release tag from GitHub..."
     LATEST_TAG=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null \
         | grep -E '"tag_name":' | head -1 \
         | sed -E 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/' || true)
 
     if [[ -z "$LATEST_TAG" ]]; then
-        social_cangaroo_warn "Could not auto-discover latest tag - defaulting to 'main'."
+        rilt_warn "Could not auto-discover latest tag - defaulting to 'main'."
         LATEST_TAG="main"
     fi
 
     if [[ -t 0 ]]; then
         echo ""
         echo -e "${YELLOW}Target version. Accepted forms: bare semver (1.28.0), v-prefixed (v1.28.0),${NC}"
-        echo -e "${YELLOW}full git tag (social-cangaroo-v1.28.0), or 'main' for the latest deployment files.${NC}"
+        echo -e "${YELLOW}full git tag (rilt-v1.28.0), or 'main' for the latest deployment files.${NC}"
         read -p "[$LATEST_TAG]: " TARGET_VERSION
         TARGET_VERSION="${TARGET_VERSION:-$LATEST_TAG}"
     else
@@ -138,24 +138,24 @@ if [[ "$TARGET_VERSION" == "latest" ]]; then
     TARGET_VERSION=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null \
         | grep -E '"tag_name":' | head -1 \
         | sed -E 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/' || true)
-    [[ -n "$TARGET_VERSION" ]] || social_cangaroo_fail "could not resolve 'latest' to a release tag"
+    [[ -n "$TARGET_VERSION" ]] || rilt_fail "could not resolve 'latest' to a release tag"
 fi
 
 TRY_TAGS=("$TARGET_VERSION")
 case "$TARGET_VERSION" in
     main|HEAD)
         ;;
-    social-cangaroo-*)
+    rilt-*)
         ;;
     v*)
-        TRY_TAGS+=("social-cangaroo-$TARGET_VERSION")
+        TRY_TAGS+=("rilt-$TARGET_VERSION")
         ;;
     *)
-        TRY_TAGS+=("social-cangaroo-v$TARGET_VERSION" "v$TARGET_VERSION" "social-cangaroo-$TARGET_VERSION")
+        TRY_TAGS+=("rilt-v$TARGET_VERSION" "v$TARGET_VERSION" "rilt-$TARGET_VERSION")
         ;;
 esac
 
-social_cangaroo_info "Validating target version: $TARGET_VERSION..."
+rilt_info "Validating target version: $TARGET_VERSION..."
 RESOLVED_TAG=""
 for tag in "${TRY_TAGS[@]}"; do
     if curl -fsI "https://raw.githubusercontent.com/$REPO/$tag/docker-compose.yaml" >/dev/null 2>&1; then
@@ -164,10 +164,10 @@ for tag in "${TRY_TAGS[@]}"; do
     fi
 done
 
-[[ -n "$RESOLVED_TAG" ]] || social_cangaroo_fail "could not find a git tag matching '$TARGET_VERSION'"
+[[ -n "$RESOLVED_TAG" ]] || rilt_fail "could not find a git tag matching '$TARGET_VERSION'"
 
 if [[ "$RESOLVED_TAG" != "$TARGET_VERSION" ]]; then
-    social_cangaroo_success "✓ Resolved '$TARGET_VERSION' to git tag '$RESOLVED_TAG'"
+    rilt_success "✓ Resolved '$TARGET_VERSION' to git tag '$RESOLVED_TAG'"
 fi
 
 TARGET_VERSION="$RESOLVED_TAG"
@@ -175,38 +175,38 @@ RAW_BASE="https://raw.githubusercontent.com/$REPO/$TARGET_VERSION"
 IMAGE_TAG=""
 
 case "$TARGET_VERSION" in
-    social-cangaroo-v*) IMAGE_TAG="${TARGET_VERSION#social-cangaroo-v}" ;;
+    rilt-v*) IMAGE_TAG="${TARGET_VERSION#rilt-v}" ;;
     v*) IMAGE_TAG="${TARGET_VERSION#v}" ;;
     main|HEAD) IMAGE_TAG="" ;;
     *) [[ "$TARGET_VERSION" =~ ^[0-9] ]] && IMAGE_TAG="$TARGET_VERSION" ;;
 esac
 
 if [[ -n "$IMAGE_TAG" ]]; then
-    if curl -fsI "https://hub.docker.com/v2/repositories/socialcangaroo/social-cangaroo-api/tags/$IMAGE_TAG/" >/dev/null 2>&1; then
-        social_cangaroo_success "✓ Image tag :$IMAGE_TAG found on Docker Hub"
+    if curl -fsI "https://hub.docker.com/v2/repositories/riltai/aicall-api/tags/$IMAGE_TAG/" >/dev/null 2>&1; then
+        rilt_success "✓ Image tag :$IMAGE_TAG found on Docker Hub"
     else
-        social_cangaroo_warn "Warning: image tag :$IMAGE_TAG not found on Docker Hub - leaving images at :latest"
+        rilt_warn "Warning: image tag :$IMAGE_TAG not found on Docker Hub - leaving images at :latest"
         IMAGE_TAG=""
     fi
 fi
 
 echo ""
 echo -e "${GREEN}Update plan:${NC}"
-echo -e "  Server IP:        ${BLUE}$(social_cangaroo_infer_server_ip "$(pwd)" || echo "unknown")${NC}"
+echo -e "  Server IP:        ${BLUE}$(rilt_infer_server_ip "$(pwd)" || echo "unknown")${NC}"
 echo -e "  Target version:   ${BLUE}$TARGET_VERSION${NC}"
 echo -e "  FastAPI workers:  ${BLUE}$FASTAPI_WORKERS${NC}  (ports 8000..$((8000 + FASTAPI_WORKERS - 1)))"
 echo ""
 echo -e "${YELLOW}Files that will be replaced (backups saved with suffix .bak.$TIMESTAMP):${NC}"
 echo "  - docker-compose.yaml   (pulled from GitHub at $TARGET_VERSION)"
 echo "  - remote_up.sh          (startup wrapper / preflight)"
-echo "  - scripts/run_social_cangaroo_init.sh"
+echo "  - scripts/run_rilt_init.sh"
 echo "  - scripts/lib/setup_common.sh"
 echo "  - deploy/templates/*.template"
 echo "  - .env                  (canonical remote keys synchronized)"
 echo "  - legacy nginx.conf / turnserver.conf backups will be kept if those files still exist"
 echo ""
 
-if [[ -t 0 && "${SOCIAL_CANGAROO_UPDATE_YES:-}" != "1" ]]; then
+if [[ -t 0 && "${RILT_UPDATE_YES:-}" != "1" ]]; then
     read -p "Proceed? [y/N]: " confirm
     if ! [[ "$confirm" =~ ^[Yy] ]]; then
         echo -e "${RED}Aborted.${NC}"
@@ -222,7 +222,7 @@ for f in \
     turnserver.conf \
     .env \
     remote_up.sh \
-    scripts/run_social_cangaroo_init.sh \
+    scripts/run_rilt_init.sh \
     scripts/lib/setup_common.sh \
     deploy/templates/nginx.remote.conf.template \
     deploy/templates/turnserver.remote.conf.template
@@ -236,44 +236,44 @@ done
 
 echo -e "${BLUE}[2/3] Downloading deployment bundle at $TARGET_VERSION...${NC}"
 curl -fsSL -o docker-compose.yaml "$RAW_BASE/docker-compose.yaml"
-social_cangaroo_download_remote_support_bundle "$(pwd)" "$TARGET_VERSION"
+rilt_download_remote_support_bundle "$(pwd)" "$TARGET_VERSION"
 rm -f nginx.conf turnserver.conf
 
 if [[ -n "$IMAGE_TAG" ]]; then
-    sed -i.tmp -E "s#(social-cangaroo-(api|ui)):latest#\1:$IMAGE_TAG#g" docker-compose.yaml
+    sed -i.tmp -E "s#(rilt-(api|ui)):latest#\1:$IMAGE_TAG#g" docker-compose.yaml
     rm -f docker-compose.yaml.tmp
-    social_cangaroo_success "✓ docker-compose.yaml updated; images pinned to :$IMAGE_TAG"
+    rilt_success "✓ docker-compose.yaml updated; images pinned to :$IMAGE_TAG"
 else
-    social_cangaroo_success "✓ docker-compose.yaml updated (image tags left at :latest)"
+    rilt_success "✓ docker-compose.yaml updated (image tags left at :latest)"
 fi
 
 echo -e "${BLUE}[3/3] Synchronizing environment and validating init-based remote config...${NC}"
-social_cangaroo_set_env_key .env FASTAPI_WORKERS "$FASTAPI_WORKERS"
+rilt_set_env_key .env FASTAPI_WORKERS "$FASTAPI_WORKERS"
 if [[ -z "${REDIS_PASSWORD:-}" ]]; then
-    social_cangaroo_set_env_key .env REDIS_PASSWORD "$(generate_secret)"
-    social_cangaroo_success "✓ REDIS_PASSWORD created in .env"
+    rilt_set_env_key .env REDIS_PASSWORD "$(generate_secret)"
+    rilt_success "✓ REDIS_PASSWORD created in .env"
 fi
 if [[ -z "${MINIO_ROOT_USER:-}" ]]; then
     if [[ -n "${MINIO_ACCESS_KEY:-}" ]]; then
-        social_cangaroo_set_env_key .env MINIO_ROOT_USER "$MINIO_ACCESS_KEY"
-        social_cangaroo_success "✓ MINIO_ROOT_USER created in .env from existing MINIO_ACCESS_KEY"
+        rilt_set_env_key .env MINIO_ROOT_USER "$MINIO_ACCESS_KEY"
+        rilt_success "✓ MINIO_ROOT_USER created in .env from existing MINIO_ACCESS_KEY"
     else
-        social_cangaroo_set_env_key .env MINIO_ROOT_USER "$(generate_minio_root_user)"
-        social_cangaroo_success "✓ MINIO_ROOT_USER created in .env"
+        rilt_set_env_key .env MINIO_ROOT_USER "$(generate_minio_root_user)"
+        rilt_success "✓ MINIO_ROOT_USER created in .env"
     fi
 fi
 if [[ -z "${MINIO_ROOT_PASSWORD:-}" ]]; then
     if [[ -n "${MINIO_SECRET_KEY:-}" ]]; then
-        social_cangaroo_set_env_key .env MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY"
-        social_cangaroo_success "✓ MINIO_ROOT_PASSWORD created in .env from existing MINIO_SECRET_KEY"
+        rilt_set_env_key .env MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY"
+        rilt_success "✓ MINIO_ROOT_PASSWORD created in .env from existing MINIO_SECRET_KEY"
     else
-        social_cangaroo_set_env_key .env MINIO_ROOT_PASSWORD "$(generate_secret)"
-        social_cangaroo_success "✓ MINIO_ROOT_PASSWORD created in .env"
+        rilt_set_env_key .env MINIO_ROOT_PASSWORD "$(generate_secret)"
+        rilt_success "✓ MINIO_ROOT_PASSWORD created in .env"
     fi
 fi
-social_cangaroo_prepare_remote_install "$(pwd)"
+rilt_prepare_remote_install "$(pwd)"
 docker compose config -q
-social_cangaroo_success "✓ Remote init configuration validated"
+rilt_success "✓ Remote init configuration validated"
 
 echo ""
 echo -e "${GREEN}╔══════════════════════════════════════════════════════════════╗${NC}"
@@ -288,7 +288,7 @@ echo -e "  ${BLUE}./remote_up.sh${NC}"
 echo ""
 echo -e "${YELLOW}To roll back, restore the backups and re-run the wrapper:${NC}"
 echo ""
-echo -e "  ${BLUE}for f in docker-compose.yaml nginx.conf turnserver.conf .env remote_up.sh scripts/run_social_cangaroo_init.sh scripts/lib/setup_common.sh deploy/templates/nginx.remote.conf.template deploy/templates/turnserver.remote.conf.template; do${NC}"
+echo -e "  ${BLUE}for f in docker-compose.yaml nginx.conf turnserver.conf .env remote_up.sh scripts/run_rilt_init.sh scripts/lib/setup_common.sh deploy/templates/nginx.remote.conf.template deploy/templates/turnserver.remote.conf.template; do${NC}"
 echo -e "  ${BLUE}  [[ -f \"\$f.bak.$TIMESTAMP\" ]] && cp \"\$f.bak.$TIMESTAMP\" \"\$f\"${NC}"
 echo -e "  ${BLUE}done${NC}"
 echo -e "  ${BLUE}./remote_up.sh${NC}"

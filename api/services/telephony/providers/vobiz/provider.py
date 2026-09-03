@@ -603,9 +603,9 @@ class VobizProvider(TelephonyProvider):
                             message = (
                                 "Vobiz indicates that this phone number is already "
                                 "attached to an application. To enable inbound calls "
-                                "in Social Cangaroo, review the phone number configuration in "
+                                "in AICall, review the phone number configuration in "
                                 "Vobiz and ensure that the number is attached to the "
-                                "Application ID configured in Social Cangaroo "
+                                "Application ID configured in AICall "
                                 f"({self.application_id})."
                             )
                         elif response.status == 404:

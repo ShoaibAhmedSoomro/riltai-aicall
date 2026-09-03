@@ -187,7 +187,7 @@ async def run_completion(
 
         trace_attributes = trace_data.setdefault("attributes", {})
         if recording_url:
-            trace_attributes["social_cangaroo.recording_url"] = recording_url
+            trace_attributes["rilt.recording_url"] = recording_url
         # The live-phase client ran with placeholder identity ("deferred" /
         # "development"); the wire export only fixes the TOP-LEVEL project and
         # environment fields, so overwrite the trace ATTRIBUTES with the
@@ -198,7 +198,7 @@ async def run_completion(
         # The agent version was stamped into the trace attributes in the live
         # phase; surface it as the trace's top-level service_version too (the
         # transport applies config.service_version at export time).
-        agent_version = trace_attributes.get("social_cangaroo.agent_version")
+        agent_version = trace_attributes.get("rilt.agent_version")
 
         client = None
         try:

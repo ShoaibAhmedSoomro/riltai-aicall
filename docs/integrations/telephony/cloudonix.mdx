@@ -1,20 +1,20 @@
 ---
 title: "Cloudonix Integration"
-description: "Configure Cloudonix for voice communication in Social Cangaroo AI"
+description: "Configure Cloudonix for voice communication in AICall"
 ---
 
 ## Overview
 
-Cloudonix is a cloud communications platform that enables Social Cangaroo voice agents to connect to SIP communications
+Cloudonix is a cloud communications platform that enables AICall voice agents to connect to SIP communications
 platform, either on-premise or in the cloud. In addition, Cloudonix exposes a full set of voice APIs, that provide 
 a full suite of call-control capabilities and more.
 
 <Note>
-  **Already have a configuration named "Social Cangaroo Cloudonix SIP"?** That one is
-  provisioned for you — Social Cangaroo owns the Cloudonix domain, so it needs no
+  **Already have a configuration named "AICall Cloudonix SIP"?** That one is
+  provisioned for you — AICall owns the Cloudonix domain, so it needs no
   Cloudonix account or credentials of your own. It does need you to connect
   your SIP carrier and add your phone numbers. Follow
-  [Social Cangaroo Managed SIP](/integrations/telephony/social-cangaroo-sip) instead of this page.
+  [RiltAI Managed SIP](/integrations/telephony/rilt-sip) instead of this page.
 
   This page covers bringing **your own** Cloudonix account as a separate
   configuration.
@@ -24,21 +24,21 @@ a full suite of call-control capabilities and more.
 
 Before setting up Cloudonix integration, you'll need:
 
-- A [Cloudonix account](https://cockpit.cloudonix.io/onboarding?affiliate=SOCIAL_CANGAROO)
+- A [Cloudonix account](https://cockpit.cloudonix.io/onboarding?affiliate=RILT)
 - A Cloudonix domain UUID (or the domain name)
 - A Cloudonix domain API Key (Bearer Token)
-- A Cloudonix **Voice Application** on that domain (optional — leave the field blank in Social Cangaroo and we'll auto-create one for you on save, with the application `url` pre-set)
+- A Cloudonix **Voice Application** on that domain (optional — leave the field blank in AICall and we'll auto-create one for you on save, with the application `url` pre-set)
 - A Cloudonix outbound voice trunk service provider connection
-- Social Cangaroo AI instance running and accessible
+- AICall instance running and accessible
 
 ## Video Tutorial
 
-Watch this step-by-step guide to set up Cloudonix with Social Cangaroo AI:
+Watch this step-by-step guide to set up Cloudonix with AICall:
 
 <iframe
   className="w-full aspect-video rounded-xl"
   src="https://www.youtube.com/embed/qLKX0F99jpU?si=tA3zwCsNRKe-WCI1"
-  title="Social Cangaroo Cloudonix Setup"
+  title="AICall Cloudonix Setup"
   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
   allowFullScreen
 ></iframe>
@@ -47,11 +47,11 @@ Watch this step-by-step guide to set up Cloudonix with Social Cangaroo AI:
 
 ### Step 1: Get Cloudonix Credentials
 
-1. Log in to your [Cloudonix Console](https://cockpit.cloudonix.io/onboarding?affiliate=SOCIAL_CANGAROO)
+1. Log in to your [Cloudonix Console](https://cockpit.cloudonix.io/onboarding?affiliate=RILT)
 2. Find your **Domain ID** (UUID or domain name) and **Bearer Token** (Domain API Key) on the dashboard
-3. (Optional) Navigate to your domain's **Applications** and create (or open) the application you'll use with Social Cangaroo, then copy its **Application Name**. Skip this if you want Social Cangaroo to auto-create the Voice Application for you on save.
+3. (Optional) Navigate to your domain's **Applications** and create (or open) the application you'll use with AICall, then copy its **Application Name**. Skip this if you want AICall to auto-create the Voice Application for you on save.
 
-### Step 2: Configure in Social Cangaroo AI
+### Step 2: Configure in AICall
 
 1. Navigate to **/telephony-configurations** and click **Add configuration**
 2. Watch the Cloudonix setup video tutorial above for detailed guidance
@@ -59,15 +59,15 @@ Watch this step-by-step guide to set up Cloudonix with Social Cangaroo AI:
 4. Enter your credentials:
    - Bearer Token
    - Domain ID
-   - Application Name — *optional*. Leave blank and Social Cangaroo will auto-create a Voice Application on save (with the application `url` and CXML runtime already configured) and store its name on this configuration.
+   - Application Name — *optional*. Leave blank and AICall will auto-create a Voice Application on save (with the application `url` and CXML runtime already configured) and store its name on this configuration.
 5. Click **Save Configuration**
 6. Open the configuration you just created and add at least one **phone number** (with country code, in [E.164](https://en.wikipedia.org/wiki/E.164) format — `+` then country code then number, no spaces or dashes, e.g. `+1234567890`). The default caller ID is used for outbound calls.
 
    <Note>
-     If Social Cangaroo auto-created the Voice Application for you, you still need to
+     If AICall auto-created the Voice Application for you, you still need to
      bind your DNIDs to that application in the Cloudonix cockpit (see
      [Step 2 of Inbound Calling Setup](#step-2-create-the-voice-application-and-link-dnids)).
-     The auto-created application is named `social-cangaroo-<random>` — its name is
+     The auto-created application is named `rilt-<random>` — its name is
      shown on the saved configuration.
    </Note>
 
@@ -79,7 +79,7 @@ Watch this step-by-step guide to set up Cloudonix with Social Cangaroo AI:
 
 ## Inbound Calling Setup
 
-Cloudonix routes inbound calls per **Voice Application** — the webhook URL is set once on the application, and applies to every DNID bound to it. **When you save an inbound workflow on a phone number, Social Cangaroo automatically pushes the webhook URL to your Voice Application's `url`** (provided the credentials are correct), so you don't need to set the webhook by hand. If Social Cangaroo auto-created the application during configuration save, the `url` is already set and this push is a no-op — you only need to bind your DNIDs to the auto-created application.
+Cloudonix routes inbound calls per **Voice Application** — the webhook URL is set once on the application, and applies to every DNID bound to it. **When you save an inbound workflow on a phone number, AICall automatically pushes the webhook URL to your Voice Application's `url`** (provided the credentials are correct), so you don't need to set the webhook by hand. If AICall auto-created the application during configuration save, the `url` is already set and this push is a no-op — you only need to bind your DNIDs to the auto-created application.
 
 ### Step 1: Set Up the Inbound Trunk
 
@@ -100,34 +100,34 @@ Cloudonix routes inbound calls per **Voice Application** — the webhook URL is 
 ### Step 2: Create the Voice Application and Link DNIDs
 
 1. In the Cloudonix cockpit, select your domain and navigate to **Applications**
-2. Create a new application (or open the existing one whose name you configured in Social Cangaroo) with these settings:
+2. Create a new application (or open the existing one whose name you configured in AICall) with these settings:
    - **Application Resource Type**: `Remote Application Resource`
    - **Application Runtime**: `Cloudonix (CXML)`
-   - **Application URL**: `https://api.socialcangaroo.com/api/v1/telephony/inbound/run`
+   - **Application URL**: `https://api.rilt.ai/api/v1/telephony/inbound/run`
    - **HTTP Method**: `POST`
 3. Under **DNID Numbers**, add each phone number (DNID) you want to route through this application
 4. Save
 
    <Note>
-     The Application URL is what Social Cangaroo's auto-push updates in Step 3 — you
+     The Application URL is what AICall's auto-push updates in Step 3 — you
      can leave it blank during creation and let the auto-push fill it in,
      or paste the URL above so the application is usable immediately.
-     Either works. Self-hosted Social Cangaroo deployments use their backend domain
-     in place of `api.socialcangaroo.com`.
+     Either works. Self-hosted AICall deployments use their backend domain
+     in place of `api.rilt.ai`.
    </Note>
 
    <img
      className="block dark:hidden"
      src="/images/cloudonix-inbound-config-application.png"
-     alt="Cloudonix application form showing Remote Application Resource type, Cloudonix CXML runtime, the Social Cangaroo inbound URL, POST method, and a DNID number entry"
+     alt="Cloudonix application form showing Remote Application Resource type, Cloudonix CXML runtime, the AICall inbound URL, POST method, and a DNID number entry"
    />
    <img
      className="hidden dark:block"
      src="/images/cloudonix-inbound-config-application.png"
-     alt="Cloudonix application form showing Remote Application Resource type, Cloudonix CXML runtime, the Social Cangaroo inbound URL, POST method, and a DNID number entry"
+     alt="Cloudonix application form showing Remote Application Resource type, Cloudonix CXML runtime, the AICall inbound URL, POST method, and a DNID number entry"
    />
 
-### Step 3: Assign an Inbound Workflow to the Phone Number in Social Cangaroo
+### Step 3: Assign an Inbound Workflow to the Phone Number in AICall
 
 1. Go to **/telephony-configurations** and open your Cloudonix configuration
 2. In the **Phone numbers** section, edit the number that should receive inbound calls
@@ -137,21 +137,21 @@ Cloudonix routes inbound calls per **Voice Application** — the webhook URL is 
 ### Step 4: Verify the URL on the Voice Application
 
 1. Open your Cloudonix cockpit and navigate to your domain's **Applications**
-2. Open the application whose name you configured in Social Cangaroo
+2. Open the application whose name you configured in AICall
 3. Confirm:
-   - **URL** is set to: `https://api.socialcangaroo.com/api/v1/telephony/inbound/run`
+   - **URL** is set to: `https://api.rilt.ai/api/v1/telephony/inbound/run`
    - **Method** is `POST`
 
    <Note>
-     Social Cangaroo pushed this URL automatically when you saved the inbound workflow
+     AICall pushed this URL automatically when you saved the inbound workflow
      in Step 3. The same URL is shared across every DNID bound to that
-     application — Social Cangaroo routes each inbound call to the right agent based
+     application — AICall routes each inbound call to the right agent based
      on the called number's inbound workflow assignment. If the field is
-     empty, shows a different URL, or Social Cangaroo surfaced a sync warning on
+     empty, shows a different URL, or AICall surfaced a sync warning on
      save, the auto-push failed — most often because the Bearer Token,
-     Domain ID, or Application Name in Social Cangaroo is incorrect. Paste the URL
+     Domain ID, or Application Name in AICall is incorrect. Paste the URL
      into the field yourself, set the method to `POST`, and save. On
-     self-hosted Social Cangaroo, replace `api.socialcangaroo.com` with your backend domain.
+     self-hosted AICall, replace `api.rilt.ai` with your backend domain.
    </Note>
 
    <img
@@ -167,15 +167,15 @@ Cloudonix routes inbound calls per **Voice Application** — the webhook URL is 
 
 ### Step 5: Verify Setup
 
-- Ensure your Social Cangaroo AI instance is publicly accessible
+- Ensure your AICall instance is publicly accessible
 - Verify any firewalls allow Cloudonix's IP ranges
 - Confirm your inbound trunk is active and receiving calls
 
 ### Test Inbound Calling
 
 1. Call your configured phone number from another phone
-2. Verify your Social Cangaroo AI voice agent answers and responds
-3. Check call logs in both Social Cangaroo AI dashboard and Cloudonix Console
+2. Verify your AICall voice agent answers and responds
+3. Check call logs in both AICall dashboard and Cloudonix Console
 4. Confirm clear two-way audio communication
 
 ## Troubleshooting
@@ -199,16 +199,16 @@ Cloudonix routes inbound calls per **Voice Application** — the webhook URL is 
 
   <Accordion title="Inbound calls not reaching voice agent">
     - Verify the DNID is bound to the same Voice Application whose name you
-    configured in Social Cangaroo - Confirm the called number exists in your Social Cangaroo
+    configured in AICall - Confirm the called number exists in your AICall
     telephony configuration and has an **Inbound workflow** assigned -
-    After assigning the inbound workflow, confirm Social Cangaroo successfully updated
+    After assigning the inbound workflow, confirm AICall successfully updated
     the application's `url` (no warning shown on save) - Verify your inbound
     trunk is active and receiving calls
   </Accordion>
 
   <Accordion title="Voice agent doesn't respond to inbound calls">
     - Confirm the phone number has an **Inbound workflow** assigned in
-    /telephony-configurations - Verify the Bearer Token in Social Cangaroo matches the
+    /telephony-configurations - Verify the Bearer Token in AICall matches the
     one in your Cloudonix Console - Verify WebSocket connection establishes
     successfully - Review call logs for error messages
   </Accordion>
@@ -218,4 +218,4 @@ Cloudonix routes inbound calls per **Voice Application** — the webhook URL is 
 
 - Test your configuration with a single call before running campaigns
 - Monitor Cloudonix Sessions for usage
-- Use a dedicated Voice Application for Social Cangaroo so the shared `url` doesn't conflict with other systems
+- Use a dedicated Voice Application for AICall so the shared `url` doesn't conflict with other systems

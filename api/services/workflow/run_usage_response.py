@@ -23,19 +23,17 @@ def format_public_cost_info(
     elif cost_info and cost_info.get("call_duration_seconds") is not None:
         duration = int(round(cost_info.get("call_duration_seconds") or 0))
 
-    social_cangaroo_token_usage = 0
+    rilt_token_usage = 0
     if cost_info:
-        if "social_cangaroo_token_usage" in cost_info:
-            social_cangaroo_token_usage = cost_info.get("social_cangaroo_token_usage") or 0
+        if "rilt_token_usage" in cost_info:
+            rilt_token_usage = cost_info.get("rilt_token_usage") or 0
         elif "total_cost_usd" in cost_info:
-            social_cangaroo_token_usage = round(
-                float(cost_info.get("total_cost_usd", 0)) * 100, 2
-            )
+            rilt_token_usage = round(float(cost_info.get("total_cost_usd", 0)) * 100, 2)
 
-    if duration is None and social_cangaroo_token_usage == 0:
+    if duration is None and rilt_token_usage == 0:
         return None
 
     return {
-        "social_cangaroo_token_usage": social_cangaroo_token_usage,
+        "rilt_token_usage": rilt_token_usage,
         "call_duration_seconds": duration,
     }

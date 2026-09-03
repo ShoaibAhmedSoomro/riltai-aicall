@@ -18,7 +18,7 @@ from .collector import (
 
 
 def _format_model_label(provider: Any, model: Any) -> str:
-    # provider/model may be enum members (e.g. ServiceProviders.SOCIAL_CANGAROO) —
+    # provider/model may be enum members (e.g. ServiceProviders.RILT) —
     # label with the wire value, not the enum repr.
     provider = getattr(provider, "value", provider)
     model = getattr(model, "value", model)
@@ -71,7 +71,7 @@ class NoveumRuntimeSession(IntegrationRuntimeSession):
         task.add_observer(self._observer)
         # Register turn/latency/audio wiring synchronously (no fire-and-forget
         # task) so nothing races teardown. attach_to_task_sync does NOT start
-        # ABP recording (that is async); social_cangaroo's on_client_connected already
+        # ABP recording (that is async); rilt's on_client_connected already
         # calls audio_buffer.start_recording() before any conversation PCM, so
         # the on_audio_data handler is live in time to capture it.
         self._observer.attach_to_task_sync(task)
@@ -83,7 +83,7 @@ class NoveumRuntimeSession(IntegrationRuntimeSession):
     ) -> dict[str, Any] | None:
         # This is the SOLE guaranteed finisher: the SDK's on_pipeline_finished
         # safety net is disabled (see collector.build_deferred_observer) so
-        # teardown cannot run before social_cangaroo's stop_recording() has flushed the
+        # teardown cannot run before rilt's stop_recording() has flushed the
         # conversation audio. on_call_finished is invoked after that flush, and
         # _finish_conversation is idempotent if the EndFrame frame path already
         # finished the trace.
@@ -95,7 +95,7 @@ class NoveumRuntimeSession(IntegrationRuntimeSession):
         attributes = dict(self._call_attributes)
         disposition = gathered_context.get("call_disposition")
         if disposition:
-            attributes["social_cangaroo.call_disposition"] = disposition
+            attributes["rilt.call_disposition"] = disposition
 
         envelope = build_payload_envelope(self._observer, self._manifest, attributes)
         if envelope is None:
@@ -150,9 +150,9 @@ def create_runtime_sessions(
 
     models = _resolve_model_labels(context)
     call_attributes: dict[str, Any] = {
-        "social_cangaroo.workflow_run_id": context.workflow_run_id,
-        "social_cangaroo.mode": getattr(context.workflow_run, "mode", None),
-        "social_cangaroo.agent_version": getattr(context.run_definition, "version_number", None),
+        "rilt.workflow_run_id": context.workflow_run_id,
+        "rilt.mode": getattr(context.workflow_run, "mode", None),
+        "rilt.agent_version": getattr(context.run_definition, "version_number", None),
         "stt.model_label": models["stt"],
         "llm.model_label": models["llm"],
         "tts.model_label": models["tts"],

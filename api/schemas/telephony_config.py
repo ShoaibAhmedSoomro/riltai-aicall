@@ -113,7 +113,7 @@ class TrunkResponse(BaseModel):
 
     ``settings`` is the provider's own trunk schema (validated on write against
     ``ProviderSpec.trunk_settings_cls``). The provider-side identifier is
-    Social Cangaroo's bookkeeping and is not exposed.
+    AICall's bookkeeping and is not exposed.
     """
 
     model_config = ConfigDict(from_attributes=True)
@@ -159,12 +159,12 @@ class TelephonyConfigurationDetail(BaseModel):
     credentials: dict
     sip_connectivity: SIPConnectivityDetails | None = None
     setup_checklist: ProviderSetupChecklist | None = None
-    # Whether the provider's Social Cangaroo integration models trunks at all. Distinct
+    # Whether the provider's AICall integration models trunks at all. Distinct
     # from ``trunks`` being empty, which is equally the state of a trunk-capable
     # configuration nobody has added one to yet — the UI needs to tell those
     # apart to know whether to offer the "add a trunk" affordance.
     supports_trunks: bool = False
-    # Empty unless the provider's Social Cangaroo integration models trunks; the
+    # Empty unless the provider's AICall integration models trunks; the
     # call-control integrations route through the account itself.
     trunks: List[TrunkResponse] = Field(default_factory=list)
     created_at: datetime

@@ -1,11 +1,11 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Social Cangaroo AI",
+  "name": "AICall",
   "colors": {
-    "primary": "#f1924e",
-    "light": "#f1924e",
-    "dark": "#b35f1e"
+    "primary": "#1c1c1c",
+    "light": "#fafafa",
+    "dark": "#1c1c1c"
   },
   "favicon": "/favicon.svg",
   "navigation": {
@@ -40,7 +40,7 @@
           {
             "group": "Core Concepts",
             "pages": [
-              "core-concepts/how-social-cangaroo-works",
+              "core-concepts/how-rilt-works",
               "core-concepts/workflows-and-agents",
               "core-concepts/calls-and-runs",
               "core-concepts/context-and-variables",
@@ -109,7 +109,7 @@
             "pages": [
               "integrations/telephony/overview",
               "integrations/telephony/inbound",
-              "integrations/telephony/social-cangaroo-sip",
+              "integrations/telephony/rilt-sip",
               "integrations/telephony/twilio",
               "integrations/telephony/vonage",
               "integrations/telephony/plivo",
@@ -285,23 +285,23 @@
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg",
-    "href": "https://docs.socialcangaroo.com"
+    "href": "https://docs.rilt.ai"
   },
   "navbar": {
     "links": [
       {
         "label": "Support",
-        "href": "https://github.com/ShoaibAhmedSoomro/social-cangaroo/issues/new/choose"
+        "href": "https://github.com/ShoaibAhmedSoomro/riltai-aicall/issues/new/choose"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Dashboard",
-      "href": "https://app.socialcangaroo.com"
+      "href": "https://aicall.rilt.ai"
     }
   },
   "banner": {
-    "content": "\ud83c\udf89 **New: MCP Server & SDKs Released** \u2014 Drive Social Cangaroo from Claude, Cursor, or your own Python/TypeScript code. [MCP \u2192](/integrations/mcp) \u00b7 [SDKs \u2192](/sdks/introduction)",
+    "content": "\ud83c\udf89 **New: MCP Server & SDKs Released** \u2014 Drive AICall from Claude, Cursor, or your own Python/TypeScript code. [MCP \u2192](/integrations/mcp) \u00b7 [SDKs \u2192](/sdks/introduction)",
     "dismissible": true
   },
   "search": {
@@ -323,7 +323,7 @@
   "footer": {
     "socials": {
       "github": "https://github.com/ShoaibAhmedSoomro",
-      "linkedin": "https://linkedin.com/company/social-cangaroo"
+      "linkedin": "https://linkedin.com/company/riltai"
     }
   },
   "api": {

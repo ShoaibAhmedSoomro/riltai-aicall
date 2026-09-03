@@ -188,7 +188,7 @@ export default function TelephonyConfigurationsPage() {
               Connect one or more telephony provider accounts. Each campaign uses one
               configuration; inbound calls are routed to the right one by account ID.{" "}
               <a
-                href="https://docs.socialcangaroo.com/integrations/telephony/overview"
+                href="https://docs.rilt.ai/integrations/telephony/overview"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-0.5 underline"

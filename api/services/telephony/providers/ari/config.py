@@ -79,7 +79,7 @@ class ARIConfigurationRequest(BaseModel):
     app_password: str = Field(..., description="ARI user password")
     ws_client_name: str = Field(
         default="",
-        description="websocket_client.conf connection name for externalMedia (e.g., social_cangaroo_staging)",
+        description="websocket_client.conf connection name for externalMedia (e.g., rilt_staging)",
     )
     external_pbx: Optional[VicidialExternalPBXConfiguration] = Field(
         default=None,

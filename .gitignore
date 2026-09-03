@@ -20,7 +20,7 @@ venv/
 .playwright-mcp
 coturn/
 *.wav
-social_cangaroo_pcm_cache/
+rilt_pcm_cache/
 node_modules/
 
 # Superpowers brainstorm mockups (local only)

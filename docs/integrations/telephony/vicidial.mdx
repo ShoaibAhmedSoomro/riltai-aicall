@@ -1,12 +1,12 @@
 ---
 title: "VICIdial Integration"
-description: "Connect Social Cangaroo to VICIdial through Asterisk ARI for call control, in-group transfers, and lead updates"
+description: "Connect AICall to VICIdial through Asterisk ARI for call control, in-group transfers, and lead updates"
 ---
 
 ## Overview
 
-Use this integration when VICIdial owns the customer call and connects Social Cangaroo
-to it through Asterisk. Social Cangaroo uses Asterisk ARI for audio and VICIdial APIs for
+Use this integration when VICIdial owns the customer call and connects AICall
+to it through Asterisk. AICall uses Asterisk ARI for audio and VICIdial APIs for
 operations that must affect the original customer leg:
 
 - Hang up the customer call when the agent ends the conversation
@@ -21,10 +21,10 @@ also route calls for telephony providers that are not connected to VICIdial.
 
 Before configuring VICIdial, ensure that:
 
-- Asterisk ARI is connected to Social Cangaroo as described in the
+- Asterisk ARI is connected to AICall as described in the
   [Asterisk ARI integration](./asterisk-ari)
 - VICIdial sends the customer call to the Asterisk dialplan that enters the
-  Social Cangaroo Stasis application
+  AICall Stasis application
 - You have VICIdial agent API credentials with permission to hang up and
   perform in-group transfers
 - If workflows will update leads, you also have non-agent API credentials with
@@ -32,7 +32,7 @@ Before configuring VICIdial, ensure that:
 
 ## Enable the organization feature
 
-1. Open **Platform Settings** by going to https://app.socialcangaroo.com/settings
+1. Open **Platform Settings** by going to https://aicall.rilt.ai/settings
 2. Enable **External PBX integrations**.
 
 This switch reveals VICIdial credentials in Asterisk telephony configurations
@@ -57,13 +57,13 @@ Mapping remains available in Transfer Call tools.
 
 The non-agent API is optional when no lead updates are required. If it is used,
 its URL, user, and password must all be present. Credentials are stored with the
-telephony configuration and are returned masked by the Social Cangaroo API.
+telephony configuration and are returned masked by the AICall API.
 
 ## Pass VICIdial call identity to Asterisk
 
-Social Cangaroo needs VICIdial's call identity to control the original customer leg.
+AICall needs VICIdial's call identity to control the original customer leg.
 Configure VICIdial or the connecting dialplan to preserve these SIP headers on
-the call that enters the Social Cangaroo Stasis application:
+the call that enters the AICall Stasis application:
 
 | Header | Purpose |
 | --- | --- |
@@ -83,7 +83,7 @@ Configure VICIdial or the dialplan to attach lead fields as headers, for example
 `X-VICIDIAL-first_name`, `X-VICIDIAL-city`, or `X-VICIDIAL-vendor_lead_code`.
 Headers with empty values are ignored.
 
-Each lead field is then read individually during call setup, so Social Cangaroo captures
+Each lead field is then read individually during call setup, so AICall captures
 only the fields you list:
 
 1. Open the workflow's **General Settings**.
@@ -137,7 +137,7 @@ the agent during a call.
 
 Rules are evaluated top to bottom. The first rule whose context value matches
 one of its routes wins, so put the most specific routing first; the fallback
-applies only after every rule misses. The match is case-insensitive. Social Cangaroo
+applies only after every rule misses. The match is case-insensitive. AICall
 performs final variable extraction before resolving the mapping. If no rule or
 fallback matches, the transfer fails and the agent can recover instead of
 silently hanging up the caller.
@@ -159,15 +159,15 @@ whose source value is absent are skipped.
 The VICIdial adapter ignores mappings that target the API control parameters
 `source`, `user`, `pass`, `function`, and `lead_id`. The non-agent API
 configuration is required for mappings to be applied. A lead-update failure
-does not prevent Social Cangaroo from attempting the requested transfer or hangup.
+does not prevent AICall from attempting the requested transfer or hangup.
 
 ## Runtime behavior
 
-When the workflow transfers the call, Social Cangaroo resolves the configured in-group,
+When the workflow transfers the call, AICall resolves the configured in-group,
 applies available lead updates, asks VICIdial to transfer the customer leg, and
 then closes only the local Asterisk media leg.
 
-When the conversation ends without a transfer, Social Cangaroo persists final gathered
+When the conversation ends without a transfer, AICall persists final gathered
 context, applies available lead updates, asks VICIdial to hang up the customer
 leg, and then closes the local Asterisk leg.
 

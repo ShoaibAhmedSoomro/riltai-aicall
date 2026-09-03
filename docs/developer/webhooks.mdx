@@ -1,16 +1,16 @@
 ---
 title: "Webhook Payloads"
-description: "Context variables available in webhook nodes and the data Social Cangaroo sends after a call"
+description: "Context variables available in webhook nodes and the data AICall sends after a call"
 ---
 
-Social Cangaroo executes **webhook nodes** asynchronously after a workflow run completes. You configure the target URL, HTTP method, headers, and payload template directly in the workflow definition.
+AICall executes **webhook nodes** asynchronously after a workflow run completes. You configure the target URL, HTTP method, headers, and payload template directly in the workflow definition.
 
 ---
 
 ## How webhooks work
 
 1. A call completes (or a run finishes)
-2. Social Cangaroo executes any `webhook` nodes in the workflow asynchronously
+2. AICall executes any `webhook` nodes in the workflow asynchronously
 3. The payload template is rendered with the run's context and sent as a JSON `POST` (or your configured method) to your endpoint
 4. Non-200 responses are logged but do not block or retry by default (configure `retry_config` to change this)
 
@@ -42,7 +42,7 @@ The following variables are available in your `payload_template` using double-br
 The final outcome of the call is available as `{{gathered_context.call_disposition}}`. It holds the disposition set during the call, falling back to the reason the call ended (e.g. `user_hangup`, `voicemail_detected`, `call_transferred`, `call_duration_exceeded`).
 
 <Note>
-Social Cangaroo always includes a top-level `call_disposition` field in the delivered payload. If your template doesn't set one, it is added automatically from `gathered_context.call_disposition`; if your template sets it explicitly, your value is kept.
+AICall always includes a top-level `call_disposition` field in the delivered payload. If your template doesn't set one, it is added automatically from `gathered_context.call_disposition`; if your template sets it explicitly, your value is kept.
 </Note>
 
 ### Example payload template
@@ -89,8 +89,8 @@ from fastapi import FastAPI, Request
 
 app = FastAPI()
 
-@app.post("/webhook/social-cangaroo")
-async def handle_social_cangaroo_webhook(request: Request):
+@app.post("/webhook/rilt")
+async def handle_rilt_webhook(request: Request):
     payload = await request.json()
     run_id = payload.get("run_id")
     outcome = payload.get("outcome")
@@ -113,7 +113,7 @@ See [Workflow Definition Schema](/developer/workflow-schema#webhook-node) for th
     "name": "Notify CRM",
     "enabled": true,
     "http_method": "POST",
-    "endpoint_url": "https://your-service.com/webhook/social-cangaroo",
+    "endpoint_url": "https://your-service.com/webhook/rilt",
     "payload_template": {
       "run_id": "{{workflow_run_id}}",
       "customer": "{{initial_context.customer_name}}",

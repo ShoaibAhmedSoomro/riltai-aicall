@@ -86,8 +86,8 @@ def mock_backends(authed_user: MagicMock):
 
 
 def _valid_code(name: str = "tool-test") -> str:
-    return f'''import {{ Workflow }} from "@social_cangaroo/sdk";
-import {{ startCall, endCall }} from "@social_cangaroo/sdk/typed";
+    return f'''import {{ Workflow }} from "@rilt/sdk";
+import {{ startCall, endCall }} from "@rilt/sdk/typed";
 
 const wf = new Workflow({{ name: "{name}" }});
 
@@ -156,7 +156,7 @@ async def test_parser_rejects_disallowed_top_level(mock_backends):
 @pytest.mark.asyncio
 async def test_parser_rejects_unknown_factory(mock_backends):
     save_mock, update_mock = mock_backends
-    code = """import { Workflow } from "@social_cangaroo/sdk";
+    code = """import { Workflow } from "@rilt/sdk";
 const wf = new Workflow({ name: "x" });
 const n = wf.addTyped(fakeNode({ name: "x", prompt: "y" }));
 """
@@ -174,8 +174,8 @@ const n = wf.addTyped(fakeNode({ name: "x", prompt: "y" }));
 @pytest.mark.asyncio
 async def test_unknown_field_surfaces_validation_error(mock_backends):
     save_mock, update_mock = mock_backends
-    code = """import { Workflow } from "@social_cangaroo/sdk";
-import { startCall } from "@social_cangaroo/sdk/typed";
+    code = """import { Workflow } from "@rilt/sdk";
+import { startCall } from "@rilt/sdk/typed";
 const wf = new Workflow({ name: "x" });
 const n = wf.addTyped(startCall({ name: "g", prompt: "hi", promt: "typo" }));
 """
@@ -233,8 +233,8 @@ async def test_invalid_trigger_path_surfaces_validation_error(mock_backends):
 async def test_graph_validation_catches_missing_start_node(mock_backends):
     save_mock, update_mock = mock_backends
     # Only an end node — WorkflowGraph requires exactly one start node.
-    code = """import { Workflow } from "@social_cangaroo/sdk";
-import { endCall } from "@social_cangaroo/sdk/typed";
+    code = """import { Workflow } from "@rilt/sdk";
+import { endCall } from "@rilt/sdk/typed";
 const wf = new Workflow({ name: "orphan" });
 const only = wf.addTyped(endCall({ name: "only", prompt: "bye" }));
 """
@@ -300,8 +300,8 @@ async def test_graph_validation_catches_duplicate_api_triggers(mock_backends):
 @pytest.mark.asyncio
 async def test_graph_validation_catches_duplicate_transition_tools(mock_backends):
     save_mock, update_mock = mock_backends
-    code = """import { Workflow } from "@social_cangaroo/sdk";
-import { startCall, endCall } from "@social_cangaroo/sdk/typed";
+    code = """import { Workflow } from "@rilt/sdk";
+import { startCall, endCall } from "@rilt/sdk/typed";
 const wf = new Workflow({ name: "duplicate-transitions" });
 const start = wf.addTyped(startCall({ name: "start", prompt: "Hi." }));
 const first = wf.addTyped(endCall({ name: "first", prompt: "Bye." }));
@@ -324,8 +324,8 @@ async def test_graph_validation_catches_transition_custom_tool_collision(
     mock_backends,
 ):
     save_mock, update_mock = mock_backends
-    code = """import { Workflow } from "@social_cangaroo/sdk";
-import { startCall, endCall } from "@social_cangaroo/sdk/typed";
+    code = """import { Workflow } from "@rilt/sdk";
+import { startCall, endCall } from "@rilt/sdk/typed";
 const wf = new Workflow({ name: "tool-transition-collision" });
 const start = wf.addTyped(startCall({
   name: "start",

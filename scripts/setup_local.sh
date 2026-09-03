@@ -14,7 +14,7 @@ BOOTSTRAP_LIB=""
 
 if [[ ! -f "$LIB_PATH" ]]; then
     BOOTSTRAP_LIB="$(mktemp)"
-    curl -fsSL -o "$BOOTSTRAP_LIB" "https://raw.githubusercontent.com/ShoaibAhmedSoomro/social-cangaroo/main/scripts/lib/setup_common.sh"
+    curl -fsSL -o "$BOOTSTRAP_LIB" "https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/scripts/lib/setup_common.sh"
     LIB_PATH="$BOOTSTRAP_LIB"
 fi
 
@@ -30,7 +30,7 @@ trap cleanup EXIT
 
 echo -e "${BLUE}"
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║                    Social Cangaroo Local Setup                        ║"
+echo "║                    AICall Local Setup                        ║"
 echo "║       Local docker deployment, optional TURN server          ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
@@ -122,18 +122,18 @@ echo -e "  Telemetry:     ${BLUE}$ENABLE_TELEMETRY${NC}"
 echo -e "  Registry:      ${BLUE}$REGISTRY${NC}"
 echo ""
 
-# Download compose file (skip when SOCIAL_CANGAROO_SKIP_DOWNLOAD=1 — e.g. local repo testing).
+# Download compose file (skip when RILT_SKIP_DOWNLOAD=1 — e.g. local repo testing).
 TOTAL_STEPS=2
 
-if [[ "${SOCIAL_CANGAROO_SKIP_DOWNLOAD:-}" != "1" ]]; then
+if [[ "${RILT_SKIP_DOWNLOAD:-}" != "1" ]]; then
     if [[ "${ENABLE_COTURN:-false}" == "true" ]]; then
         echo -e "${BLUE}[1/$TOTAL_STEPS] Downloading docker-compose.yaml and TURN helper bundle...${NC}"
     else
         echo -e "${BLUE}[1/$TOTAL_STEPS] Downloading docker-compose.yaml...${NC}"
     fi
-    curl -sS -o docker-compose.yaml https://raw.githubusercontent.com/ShoaibAhmedSoomro/social-cangaroo/main/docker-compose.yaml
+    curl -sS -o docker-compose.yaml https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/docker-compose.yaml
     if [[ "${ENABLE_COTURN:-false}" == "true" ]]; then
-        social_cangaroo_download_init_support_bundle "$(pwd)" "main"
+        rilt_download_init_support_bundle "$(pwd)" "main"
     fi
     echo -e "${GREEN}✓ Deployment files downloaded${NC}"
 else
@@ -141,9 +141,9 @@ else
 fi
 
 if [[ "${ENABLE_COTURN:-false}" == "true" ]]; then
-    [[ -f scripts/run_social_cangaroo_init.sh ]] || social_cangaroo_fail "scripts/run_social_cangaroo_init.sh not found. Re-run setup_local.sh without SOCIAL_CANGAROO_SKIP_DOWNLOAD=1, or use a full repo checkout."
-    [[ -f scripts/lib/setup_common.sh ]] || social_cangaroo_fail "scripts/lib/setup_common.sh not found. Re-run setup_local.sh without SOCIAL_CANGAROO_SKIP_DOWNLOAD=1, or use a full repo checkout."
-    [[ -f deploy/templates/turnserver.remote.conf.template ]] || social_cangaroo_fail "deploy/templates/turnserver.remote.conf.template not found. Re-run setup_local.sh without SOCIAL_CANGAROO_SKIP_DOWNLOAD=1, or use a full repo checkout."
+    [[ -f scripts/run_rilt_init.sh ]] || rilt_fail "scripts/run_rilt_init.sh not found. Re-run setup_local.sh without RILT_SKIP_DOWNLOAD=1, or use a full repo checkout."
+    [[ -f scripts/lib/setup_common.sh ]] || rilt_fail "scripts/lib/setup_common.sh not found. Re-run setup_local.sh without RILT_SKIP_DOWNLOAD=1, or use a full repo checkout."
+    [[ -f deploy/templates/turnserver.remote.conf.template ]] || rilt_fail "deploy/templates/turnserver.remote.conf.template not found. Re-run setup_local.sh without RILT_SKIP_DOWNLOAD=1, or use a full repo checkout."
 fi
 
 # Generate .env
@@ -152,11 +152,11 @@ echo -e "${BLUE}[$ENV_STEP/$TOTAL_STEPS] Creating environment file...${NC}"
 OSS_JWT_SECRET=$(openssl rand -hex 32)
 POSTGRES_PASSWORD=$(openssl rand -hex 32)
 REDIS_PASSWORD=$(openssl rand -hex 32)
-MINIO_ROOT_USER="social-cangaroo$(openssl rand -hex 6)"
+MINIO_ROOT_USER="rilt$(openssl rand -hex 6)"
 MINIO_ROOT_PASSWORD=$(openssl rand -hex 32)
 
 cat > .env << ENV_EOF
-# Container registry for Social Cangaroo images
+# Container registry for AICall images
 REGISTRY=$REGISTRY
 
 # JWT secret for OSS authentication
@@ -204,17 +204,17 @@ echo -e "Files created in ${BLUE}$(pwd)${NC}:"
 echo "  - docker-compose.yaml"
 echo "  - .env"
 if [[ "${ENABLE_COTURN:-false}" == "true" ]]; then
-    echo "  - scripts/run_social_cangaroo_init.sh"
+    echo "  - scripts/run_rilt_init.sh"
     echo "  - scripts/lib/setup_common.sh"
     echo "  - deploy/templates/"
 fi
 echo ""
 if [[ "${ENABLE_COTURN:-false}" == "true" ]]; then
-    echo -e "${YELLOW}To start Social Cangaroo with TURN, run:${NC}"
+    echo -e "${YELLOW}To start AICall with TURN, run:${NC}"
     echo ""
     echo -e "  ${BLUE}docker compose --profile local-turn --profile tunnel up --pull always${NC}"
 else
-    echo -e "${YELLOW}To start Social Cangaroo, run:${NC}"
+    echo -e "${YELLOW}To start AICall, run:${NC}"
     echo ""
     echo -e "  ${BLUE}docker compose --profile tunnel up --pull always${NC}"
 fi

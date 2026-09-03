@@ -119,7 +119,7 @@ async def test_integration_completion_failure_remains_isolated(monkeypatch):
 
     assert result == {"integration_salesforce": {"error": "completion_handler_failed"}}
     failure_records = [
-        record for record in records if "SOCIAL_CANGAROO_FAILURE" in str(record["message"])
+        record for record in records if "RILT_FAILURE" in str(record["message"])
     ]
     assert len(failure_records) == 1
     assert failure_records[0]["extra"]["error_type"] == ErrorType.PROVIDER_ERROR

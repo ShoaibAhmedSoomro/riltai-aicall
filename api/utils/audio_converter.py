@@ -73,7 +73,7 @@ async def convert_audio_sample_rate(input_path: str, output_sample_rates: list[i
 
 async def main():
     """Main function to convert the office ambience file."""
-    input_file = "/Users/abhishekkumar/Projects/social_cangaroo/social_cangaroo/api/assets/office-ambience-24000-mono.mp3"
+    input_file = "/Users/abhishekkumar/Projects/rilt/rilt/api/assets/office-ambience-24000-mono.mp3"
     target_rates = [8000, 16000]
 
     await convert_audio_sample_rate(input_file, target_rates)

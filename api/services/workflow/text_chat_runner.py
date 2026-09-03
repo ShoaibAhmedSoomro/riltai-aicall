@@ -108,7 +108,7 @@ def text_chat_trace_id(workflow_run_id: int) -> str:
     per-turn spans land in one shared trace — without persisting extra state
     across the otherwise stateless turn requests.
     """
-    digest = hashlib.sha256(f"social-cangaroo-text-chat:{workflow_run_id}".encode()).hexdigest()
+    digest = hashlib.sha256(f"rilt-text-chat:{workflow_run_id}".encode()).hexdigest()
     return digest[:32]
 
 
@@ -493,7 +493,7 @@ async def execute_text_chat_pending_turn(
             usage_context="variable_extraction",
         )
         if workflow_graph.uses_variable_extraction()
-        and user_config.llm.provider == ServiceProviders.SOCIAL_CANGAROO.value
+        and user_config.llm.provider == ServiceProviders.RILT.value
         else llm
     )
 

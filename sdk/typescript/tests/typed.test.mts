@@ -1,5 +1,5 @@
-// Tests for the typed SDK (`@social-cangaroo/sdk/typed`). Mirrors
-// api/tests/test_social_cangaroo_sdk_typed.py — checks that generated factories
+// Tests for the typed SDK (`@rilt/sdk/typed`). Mirrors
+// api/tests/test_rilt_sdk_typed.py — checks that generated factories
 // produce objects consumable by `workflow.addTyped()`.
 
 import { describe, it } from "node:test";

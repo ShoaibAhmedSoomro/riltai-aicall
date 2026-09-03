@@ -34,7 +34,7 @@ class APIKeyStatusResponse(TypedDict):
 
 class UserConfigurationValidator:
     def __init__(self):
-        self._social_cangaroo_service_key_validation_cache: dict[str, bool] = {}
+        self._rilt_service_key_validation_cache: dict[str, bool] = {}
         self._validator_map = {
             ServiceProviders.OPENAI.value: self._check_openai_api_key,
             ServiceProviders.ATLASCLOUD.value: self._check_openai_api_key,
@@ -47,7 +47,7 @@ class UserConfigurationValidator:
             ServiceProviders.AZURE.value: self._check_azure_api_key,
             ServiceProviders.AZURE_SPEECH.value: self._check_azure_speech_api_key,
             ServiceProviders.CARTESIA.value: self._check_cartesia_api_key,
-            ServiceProviders.SOCIAL_CANGAROO.value: self._check_social_cangaroo_api_key,
+            ServiceProviders.RILT.value: self._check_rilt_api_key,
             ServiceProviders.SARVAM.value: self._check_sarvam_api_key,
             ServiceProviders.SPEECHMATICS.value: self._check_speechmatics_api_key,
             ServiceProviders.CAMB.value: self._check_camb_api_key,
@@ -78,7 +78,7 @@ class UserConfigurationValidator:
     ) -> APIKeyStatusResponse:
         # A managed configuration commonly repeats one service key across LLM,
         # STT, TTS, and embeddings. Validate that credential once per request.
-        self._social_cangaroo_service_key_validation_cache.clear()
+        self._rilt_service_key_validation_cache.clear()
         self._auth_context: AuthContext = {
             "organization_id": organization_id,
             "created_by": created_by,
@@ -341,22 +341,22 @@ class UserConfigurationValidator:
     def _check_cartesia_api_key(self, model: str, api_key: str) -> bool:
         return True
 
-    def _check_social_cangaroo_api_key(self, model: str, api_key: str) -> bool:
+    def _check_rilt_api_key(self, model: str, api_key: str) -> bool:
         if api_key.startswith("dgr"):
             raise ValueError(
-                "You provided a Social Cangaroo API key (dgr...) instead of a service key. "
+                "You provided a AICall API key (dgr...) instead of a service key. "
                 "Please use a service key (mps...)."
             )
         auth = getattr(self, "_auth_context", {})
-        if api_key in self._social_cangaroo_service_key_validation_cache:
-            return self._social_cangaroo_service_key_validation_cache[api_key]
+        if api_key in self._rilt_service_key_validation_cache:
+            return self._rilt_service_key_validation_cache[api_key]
 
         is_valid = mps_service_key_client.validate_service_key(
             api_key,
             organization_id=auth.get("organization_id"),
             created_by=auth.get("created_by"),
         )
-        self._social_cangaroo_service_key_validation_cache[api_key] = is_valid
+        self._rilt_service_key_validation_cache[api_key] = is_valid
         return is_valid
 
     def _check_sarvam_api_key(self, model: str, api_key: str) -> bool:

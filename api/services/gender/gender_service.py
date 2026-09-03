@@ -1,6 +1,6 @@
 """
 Gender prediction service with local model and GenderAPI fallback.
-Internal service for use within Social Cangaroo platform.
+Internal service for use within AICall platform.
 """
 
 import json

@@ -29,7 +29,7 @@ async def test_value_is_fleet_plus_clamped_buffer(fleet, buffer, expected):
         patch("api.services.call_concurrency.call_concurrency") as mock_cc,
     ):
         mock_cc.get_fleet_active_calls = AsyncMock(return_value=fleet)
-        resp = await autoscale_metric(buffer=buffer, x_social_cangaroo_devops_secret="ok")
+        resp = await autoscale_metric(buffer=buffer, x_rilt_devops_secret="ok")
     assert resp.value == expected
 
 
@@ -45,5 +45,5 @@ async def test_redis_failure_responds_503_not_zero():
             side_effect=ConnectionError("redis down")
         )
         with pytest.raises(HTTPException) as exc_info:
-            await autoscale_metric(buffer=0, x_social_cangaroo_devops_secret="ok")
+            await autoscale_metric(buffer=0, x_rilt_devops_secret="ok")
     assert exc_info.value.status_code == 503

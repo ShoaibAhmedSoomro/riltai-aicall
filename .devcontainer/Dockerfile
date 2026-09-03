@@ -29,9 +29,9 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 # Build the venv at the path it will live at in the final image, so shebangs
 # and console-scripts inside the venv reference the correct runtime location
 # once the seed step rsyncs them into the named volume.
-ENV VIRTUAL_ENV=/workspaces/social-cangaroo/venv \
-    PATH=/workspaces/social-cangaroo/venv/bin:$PATH
-RUN mkdir -p /workspaces/social-cangaroo && python3.13 -m venv "$VIRTUAL_ENV"
+ENV VIRTUAL_ENV=/workspaces/rilt/venv \
+    PATH=/workspaces/rilt/venv/bin:$PATH
+RUN mkdir -p /workspaces/rilt && python3.13 -m venv "$VIRTUAL_ENV"
 
 # Layer 1: API deps. Cache invalidates only when these two files change.
 RUN --mount=type=bind,source=api/requirements.txt,target=/tmp/req.txt \
@@ -53,7 +53,7 @@ RUN --mount=type=bind,source=pipecat,target=/tmp/pipecat,rw \
  && uv pip install --group /tmp/pipecat/pyproject.toml:dev \
  && uv pip uninstall opencv-python \
  && uv pip install opencv-python-headless \
- && python -c "import nltk; nltk.download('punkt_tab', download_dir='/workspaces/social-cangaroo/venv/nltk_data', quiet=True)"
+ && python -c "import nltk; nltk.download('punkt_tab', download_dir='/workspaces/rilt/venv/nltk_data', quiet=True)"
 
 
 # =============================================================================
@@ -91,12 +91,12 @@ RUN apt-get update \
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
 # Bring the populated venv across. At runtime, the named volume in
-# docker-compose.yml shadows /workspaces/social-cangaroo/venv; post-create.sh
+# docker-compose.yml shadows /workspaces/rilt/venv; post-create.sh
 # rsyncs from /opt/venv-template into the (initially empty) volume,
 # comparing build-stamps so an image rebuild that changed deps re-seeds.
-COPY --from=venv-builder --chown=vscode:vscode /workspaces/social-cangaroo/venv /opt/venv-template
+COPY --from=venv-builder --chown=vscode:vscode /workspaces/rilt/venv /opt/venv-template
 RUN date -u +%s > /opt/venv-template/.build-stamp \
  && chown vscode:vscode /opt/venv-template/.build-stamp
 
-ENV VIRTUAL_ENV=/workspaces/social-cangaroo/venv \
-    PATH=/workspaces/social-cangaroo/venv/bin:$PATH
+ENV VIRTUAL_ENV=/workspaces/rilt/venv \
+    PATH=/workspaces/rilt/venv/bin:$PATH

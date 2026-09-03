@@ -77,7 +77,7 @@ class ServiceProviders(str, Enum):
     GOOGLE = "google"
     AZURE = "azure"
     AZURE_SPEECH = "azure_speech"
-    SOCIAL_CANGAROO = "dograh"
+    RILT = "dograh"
     SARVAM = "sarvam"
     SPEECHMATICS = "speechmatics"
     CAMB = "camb"
@@ -112,7 +112,7 @@ class BaseServiceConfiguration(BaseModel):
         ServiceProviders.GOOGLE,
         ServiceProviders.AZURE,
         ServiceProviders.AZURE_SPEECH,
-        ServiceProviders.SOCIAL_CANGAROO,
+        ServiceProviders.RILT,
         ServiceProviders.AWS_BEDROCK,
         ServiceProviders.SPEACHES,
         ServiceProviders.HUGGINGFACE,
@@ -300,7 +300,7 @@ GOOGLE_PROVIDER_MODEL_CONFIG = provider_model_config("Google")
 GROQ_PROVIDER_MODEL_CONFIG = provider_model_config("Groq")
 OPENROUTER_PROVIDER_MODEL_CONFIG = provider_model_config("Open Router")
 AZURE_OPENAI_PROVIDER_MODEL_CONFIG = provider_model_config("Azure OpenAI")
-SOCIAL_CANGAROO_PROVIDER_MODEL_CONFIG = provider_model_config("Social Cangaroo")
+RILT_PROVIDER_MODEL_CONFIG = provider_model_config("AICall")
 AWS_BEDROCK_PROVIDER_MODEL_CONFIG = provider_model_config("AWS Bedrock")
 GOOGLE_VERTEX_PROVIDER_MODEL_CONFIG = provider_model_config("Google Vertex")
 OPENAI_REALTIME_PROVIDER_MODEL_CONFIG = provider_model_config("OpenAI Realtime")
@@ -387,7 +387,7 @@ OPENROUTER_MODELS = [
     "meta-llama/llama-3.3-70b-instruct",
     "deepseek/deepseek-chat-v3-0324",
 ]
-SOCIAL_CANGAROO_LLM_MODELS = ["default", "accurate", "fast", "lite", "zen"]
+RILT_LLM_MODELS = ["default", "accurate", "fast", "lite", "zen"]
 AWS_BEDROCK_MODELS = [
     "us.amazon.nova-pro-v1:0",
     "us.amazon.nova-lite-v1:0",
@@ -516,13 +516,13 @@ class AzureLLMService(BaseLLMConfiguration):
 
 
 @register_llm
-class SocialCangarooLLMService(BaseLLMConfiguration):
-    model_config = SOCIAL_CANGAROO_PROVIDER_MODEL_CONFIG
-    provider: Literal[ServiceProviders.SOCIAL_CANGAROO] = ServiceProviders.SOCIAL_CANGAROO
+class RiltLLMService(BaseLLMConfiguration):
+    model_config = RILT_PROVIDER_MODEL_CONFIG
+    provider: Literal[ServiceProviders.RILT] = ServiceProviders.RILT
     model: str = Field(
         default="default",
-        description="Social-Cangaroo-hosted model tier.",
-        json_schema_extra={"examples": SOCIAL_CANGAROO_LLM_MODELS, "allow_custom_input": True},
+        description="Rilt-hosted model tier.",
+        json_schema_extra={"examples": RILT_LLM_MODELS, "allow_custom_input": True},
     )
 
 
@@ -913,7 +913,7 @@ LLMConfig = Annotated[
         OpenRouterLLMConfiguration,
         GoogleLLMService,
         AzureLLMService,
-        SocialCangarooLLMService,
+        RiltLLMService,
         AWSBedrockLLMConfiguration,
         SpeachesLLMConfiguration,
         HuggingFaceLLMConfiguration,
@@ -998,7 +998,7 @@ class GoogleTTSConfiguration(BaseTTSConfiguration):
     model: str = Field(
         default="chirp_3_hd",
         description=(
-            "Google Cloud low-latency TTS engine. Social Cangaroo maps this to Pipecat's "
+            "Google Cloud low-latency TTS engine. AICall maps this to Pipecat's "
             "streaming Google TTS service for Chirp 3 HD and Journey voices."
         ),
         json_schema_extra={
@@ -1071,17 +1071,17 @@ class OpenAITTSService(BaseTTSConfiguration):
     )
 
 
-SOCIAL_CANGAROO_TTS_MODELS = ["default"]
+RILT_TTS_MODELS = ["default"]
 
 
 @register_tts
-class SocialCangarooTTSService(BaseTTSConfiguration):
-    model_config = SOCIAL_CANGAROO_PROVIDER_MODEL_CONFIG
-    provider: Literal[ServiceProviders.SOCIAL_CANGAROO] = ServiceProviders.SOCIAL_CANGAROO
+class RiltTTSService(BaseTTSConfiguration):
+    model_config = RILT_PROVIDER_MODEL_CONFIG
+    provider: Literal[ServiceProviders.RILT] = ServiceProviders.RILT
     model: str = Field(
         default="default",
-        description="Social Cangaroo TTS tier.",
-        json_schema_extra={"examples": SOCIAL_CANGAROO_TTS_MODELS},
+        description="AICall TTS tier.",
+        json_schema_extra={"examples": RILT_TTS_MODELS},
     )
     voice: str = Field(
         default="default",
@@ -1467,7 +1467,7 @@ TTSConfig = Annotated[
         ElevenlabsTTSConfiguration,
         CartesiaTTSConfiguration,
         InworldTTSConfiguration,
-        SocialCangarooTTSService,
+        RiltTTSService,
         SarvamTTSConfiguration,
         CambTTSConfiguration,
         RimeTTSConfiguration,
@@ -1591,28 +1591,28 @@ class GoogleSTTConfiguration(BaseSTTConfiguration):
     )
 
 
-# Social Cangaroo STT Service
-SOCIAL_CANGAROO_STT_MODELS = ["default"]
-SOCIAL_CANGAROO_STT_LANGUAGES = DEEPGRAM_LANGUAGES
-# Languages auto-detected when the Social Cangaroo STT language is "multi". Social Cangaroo STT runs
+# AICall STT Service
+RILT_STT_MODELS = ["default"]
+RILT_STT_LANGUAGES = DEEPGRAM_LANGUAGES
+# Languages auto-detected when the AICall STT language is "multi". AICall STT runs
 # Deepgram Flux multilingual under the hood, which only auto-detects this subset —
-# not the full SOCIAL_CANGAROO_STT_LANGUAGES list offered for explicit single-language selection.
-SOCIAL_CANGAROO_MULTILINGUAL_AUTODETECT_LANGUAGES = DEEPGRAM_FLUX_MULTILINGUAL_LANGUAGES
+# not the full RILT_STT_LANGUAGES list offered for explicit single-language selection.
+RILT_MULTILINGUAL_AUTODETECT_LANGUAGES = DEEPGRAM_FLUX_MULTILINGUAL_LANGUAGES
 
 
 @register_stt
-class SocialCangarooSTTService(BaseSTTConfiguration):
-    model_config = SOCIAL_CANGAROO_PROVIDER_MODEL_CONFIG
-    provider: Literal[ServiceProviders.SOCIAL_CANGAROO] = ServiceProviders.SOCIAL_CANGAROO
+class RiltSTTService(BaseSTTConfiguration):
+    model_config = RILT_PROVIDER_MODEL_CONFIG
+    provider: Literal[ServiceProviders.RILT] = ServiceProviders.RILT
     model: str = Field(
         default="default",
-        description="Social Cangaroo STT tier.",
-        json_schema_extra={"examples": SOCIAL_CANGAROO_STT_MODELS},
+        description="AICall STT tier.",
+        json_schema_extra={"examples": RILT_STT_MODELS},
     )
     language: str = Field(
         default="multi",
         description="Language code; use 'multi' for auto-detect.",
-        json_schema_extra={"examples": SOCIAL_CANGAROO_STT_LANGUAGES},
+        json_schema_extra={"examples": RILT_STT_LANGUAGES},
     )
 
 
@@ -1884,7 +1884,7 @@ STTConfig = Annotated[
         CartesiaSTTConfiguration,
         OpenAISTTConfiguration,
         GoogleSTTConfiguration,
-        SocialCangarooSTTService,
+        RiltSTTService,
         SpeechmaticsSTTConfiguration,
         SarvamSTTConfiguration,
         SpeachesSTTConfiguration,
@@ -1957,17 +1957,17 @@ class AzureOpenAIEmbeddingsConfiguration(BaseEmbeddingsConfiguration):
     )
 
 
-SOCIAL_CANGAROO_EMBEDDING_MODELS = ["social_cangaroo_embedding_v1"]
+RILT_EMBEDDING_MODELS = ["dograh_embedding_v1"]
 
 
 @register_embeddings
-class SocialCangarooEmbeddingsConfiguration(BaseEmbeddingsConfiguration):
-    model_config = SOCIAL_CANGAROO_PROVIDER_MODEL_CONFIG
-    provider: Literal[ServiceProviders.SOCIAL_CANGAROO] = ServiceProviders.SOCIAL_CANGAROO
+class RiltEmbeddingsConfiguration(BaseEmbeddingsConfiguration):
+    model_config = RILT_PROVIDER_MODEL_CONFIG
+    provider: Literal[ServiceProviders.RILT] = ServiceProviders.RILT
     model: str = Field(
-        default="social_cangaroo_embedding_v1",
-        description="Social-Cangaroo-managed embedding model.",
-        json_schema_extra={"examples": SOCIAL_CANGAROO_EMBEDDING_MODELS},
+        default="dograh_embedding_v1",
+        description="RiltAI-managed embedding model.",
+        json_schema_extra={"examples": RILT_EMBEDDING_MODELS},
     )
 
 
@@ -1976,7 +1976,7 @@ EmbeddingsConfig = Annotated[
         OpenAIEmbeddingsConfiguration,
         OpenRouterEmbeddingsConfiguration,
         AzureOpenAIEmbeddingsConfiguration,
-        SocialCangarooEmbeddingsConfiguration,
+        RiltEmbeddingsConfiguration,
     ],
     Field(discriminator="provider"),
 ]

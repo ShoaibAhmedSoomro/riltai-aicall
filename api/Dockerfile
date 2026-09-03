@@ -112,9 +112,9 @@ FROM python:3.13-slim AS runner
 
 WORKDIR /app
 
-RUN groupadd --system social-cangaroo \
- && useradd --system --gid social-cangaroo --no-log-init --home-dir /app --shell /usr/sbin/nologin social-cangaroo \
- && chown social-cangaroo:social-cangaroo /app
+RUN groupadd --system rilt \
+ && useradd --system --gid rilt --no-log-init --home-dir /app --shell /usr/sbin/nologin rilt \
+ && chown rilt:rilt /app
 
 # Static ffmpeg + ffprobe (used by audio_converter, audio_file_cache, etc.)
 COPY --from=ffmpeg-static /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
@@ -140,7 +140,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Copy application code (chown at copy-time avoids a duplicate /app layer
 # from a later `RUN chown -R`, which would double the on-disk size of /app).
-COPY --chown=social-cangaroo:social-cangaroo ./api ./api
+COPY --chown=rilt:rilt ./api ./api
 
 # Entrypoint scripts.
 #   start_services_docker.sh — single-container (docker-compose) entrypoint
@@ -148,10 +148,10 @@ COPY --chown=social-cangaroo:social-cangaroo ./api ./api
 #   run_*.sh                 — per-service entrypoints used by the Helm chart,
 #     which runs each workload (web, arq-worker, ari-manager,
 #     campaign-orchestrator, migrate) as its own pod. Keep this list in sync
-#     with the command:[] entries in deploy/helm/social-cangaroo/templates/*.yaml.
+#     with the command:[] entries in deploy/helm/rilt/templates/*.yaml.
 #   drain_web.sh             — web pod preStop hook (call-safe scale-down); see
-#     lifecycle.preStop in deploy/helm/social-cangaroo/templates/web-deployment.yaml.
-COPY --chown=social-cangaroo:social-cangaroo \
+#     lifecycle.preStop in deploy/helm/rilt/templates/web-deployment.yaml.
+COPY --chown=rilt:rilt \
      ./scripts/start_services_docker.sh \
      ./scripts/run_migrate.sh \
      ./scripts/run_web.sh \
@@ -163,18 +163,18 @@ COPY --chown=social-cangaroo:social-cangaroo \
 
 # ts_validator Node deps (built in ts-deps stage with full node:22-slim image).
 # The validator runs as a short-lived subprocess from api/mcp_server/ts_bridge.py.
-COPY --from=ts-deps --chown=social-cangaroo:social-cangaroo /ts_validator/node_modules ./api/mcp_server/ts_validator/node_modules
+COPY --from=ts-deps --chown=rilt:rilt /ts_validator/node_modules ./api/mcp_server/ts_validator/node_modules
 
 # Product documentation — read at runtime by the MCP docs tools
-# (search_social_cangaroo_docs / fetch_social_cangaroo_doc) so agents can learn Social Cangaroo.
-COPY --chown=social-cangaroo:social-cangaroo ./docs ./docs
+# (search_rilt_docs / fetch_rilt_doc) so agents can learn AICall.
+COPY --chown=rilt:rilt ./docs ./docs
 
 ENV PYTHONPATH=/app
 
 # Disable file logging in Docker - logs go to stdout for docker logs
 ENV LOG_TO_FILE=false
 
-USER social-cangaroo
+USER rilt
 
 # Expose the port FastAPI will run on
 EXPOSE 8000

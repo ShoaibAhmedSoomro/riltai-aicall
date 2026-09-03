@@ -1,24 +1,24 @@
-# Contributing to Social Cangaroo AI
+# Contributing to AICall
 
-Welcome to Social Cangaroo AI! ❤️ Thank you for your interest in contributing to the future of open-source voice AI. ❤️
+Welcome to AICall! ❤️ Thank you for your interest in contributing to the future of open-source voice AI. ❤️
 
-Social Cangaroo AI is a comprehensive voice agent platform that helps developers build, test, and deploy conversational AI systems with minimal setup. This guide will help you understand the project structure, set up your development environment, and start contributing effectively.
+AICall is a comprehensive voice agent platform that helps developers build, test, and deploy conversational AI systems with minimal setup. This guide will help you understand the project structure, set up your development environment, and start contributing effectively.
 
-👉 Join our community → [Social Cangaroo Community Slack](https://join.slack.com/t/social-cangaroo-community/shared_invite/zt-4787daqcn-3TDiQUh~3xrr3pwAqR9wpQ)
+👉 Join our community → [AICall GitHub Discussions](https://github.com/ShoaibAhmedSoomro/riltai-aicall/discussions)
 
 ## 🏗️ Project Overview
 
-### What is Social Cangaroo AI?
+### What is AICall?
 
-Social Cangaroo AI is a full-stack platform for building voice agents with a drag-and-drop workflow builder. It combines multiple technologies to provide a seamless experience from development to production deployment.
+AICall is a full-stack platform for building voice agents with a drag-and-drop workflow builder. It combines multiple technologies to provide a seamless experience from development to production deployment.
 
 ## 🙌 How You Can Contribute
 
-- 🐛 **Report bugs** via [GitHub Issues](https://github.com/ShoaibAhmedSoomro/social-cangaroo/issues)
+- 🐛 **Report bugs** via [GitHub Issues](https://github.com/ShoaibAhmedSoomro/riltai-aicall/issues)
 - 💡 **Suggest features** via [Ideas](https://github.com/orgs/ShoaibAhmedSoomro/discussions/categories/ideas)
 - 🔧 **Submit pull requests**
 - 📖 **Improve documentation** The documentation is hosted via mintlify and the code is in `docs/` folder
-- 💬 **Join the Slack community**
+- 💬 **Join the GitHub Discussions**
 
 👉 A great place to start is with issues tagged **`good first issue`**.
 
@@ -28,24 +28,24 @@ Social Cangaroo AI is a full-stack platform for building voice agents with a dra
 > - Tweet about it;
 > - Refer to this project in your project's readme;
 > - Submit and vote on [Ideas](https://github.com/orgs/ShoaibAhmedSoomro/discussions/categories/ideas);
-> - Create and comment on [Issues](https://github.com/ShoaibAhmedSoomro/social-cangaroo/issues);
+> - Create and comment on [Issues](https://github.com/ShoaibAhmedSoomro/riltai-aicall/issues);
 > - Mention the project at local meetups and tell your friends/colleagues.
 
 ## 🚀 Development Setup
 
-Please refer to our [Development Setup documentation](https://docs.socialcangaroo.com/contribution/setup).
+Please refer to our [Development Setup documentation](https://docs.rilt.ai/contribution/setup).
 
 ### Getting Help
 
 **Before You Start**
 
 - Check existing [GitHub Issues](../../issues) for similar work
-- Join our [Slack community](https://join.slack.com/t/social-cangaroo-community/shared_invite/zt-4787daqcn-3TDiQUh~3xrr3pwAqR9wpQ) to discuss your plans
+- Join our [GitHub Discussions](https://github.com/ShoaibAhmedSoomro/riltai-aicall/discussions) to discuss your plans
 - Look for issues tagged `good first issue` for beginner-friendly tasks
 
 **During Development**
 
-- Ask questions in our Slack community
+- Ask questions in our GitHub Discussions
 - Reference related issues and PRs in your discussions
 - Share early drafts for feedback on complex features
 
@@ -59,8 +59,8 @@ Telephony changes require thorough review and testing. Every telephony pull requ
 
 The video must demonstrate all of the following:
 
-- All provider-side setup required before configuring the integration in Social Cangaroo, including where to find the account credentials and any other required values
-- Configuring the provider integration in Social Cangaroo
+- All provider-side setup required before configuring the integration in AICall, including where to find the account credentials and any other required values
+- Configuring the provider integration in AICall
 - Outbound calls
 - Inbound calls
 - Number provisioning and any required KYC flow
@@ -82,32 +82,32 @@ This section applies to new or changed TTS, STT, LLM, realtime, embeddings, and 
 
 #### Provider Eligibility
 
-Before maintainers perform detailed code review, the pull request must explain why Social Cangaroo should support the provider: the user need or maintainer sponsorship, the clear benefit over providers already supported, and links to the provider's public API documentation and pricing. The provider must have a usable public API, self-service account or credential setup, and a credible support or maintenance path.
+Before maintainers perform detailed code review, the pull request must explain why AICall should support the provider: the user need or maintainer sponsorship, the clear benefit over providers already supported, and links to the provider's public API documentation and pricing. The provider must have a usable public API, self-service account or credential setup, and a credible support or maintenance path.
 
 Providers must be generally available for production use, with a publicly documented and stable API, for at least six months. Alpha, beta, private-preview, or newly launched providers are not accepted by default. A maintainer may approve a documented exception before implementation when there is a compelling user or product need.
 
 #### Required Evidence
 
-Contributors must create or use a real provider account and test the complete integration manually in Social Cangaroo. Unit, mock, and provider-SDK tests are required where appropriate, but they are not evidence that the Social Cangaroo integration works.
+Contributors must create or use a real provider account and test the complete integration manually in AICall. Unit, mock, and provider-SDK tests are required where appropriate, but they are not evidence that the AICall integration works.
 
 The pull request must include redacted evidence of all of the following:
 
 - Provider-side account and credential setup (never commit or share secrets)
-- Configuring and saving the provider in the Social Cangaroo UI or API
-- Running a real Social Cangaroo workflow through the same adapter, endpoint, protocol, and authentication scheme that the PR adds
+- Configuring and saving the provider in the AICall UI or API
+- Running a real AICall workflow through the same adapter, endpoint, protocol, and authentication scheme that the PR adds
 - The resulting provider output and the selected settings
 - Redacted provider API request/response logs showing the endpoint, protocol, status, and request fields (never include credentials or user data)
 - Invalid-credential and network/error behaviour
 
-For TTS, show real audio produced by Social Cangaroo and its voice, language, speed, format, sample rate, and duration as applicable. For STT, show a known audio input and transcript. For LLM and realtime providers, show a real Social Cangaroo turn and any claimed tool or structured-output behaviour.
+For TTS, show real audio produced by AICall and its voice, language, speed, format, sample rate, and duration as applicable. For STT, show a known audio input and transcript. For LLM and realtime providers, show a real AICall turn and any claimed tool or structured-output behaviour.
 
-Include the test date, Social Cangaroo commit SHA, provider endpoint/API version, and the command, workflow, or recording used to produce the evidence. A direct API request, provider sample SDK, or smoke test using a different protocol does not satisfy this requirement.
+Include the test date, AICall commit SHA, provider endpoint/API version, and the command, workflow, or recording used to produce the evidence. A direct API request, provider sample SDK, or smoke test using a different protocol does not satisfy this requirement.
 
-Pull requests without a convincing provider-value case or complete live Social Cangaroo evidence will be rejected without detailed implementation review.
+Pull requests without a convincing provider-value case or complete live AICall evidence will be rejected without detailed implementation review.
 
 ### Bug-Fix Pull Requests
 
-Before submitting a bug-fix pull request, search the [GitHub Issues](https://github.com/ShoaibAhmedSoomro/social-cangaroo/issues) to determine whether the bug has already been reported. If no issue exists, create one that includes:
+Before submitting a bug-fix pull request, search the [GitHub Issues](https://github.com/ShoaibAhmedSoomro/riltai-aicall/issues) to determine whether the bug has already been reported. If no issue exists, create one that includes:
 
 - The deployment mode where the bug occurs: the self-hosted or cloud-hosted application
 - A clear description of the bug and its impact
@@ -120,13 +120,13 @@ Link the existing or newly created issue in the bug-fix pull request. Use a [Git
 
 ## 💬 Community & Support
 
-Our Slack community is the heart of Social Cangaroo AI development:
+Our GitHub Discussions is the heart of AICall development:
 
 - **Get Help**: Setup assistance and debugging support
 - **Collaborate**: Discuss features and architectural decisions
 - **Connect**: Meet other contributors and maintainers
 - **Stay Updated**: Learn about contribution opportunities and releases
 
-👉 **Join us**: [Social Cangaroo Community Slack](https://join.slack.com/t/social-cangaroo-community/shared_invite/zt-4787daqcn-3TDiQUh~3xrr3pwAqR9wpQ)
+👉 **Join us**: [AICall GitHub Discussions](https://github.com/ShoaibAhmedSoomro/riltai-aicall/discussions)
 
 Thank you for helping us keep voice AI open and accessible! 🎉

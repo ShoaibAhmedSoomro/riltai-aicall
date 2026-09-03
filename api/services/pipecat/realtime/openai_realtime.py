@@ -1,6 +1,6 @@
-"""Social Cangaroo subclass of pipecat's OpenAI Realtime LLM service.
+"""AICall subclass of pipecat's OpenAI Realtime LLM service.
 
-Layers Social Cangaroo engine integration quirks onto upstream-pristine
+Layers AICall engine integration quirks onto upstream-pristine
 :class:`OpenAIRealtimeLLMService`. Substantially smaller than the Gemini
 subclass because OpenAI Realtime supports runtime ``session.update`` for
 both ``system_instruction`` and tools, so node changes do not require a
@@ -12,7 +12,7 @@ Adds:
 - **TTSSpeakFrame as initial-response trigger** so the engine's greeting
   flow kicks off the bot's first response.
 - **One-off LLMMessagesAppendFrame handling** for ephemeral realtime prompts
-  like user-idle checks, without mutating Social Cangaroo's local ``LLMContext``.
+  like user-idle checks, without mutating AICall's local ``LLMContext``.
 - **Workflow-control deferral** so node transitions, call termination, and
   transfers wait for any current bot audio to finish while ordinary tools run
   immediately.
@@ -46,13 +46,13 @@ from pipecat.transcriptions.language import Language
 from pipecat.utils.time import time_now_iso8601
 
 
-class SocialCangarooOpenAIRealtimeLLMService(OpenAIRealtimeLLMService):
-    """OpenAI Realtime with Social Cangaroo engine integration quirks. See module docstring."""
+class RiltOpenAIRealtimeLLMService(OpenAIRealtimeLLMService):
+    """OpenAI Realtime with AICall engine integration quirks. See module docstring."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._user_is_muted: bool = False
-        # Social Cangaroo pre-populates self._context via the engine before the first
+        # AICall pre-populates self._context via the engine before the first
         # LLMContextFrame arrives, so upstream's "first arrival means
         # self._context is None" check no longer works.
         self._handled_initial_context: bool = False

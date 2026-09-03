@@ -1,21 +1,21 @@
 // Create a new workflow using the TypeScript SDK.
 //
 // Requirements:
-//   npm install @socialCangaroo/sdk
+//   npm install @rilt/sdk
 //
 // Environment variables:
-//   SOCIAL_CANGAROO_API_ENDPOINT  - Social Cangaroo API base URL (e.g. http://localhost:8000)
-//   SOCIAL_CANGAROO_API_TOKEN     - API token sent as X-API-Key
+//   RILT_API_ENDPOINT  - AICall API base URL (e.g. http://localhost:8000)
+//   RILT_API_TOKEN     - API token sent as X-API-Key
 //
 // Run:
 //   npx tsx create_workflow.ts
 
-import { SocialCangarooClient } from "@socialCangaroo/sdk";
+import { RiltClient } from "@rilt/sdk";
 
 const WORKFLOW_NAME = "My SDK-created agent";
 
 // A minimal starter agent with a single `startCall` node that greets the user.
-// Open the new agent in the Social Cangaroo UI to extend it, or edit this object and
+// Open the new agent in the AICall UI to extend it, or edit this object and
 // re-run to tweak the starting definition.
 const WORKFLOW_DEFINITION = {
     nodes: [
@@ -56,12 +56,12 @@ const WORKFLOW_DEFINITION = {
 };
 
 async function main(): Promise<void> {
-    const apiEndpoint = process.env.SOCIAL_CANGAROO_API_ENDPOINT ?? "http://localhost:8000";
-    const apiToken = process.env.SOCIAL_CANGAROO_API_TOKEN;
+    const apiEndpoint = process.env.RILT_API_ENDPOINT ?? "http://localhost:8000";
+    const apiToken = process.env.RILT_API_TOKEN;
 
-    if (!apiToken) throw new Error("SOCIAL_CANGAROO_API_TOKEN is required");
+    if (!apiToken) throw new Error("RILT_API_TOKEN is required");
 
-    const client = new SocialCangarooClient({
+    const client = new RiltClient({
         baseUrl: apiEndpoint,
         apiKey: apiToken,
     });

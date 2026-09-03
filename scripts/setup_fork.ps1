@@ -1,14 +1,14 @@
 #!/usr/bin/env pwsh
 # Contributor bootstrap (Windows). Run this once after cloning your fork.
-# Configures git remotes (origin = your fork, upstream = ShoaibAhmedSoomro/social-cangaroo),
+# Configures git remotes (origin = your fork, upstream = ShoaibAhmedSoomro/rilt),
 # initializes the pipecat submodule, creates the Python venv, and copies
 # the .env templates.
 
 $ErrorActionPreference = 'Stop'
 
-$UpstreamUrl    = 'https://github.com/ShoaibAhmedSoomro/social-cangaroo.git'
+$UpstreamUrl    = 'https://github.com/ShoaibAhmedSoomro/riltai-aicall.git'
 $CanonicalHttps = $UpstreamUrl
-$CanonicalSsh   = 'git@github.com:ShoaibAhmedSoomro/social-cangaroo.git'
+$CanonicalSsh   = 'git@github.com:ShoaibAhmedSoomro/rilt.git'
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $BaseDir   = Split-Path -Parent $ScriptDir
@@ -23,7 +23,7 @@ try {
 }
 
 Write-Host '+==============================================================+' -ForegroundColor Blue
-Write-Host '|              Social Cangaroo Contributor Bootstrap                    |' -ForegroundColor Blue
+Write-Host '|              AICall Contributor Bootstrap                    |' -ForegroundColor Blue
 Write-Host '+==============================================================+' -ForegroundColor Blue
 Write-Host ''
 
@@ -49,7 +49,7 @@ if (-not $currentOrigin) {
 }
 
 if ($needsForkPrompt) {
-    Write-Host 'Enter your fork URL (e.g. https://github.com/<YOUR_HANDLE>/social-cangaroo.git):' -ForegroundColor Yellow
+    Write-Host 'Enter your fork URL (e.g. https://github.com/<YOUR_HANDLE>/rilt.git):' -ForegroundColor Yellow
     $forkUrl = (Read-Host '>').Trim()
     if (-not $forkUrl) {
         Write-Host 'Fork URL is required.' -ForegroundColor Red
@@ -70,7 +70,7 @@ if (-not $existingUpstream) {
     Write-Host "OK upstream set to $UpstreamUrl" -ForegroundColor Green
 } elseif ($existingUpstream -ne $UpstreamUrl -and $existingUpstream -ne $CanonicalSsh) {
     Write-Host "upstream currently points at $existingUpstream (expected $UpstreamUrl)." -ForegroundColor Yellow
-    $reset = (Read-Host 'Reset upstream to ShoaibAhmedSoomro/social-cangaroo? [y/N]').Trim()
+    $reset = (Read-Host 'Reset upstream to ShoaibAhmedSoomro/rilt? [y/N]').Trim()
     if ($reset -match '^[Yy]') {
         git remote set-url upstream $UpstreamUrl
         Write-Host "OK upstream reset to $UpstreamUrl" -ForegroundColor Green

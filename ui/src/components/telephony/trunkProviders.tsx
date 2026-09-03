@@ -100,7 +100,7 @@ function CloudonixTrunkFields({
           </SelectContent>
         </Select>
         <p className="text-xs text-muted-foreground">
-          Sets the remote peer Social Cangaroo dials for this trunk.
+          Sets the remote peer AICall dials for this trunk.
           {originIp
             ? ` Calls leave from ${originIp} — allow it on your side.`
             : ""}

@@ -1,4 +1,4 @@
-"""Contracts for PBXs that hand a customer leg to Social Cangaroo through Asterisk."""
+"""Contracts for PBXs that hand a customer leg to AICall through Asterisk."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ class ExternalPBXResult:
 
 
 class ExternalPBXAdapter(ABC):
-    """PBX-specific operations; ARI continues to own only Social Cangaroo's local leg."""
+    """PBX-specific operations; ARI continues to own only AICall's local leg."""
 
     type: str
     # SIP header namespace this PBX attaches call identity and lead data under.

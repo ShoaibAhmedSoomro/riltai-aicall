@@ -5,7 +5,7 @@ Nothing else may hardcode them:
 
 - the dashboard reads the defaults from ``/user/configurations/defaults``,
   typed into the generated UI client, and shows them as input placeholders;
-- ``social-cangaroo-widget.js`` receives the already-resolved copy from the public
+- ``rilt-widget.js`` receives the already-resolved copy from the public
   embed config endpoint, so the static asset carries no defaults at all.
 
 Field names are snake_case in Python and camelCase on the wire, matching the

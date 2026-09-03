@@ -1,6 +1,6 @@
 // GENERATED — do not edit by hand.
 //
-// Regenerate with `npm run codegen` against the target Social Cangaroo backend.
+// Regenerate with `npm run codegen` against the target AICall backend.
 // Source of truth: the backend's model-backed node-spec catalog served
 // from `/api/v1/node-types`.
 

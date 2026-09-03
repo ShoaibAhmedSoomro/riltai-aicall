@@ -519,7 +519,7 @@ export default function RunsPage() {
                                                                         }),
                                                                     );
                                                                     window.open(
-                                                                        `https://app.axiom.co/social-cangaroo-of6c/stream/${process.env.NEXT_PUBLIC_AXIOM_LOG_DATASET}?q=${query}`,
+                                                                        `https://app.axiom.co/rilt-of6c/stream/${process.env.NEXT_PUBLIC_AXIOM_LOG_DATASET}?q=${query}`,
                                                                         '_blank',
                                                                     );
                                                                 }}

@@ -311,7 +311,7 @@ async def _execute_resolved_target(
         f"to phone number {request.phone_number}"
     )
 
-    # Check Social Cangaroo quota after the run exists so hosted v2 can mint and store
+    # Check RiltAI quota after the run exists so hosted v2 can mint and store
     # the MPS correlation id before the provider starts the call.
     quota_result = await authorize_workflow_run_start(
         workflow_id=target.workflow.id,

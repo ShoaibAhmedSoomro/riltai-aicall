@@ -9,9 +9,9 @@ from loguru import logger
 
 from api.db import db_client
 from api.errors.failure import (
-    SocialCangarooFailure,
     ErrorSource,
     ErrorType,
+    RiltFailure,
     classify_exception,
     classify_http_response,
     log_failure,
@@ -324,7 +324,7 @@ async def execute_http_tool(
                 logger.debug(f"Applied credential '{credential.name}' to tool request")
             else:
                 log_failure(
-                    SocialCangarooFailure(
+                    RiltFailure(
                         source=ErrorSource.TOOL,
                         type=ErrorType.CONFIG_ERROR,
                         code="custom-http-credential-not-found",
@@ -379,7 +379,7 @@ async def execute_http_tool(
             )
         except ValueError as e:
             log_failure(
-                SocialCangarooFailure(
+                RiltFailure(
                     source=ErrorSource.TOOL,
                     type=ErrorType.CONFIG_ERROR,
                     code="custom-http-invalid-preset",

@@ -21,7 +21,7 @@ from api.services.telephony.registry import ProviderSetupChecklist
 
 MANAGED_CREDENTIALS = {
     "bearer_token": "domain-bearer",
-    "domain_id": "oss-social-cangaroo-1111.cloudonix.net",
+    "domain_id": "oss-rilt-1111.cloudonix.net",
     "managed_by": MANAGED_BY,
 }
 SELF_SERVE_CREDENTIALS = {
@@ -130,7 +130,7 @@ def test_customer_owned_domain_only_blocks_on_the_caller_id():
 async def test_outbound_guard_rejects_incomplete_configuration():
     row = SimpleNamespace(
         id=12,
-        name="Social Cangaroo Cloudonix SIP",
+        name="AICall Cloudonix SIP",
         provider="cloudonix",
         credentials=MANAGED_CREDENTIALS,
     )
@@ -142,14 +142,14 @@ async def test_outbound_guard_rejects_incomplete_configuration():
     with pytest.raises(OutboundSetupIncompleteError) as excinfo:
         await ensure_outbound_setup_ready(12, 7, db=db_client)
 
-    assert "Social Cangaroo Cloudonix SIP" in str(excinfo.value)
+    assert "AICall Cloudonix SIP" in str(excinfo.value)
 
 
 @pytest.mark.asyncio
 async def test_outbound_guard_allows_a_ready_configuration():
     row = SimpleNamespace(
         id=12,
-        name="Social Cangaroo Cloudonix SIP",
+        name="AICall Cloudonix SIP",
         provider="cloudonix",
         credentials=MANAGED_CREDENTIALS,
     )
@@ -169,7 +169,7 @@ async def test_outbound_guard_allows_a_ready_configuration():
 async def test_outbound_resolver_selects_a_ready_configuration_without_a_default():
     row = SimpleNamespace(
         id=12,
-        name="Social Cangaroo Cloudonix SIP",
+        name="AICall Cloudonix SIP",
         provider="cloudonix",
         credentials=MANAGED_CREDENTIALS,
     )

@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from api.errors.failure import SocialCangarooFailure, ErrorSource, ErrorType
+from api.errors.failure import ErrorSource, ErrorType, RiltFailure
 from api.errors.telephony_errors import (
     TelephonyError,
     failure_from_telephony_error,
@@ -13,7 +13,7 @@ from api.services.telephony.failure_reporting import instrument_telephony_provid
 
 def test_ari_failure_reporting_preserves_repeated_occurrences(monkeypatch):
     captured = []
-    failure = SocialCangarooFailure(
+    failure = RiltFailure(
         source=ErrorSource.TELEPHONY,
         type=ErrorType.CONFIG_ERROR,
         code="ari-401",
@@ -77,7 +77,7 @@ async def test_outbound_instrumentation_classifies_and_reraises(monkeypatch):
     with pytest.raises(ProviderError) as raised:
         await provider.initiate_call(
             "+14155550123",
-            "https://social_cangaroo.test/webhook",
+            "https://rilt.test/webhook",
             workflow_run_id=88,
             organization_id=42,
         )

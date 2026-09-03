@@ -104,7 +104,7 @@ export function MCPSection() {
         For step-by-step setup with Claude Code, Claude Desktop, Cursor, and
         other clients, see the{" "}
         <Link
-          href="https://docs.socialcangaroo.com/integrations/mcp"
+          href="https://docs.rilt.ai/integrations/mcp"
           target="_blank"
           rel="noopener noreferrer"
           className="text-primary underline hover:no-underline"

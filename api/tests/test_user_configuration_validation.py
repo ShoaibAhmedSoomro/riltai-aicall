@@ -7,9 +7,9 @@ import pytest
 from api.errors.mps import MPSUnavailableError
 from api.routes import user as user_routes
 from api.schemas.ai_model_configuration import (
-    SocialCangarooManagedAIModelConfiguration,
     EffectiveAIModelConfiguration,
     OrganizationAIModelConfigurationV2,
+    RiltManagedAIModelConfiguration,
     compile_ai_model_configuration_v2,
 )
 from api.services.configuration import check_validity
@@ -118,7 +118,7 @@ async def test_managed_service_key_is_checked_once_per_validation_request(monkey
     configuration = compile_ai_model_configuration_v2(
         OrganizationAIModelConfigurationV2(
             mode="dograh",
-            social_cangaroo=SocialCangarooManagedAIModelConfiguration(api_key="mps-shared-key"),
+            rilt=RiltManagedAIModelConfiguration(api_key="mps-shared-key"),
         )
     )
     validator = UserConfigurationValidator()
@@ -152,7 +152,7 @@ async def test_mps_outage_is_not_reported_as_invalid_customer_key(monkeypatch):
     configuration = compile_ai_model_configuration_v2(
         OrganizationAIModelConfigurationV2(
             mode="dograh",
-            social_cangaroo=SocialCangarooManagedAIModelConfiguration(api_key="mps-shared-key"),
+            rilt=RiltManagedAIModelConfiguration(api_key="mps-shared-key"),
         )
     )
 

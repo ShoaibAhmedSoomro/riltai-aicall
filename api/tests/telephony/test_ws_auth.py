@@ -284,7 +284,7 @@ async def test_ari_transport_data_carries_token(secret):
         ari_endpoint="http://asterisk:8088",
         app_name="dograh",
         app_password="pw",
-        ws_client_name="social-cangaroo-ws",
+        ws_client_name="rilt-ws",
     )
     captured = {}
 

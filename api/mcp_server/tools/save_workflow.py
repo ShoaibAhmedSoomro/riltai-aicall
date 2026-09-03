@@ -68,13 +68,13 @@ def _format_errors(errors: list[dict[str, Any]]) -> str:
 async def save_workflow(workflow_id: int, code: str) -> dict[str, Any]:
     """Parse SDK TypeScript and save the resulting workflow as a draft.
 
-    `code` is TypeScript source using `@social_cangaroo/sdk`. Fetch the current
+    `code` is TypeScript source using `@rilt/sdk`. Fetch the current
     code first via `get_workflow_code(workflow_id)`, edit it, then pass
     the full updated source here.
 
     Example code:
-        import { Workflow } from "@social_cangaroo/sdk";
-        import { startCall, endCall } from "@social_cangaroo/sdk/typed";
+        import { Workflow } from "@rilt/sdk";
+        import { startCall, endCall } from "@rilt/sdk/typed";
 
         const wf = new Workflow({ name: "lead_qualification" });
         const greeting = wf.addTyped(startCall({ name: "Greeting", prompt: "Hi!" }));

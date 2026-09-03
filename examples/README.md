@@ -1,6 +1,6 @@
-# Social Cangaroo SDK Examples
+# AICall SDK Examples
 
-Runnable examples of the Social Cangaroo SDK in Python and TypeScript.
+Runnable examples of the AICall SDK in Python and TypeScript.
 
 ## Shared environment variables
 
@@ -8,18 +8,18 @@ Copy `.env.example` to `.env` in each example directory and fill in your values,
 
 | Variable              | Description                                                  |
 | --------------------- | ------------------------------------------------------------ |
-| `SOCIAL_CANGAROO_API_ENDPOINT` | Social Cangaroo API base URL (e.g. `http://localhost:8000`)           |
-| `SOCIAL_CANGAROO_API_TOKEN`    | API token — sent as `X-API-Key`                              |
+| `RILT_API_ENDPOINT` | AICall API base URL (e.g. `http://localhost:8000`)           |
+| `RILT_API_TOKEN`    | API token — sent as `X-API-Key`                              |
 
 The workflow ID and destination phone number are set as constants at the top of each example script — edit them there.
 
 ## Python
 
 ```bash
-pip install social-cangaroo-sdk
+pip install rilt-sdk
 
-export SOCIAL_CANGAROO_API_ENDPOINT=http://localhost:8000
-export SOCIAL_CANGAROO_API_TOKEN=sk-...
+export RILT_API_ENDPOINT=http://localhost:8000
+export RILT_API_TOKEN=sk-...
 
 # Fetch a workflow by ID and place a test phone call.
 python python/fetch_workflow_and_call.py
@@ -44,8 +44,8 @@ Uses `tsx` to run directly.
 cd typescript
 npm install
 
-export SOCIAL_CANGAROO_API_ENDPOINT=http://localhost:8000
-export SOCIAL_CANGAROO_API_TOKEN=sk-...
+export RILT_API_ENDPOINT=http://localhost:8000
+export RILT_API_TOKEN=sk-...
 
 npm run call    # fetch_workflow_and_call.ts
 npm run create  # create_workflow.ts

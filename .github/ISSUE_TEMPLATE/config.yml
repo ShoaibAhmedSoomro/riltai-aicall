@@ -3,5 +3,5 @@ contact_links:
     url: https://github.com/orgs/ShoaibAhmedSoomro/discussions/new?category=ideas
     about: Suggest any ideas you have using our discussion forums.
   - name: "🔒 Report a Security Vulnerability"
-    url: https://github.com/ShoaibAhmedSoomro/social-cangaroo/security/advisories/new
+    url: https://github.com/ShoaibAhmedSoomro/riltai-aicall/security/advisories/new
     about: "Privately report security vulnerabilities to maintainers (not via public issues)."

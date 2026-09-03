@@ -6,10 +6,10 @@ from loguru import logger
 
 from api.errors import failure as failure_module
 from api.errors.failure import (
-    SocialCangarooFailure,
     ErrorOwner,
     ErrorSource,
     ErrorType,
+    RiltFailure,
     annotate_failure_metadata,
     classify_exception,
     classify_http_response,
@@ -75,7 +75,7 @@ def test_classify_http_response_status_bands(status_code, expected_type, retryab
     ],
 )
 def test_failure_resolves_binary_owner(error_type, requested_owner, expected_owner):
-    failure = SocialCangarooFailure(
+    failure = RiltFailure(
         source=ErrorSource.PLATFORM,
         type=error_type,
         code="test-failure",
@@ -204,10 +204,10 @@ def test_google_http_statuses_are_distinct_without_message_parsing():
     assert unavailable.code == "google-503"
 
 
-def test_social_cangaroo_boundary_changes_attribution():
+def test_rilt_boundary_changes_attribution():
     quota = classify_http_response(
         402,
-        "Insufficient Social Cangaroo credits",
+        "Insufficient RiltAI credits",
         source=ErrorSource.LLM,
         provider="dograh",
     )
@@ -220,12 +220,12 @@ def test_social_cangaroo_boundary_changes_attribution():
 
     assert quota.type == ErrorType.QUOTA_ERROR
     assert quota.error_owner == ErrorOwner.USER
-    assert quota.code == "social-cangaroo-insufficient-credits"
+    assert quota.code == "rilt-insufficient-credits"
     assert managed_key_failure.type == ErrorType.SYSTEM_ERROR
     assert managed_key_failure.error_owner == ErrorOwner.OPERATOR
 
 
-def test_social_cangaroo_credit_prose_does_not_override_safe_default():
+def test_rilt_credit_prose_does_not_override_safe_default():
     failure = classify_exception(
         RuntimeError("insufficient credits"),
         source=ErrorSource.PLATFORM,
@@ -234,10 +234,10 @@ def test_social_cangaroo_credit_prose_does_not_override_safe_default():
 
     assert failure.type == ErrorType.SYSTEM_ERROR
     assert failure.error_owner == ErrorOwner.OPERATOR
-    assert failure.code == "social-cangaroo-unknown"
+    assert failure.code == "rilt-unknown"
 
 
-def test_social_cangaroo_transport_failure_stays_system_error_but_keeps_retry_hint():
+def test_rilt_transport_failure_stays_system_error_but_keeps_retry_hint():
     failure = classify_exception(
         httpx.ConnectError("MPS connection refused"),
         source=ErrorSource.PLATFORM,
@@ -246,7 +246,7 @@ def test_social_cangaroo_transport_failure_stays_system_error_but_keeps_retry_hi
 
     assert failure.type == ErrorType.SYSTEM_ERROR
     assert failure.error_owner == ErrorOwner.OPERATOR
-    assert failure.code == "social-cangaroo-connection"
+    assert failure.code == "rilt-connection"
     assert failure.retryable is True
 
 
@@ -291,7 +291,7 @@ def test_redaction_consumes_entire_escaped_or_multiline_quoted_secret(
 
 
 def test_factory_metadata_is_authoritative_over_wrapper_class_name():
-    service = type("SocialCangarooOpenAIRealtimeLLMService", (), {})()
+    service = type("RiltOpenAIRealtimeLLMService", (), {})()
     annotate_failure_metadata(
         service,
         source=ErrorSource.LLM,
@@ -340,7 +340,7 @@ def test_log_failure_emits_structured_and_inline_classification():
     sink_id = logger.add(lambda message: records.append(message.record))
     try:
         log_failure(
-            SocialCangarooFailure(
+            RiltFailure(
                 source=ErrorSource.WEBHOOK,
                 type=ErrorType.CONFIG_ERROR,
                 code="webhook-404",
@@ -356,7 +356,7 @@ def test_log_failure_emits_structured_and_inline_classification():
         logger.remove(sink_id)
 
     record = records[-1]
-    assert "SOCIAL_CANGAROO_FAILURE [src=webhook type=config_error code=webhook-404]" in str(
+    assert "RILT_FAILURE [src=webhook type=config_error code=webhook-404]" in str(
         record["message"]
     )
     assert record["extra"]["classified"] is True
@@ -375,7 +375,7 @@ def test_log_failure_does_not_add_a_workflow_run_id_alias():
     sink_id = logger.add(lambda message: records.append(message.record))
     try:
         log_failure(
-            SocialCangarooFailure(
+            RiltFailure(
                 source=ErrorSource.PLATFORM,
                 type=ErrorType.SYSTEM_ERROR,
                 code="platform-test",
@@ -419,7 +419,7 @@ def test_log_failure_never_raises_when_logger_fails(monkeypatch):
     monkeypatch.setattr(failure_module, "logger", _BrokenLogger())
 
     log_failure(
-        SocialCangarooFailure(
+        RiltFailure(
             source=ErrorSource.PLATFORM,
             type=ErrorType.SYSTEM_ERROR,
             code="platform-test",

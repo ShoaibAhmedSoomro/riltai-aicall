@@ -6,14 +6,14 @@ from pipecat.frames.frames import LLMMessagesAppendFrame
 from pipecat.services.openai.realtime import events
 
 from api.services.pipecat.realtime.openai_realtime import (
-    SocialCangarooOpenAIRealtimeLLMService,
+    RiltOpenAIRealtimeLLMService,
 )
 from api.services.workflow.pipecat_engine_callbacks import UserIdleHandler
 
 
 @pytest.mark.asyncio
 async def test_openai_realtime_messages_append_frame_sends_conversation_item():
-    service = SocialCangarooOpenAIRealtimeLLMService(api_key="test")
+    service = RiltOpenAIRealtimeLLMService(api_key="test")
     service._api_session_ready = True
     service.send_client_event = AsyncMock()
     service._send_manual_response_create = AsyncMock()

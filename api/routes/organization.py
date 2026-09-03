@@ -3,7 +3,13 @@ from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from loguru import logger
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import (
+    AliasChoices,
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+)
 
 from api.constants import (
     DEFAULT_CAMPAIGN_RETRY_CONFIG,
@@ -22,12 +28,12 @@ from api.enums import OrganizationConfigurationKey, PostHogEvent
 from api.errors.failure import ErrorSource, classify_exception, log_failure
 from api.errors.mps import MPSUnavailableError
 from api.schemas.ai_model_configuration import (
-    SOCIAL_CANGAROO_DEFAULT_LANGUAGE,
-    SOCIAL_CANGAROO_DEFAULT_VOICE,
-    SOCIAL_CANGAROO_SPEED_MAX,
-    SOCIAL_CANGAROO_SPEED_MIN,
-    SOCIAL_CANGAROO_SPEED_OPTIONS,
-    SOCIAL_CANGAROO_SPEED_STEP,
+    RILT_DEFAULT_LANGUAGE,
+    RILT_DEFAULT_VOICE,
+    RILT_SPEED_MAX,
+    RILT_SPEED_MIN,
+    RILT_SPEED_OPTIONS,
+    RILT_SPEED_STEP,
     OrganizationAIModelConfigurationResponse,
     OrganizationAIModelConfigurationV2,
 )
@@ -70,10 +76,10 @@ from api.services.configuration.check_validity import UserConfigurationValidator
 from api.services.configuration.defaults import DEFAULT_SERVICE_PROVIDERS
 from api.services.configuration.masking import is_mask_of, mask_key, mask_user_config
 from api.services.configuration.registry import (
-    SOCIAL_CANGAROO_MULTILINGUAL_AUTODETECT_LANGUAGES,
-    SOCIAL_CANGAROO_STT_LANGUAGES,
     REGISTRY,
-    SocialCangarooTTSService,
+    RILT_MULTILINGUAL_AUTODETECT_LANGUAGES,
+    RILT_STT_LANGUAGES,
+    RiltTTSService,
     ServiceProviders,
     ServiceType,
 )
@@ -215,15 +221,36 @@ class ModelConfigurationMetricPrice(BaseModel):
 
 
 class ModelConfigurationPricingResponse(BaseModel):
-    """MPS-owned effective prices relevant to model configuration choices."""
+    """MPS-owned effective prices relevant to model configuration choices.
+
+    This model is validated directly against the MPS response body
+    (``model_validate(pricing)`` below), so its field NAMES are an inbound wire
+    contract with a service that is not built from this repo. MPS lives on the
+    frozen ``services.dograh.com`` host and has now outlived two renames of
+    this app, so the managed-model key has been spelled three different ways
+    over time and a mismatch fails silently as ``None`` rather than raising.
+
+    ``validation_alias`` accepts all three spellings so the field populates
+    whichever one MPS actually sends, while ``serialization_alias`` keeps this
+    app's own outbound JSON on the current name. Drop the older aliases only
+    once the live payload has been confirmed against MPS.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
 
     platform_usage: ModelConfigurationMetricPrice | None = None
-    social_cangaroo_model: ModelConfigurationMetricPrice | None = None
+    rilt_model: ModelConfigurationMetricPrice | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "rilt_model", "social_cangaroo_model", "dograh_model"
+        ),
+        serialization_alias="rilt_model",
+    )
 
 
 @router.get("/context", response_model=OrganizationContextResponse)
 async def get_current_organization_context(user: UserModel = Depends(get_user)):
-    """Return organization-scoped configuration signals owned by Social Cangaroo."""
+    """Return organization-scoped configuration signals owned by AICall."""
     return await get_organization_context(user)
 
 
@@ -322,8 +349,8 @@ async def get_telephony_config_warnings(user: UserModel = Depends(get_user)):
 # ---------------------------------------------------------------------------
 
 
-def _social_cangaroo_allows_custom_voice() -> bool:
-    extra = SocialCangarooTTSService.model_fields["voice"].json_schema_extra
+def _rilt_allows_custom_voice() -> bool:
+    extra = RiltTTSService.model_fields["voice"].json_schema_extra
     if isinstance(extra, dict):
         return bool(extra.get("allow_custom_input", False))
     return False
@@ -333,7 +360,7 @@ def _byok_provider_schemas(service_type: ServiceType) -> dict[str, dict]:
     return {
         provider: model_cls.model_json_schema()
         for provider, model_cls in REGISTRY[service_type].items()
-        if provider != ServiceProviders.SOCIAL_CANGAROO.value
+        if provider != ServiceProviders.RILT.value
     }
 
 
@@ -364,24 +391,24 @@ async def get_model_configuration_v2_defaults(
     byok_default_providers = {
         service: provider
         for service, provider in DEFAULT_SERVICE_PROVIDERS.items()
-        if provider != ServiceProviders.SOCIAL_CANGAROO.value
+        if provider != ServiceProviders.RILT.value
     }
     return {
         "dograh": {
-            "voices": [SOCIAL_CANGAROO_DEFAULT_VOICE],
-            "allow_custom_input": _social_cangaroo_allows_custom_voice(),
-            "speeds": list(SOCIAL_CANGAROO_SPEED_OPTIONS),
+            "voices": [RILT_DEFAULT_VOICE],
+            "allow_custom_input": _rilt_allows_custom_voice(),
+            "speeds": list(RILT_SPEED_OPTIONS),
             "speed_range": {
-                "min": SOCIAL_CANGAROO_SPEED_MIN,
-                "max": SOCIAL_CANGAROO_SPEED_MAX,
-                "step": SOCIAL_CANGAROO_SPEED_STEP,
+                "min": RILT_SPEED_MIN,
+                "max": RILT_SPEED_MAX,
+                "step": RILT_SPEED_STEP,
             },
-            "languages": SOCIAL_CANGAROO_STT_LANGUAGES,
-            "multilingual_languages": SOCIAL_CANGAROO_MULTILINGUAL_AUTODETECT_LANGUAGES,
+            "languages": RILT_STT_LANGUAGES,
+            "multilingual_languages": RILT_MULTILINGUAL_AUTODETECT_LANGUAGES,
             "defaults": {
-                "voice": SOCIAL_CANGAROO_DEFAULT_VOICE,
+                "voice": RILT_DEFAULT_VOICE,
                 "speed": 1.0,
-                "language": SOCIAL_CANGAROO_DEFAULT_LANGUAGE,
+                "language": RILT_DEFAULT_LANGUAGE,
             },
         },
         "byok": {
@@ -1135,7 +1162,7 @@ def _require_trunk_support(provider: str):
         raise HTTPException(
             status_code=400,
             detail=(
-                f"Social Cangaroo does not model trunks on {provider} configurations — "
+                f"AICall does not model trunks on {provider} configurations — "
                 f"calls route through the provider account itself. Numbers on "
                 f"this configuration need no trunk."
             ),

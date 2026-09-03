@@ -1,6 +1,6 @@
-"""Factory for embedding services, including the Social-Cangaroo-managed (MPS) path.
+"""Factory for embedding services, including the RiltAI-managed (MPS) path.
 
-Centralizes the provider branching (Azure BYOK / Social-Cangaroo-managed / OpenAI-compatible
+Centralizes the provider branching (Azure BYOK / RiltAI-managed / OpenAI-compatible
 BYOK) that was previously duplicated across document ingestion, the search route,
 and the RAG tool, and resolves the MPS correlation id the same way the voice
 path does.
@@ -14,8 +14,8 @@ from api.db.db_client import DBClient
 
 from .azure_openai_service import AzureOpenAIEmbeddingService
 from .base import BaseEmbeddingService
-from .social_cangaroo_service import SocialCangarooEmbeddingService
 from .openai_service import OpenAIEmbeddingService
+from .rilt_service import RiltEmbeddingService
 
 DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
 DEFAULT_AZURE_API_VERSION = "2024-02-15-preview"
@@ -69,9 +69,9 @@ async def build_embedding_service(
 
     Args:
         correlation_id: A correlation id already available in context (e.g. the
-            running workflow's MPS correlation id). Used for the Social Cangaroo provider.
+            running workflow's MPS correlation id). Used for the AICall provider.
         resolve_correlation: When True and no ``correlation_id`` is supplied, resolve
-            one for the Social Cangaroo provider via ``resolve_embedding_correlation_id``
+            one for the AICall provider via ``resolve_embedding_correlation_id``
             (for calls made outside a workflow run: ingestion, manual search).
     """
     from api.services.configuration.registry import ServiceProviders
@@ -87,11 +87,11 @@ async def build_embedding_service(
             api_version=api_version or DEFAULT_AZURE_API_VERSION,
         )
 
-    if provider == ServiceProviders.SOCIAL_CANGAROO.value:
+    if provider == ServiceProviders.RILT.value:
         cid = correlation_id
         if cid is None and resolve_correlation:
             cid = await resolve_embedding_correlation_id(service_key=api_key)
-        return SocialCangarooEmbeddingService(
+        return RiltEmbeddingService(
             db_client=db_client,
             api_key=api_key,
             model_id=model_id,

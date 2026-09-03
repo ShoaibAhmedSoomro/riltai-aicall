@@ -10,11 +10,11 @@ type HeadlessWidget = {
     sendMessage: (text: string) => Promise<unknown[]>;
 };
 
-type WidgetWindow = Window & { SocialCangarooWidget?: HeadlessWidget };
+type WidgetWindow = Window & { RiltWidget?: HeadlessWidget };
 
 describe("headless chat embed example", () => {
     afterEach(() => {
-        delete (window as WidgetWindow).SocialCangarooWidget;
+        delete (window as WidgetWindow).RiltWidget;
         vi.unstubAllGlobals();
         vi.restoreAllMocks();
         document.body.innerHTML = "";
@@ -22,7 +22,7 @@ describe("headless chat embed example", () => {
 
     it("waits for the async widget script before registering callbacks", () => {
         document.body.innerHTML = `
-            <script id="social-cangaroo-widget"></script>
+            <script id="rilt-widget"></script>
             <button id="open-chat"></button>
             <input id="chat-input" />
             <button id="send-btn"></button>
@@ -46,8 +46,8 @@ describe("headless chat embed example", () => {
         expect(onChatStateChange).not.toHaveBeenCalled();
         expect(onMessage).not.toHaveBeenCalled();
 
-        (window as WidgetWindow).SocialCangarooWidget = widget;
-        document.getElementById("social-cangaroo-widget")?.dispatchEvent(new Event("load"));
+        (window as WidgetWindow).RiltWidget = widget;
+        document.getElementById("rilt-widget")?.dispatchEvent(new Event("load"));
 
         expect(onChatStateChange).toHaveBeenCalledOnce();
         expect(onMessage).toHaveBeenCalledOnce();

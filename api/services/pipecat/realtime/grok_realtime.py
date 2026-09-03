@@ -1,6 +1,6 @@
-"""Social Cangaroo subclass of pipecat's Grok Realtime LLM service.
+"""AICall subclass of pipecat's Grok Realtime LLM service.
 
-Layers Social Cangaroo engine integration quirks onto upstream-pristine
+Layers AICall engine integration quirks onto upstream-pristine
 :class:`GrokRealtimeLLMService`. Grok already supports runtime session updates,
 so this wrapper stays close to the OpenAI realtime shim.
 
@@ -10,11 +10,11 @@ Adds:
 - **TTSSpeakFrame as initial-response trigger** so the engine's greeting
   flow kicks off the bot's first response.
 - **One-off LLMMessagesAppendFrame handling** for ephemeral realtime prompts
-  like user-idle checks, without mutating Social Cangaroo's local ``LLMContext``.
+  like user-idle checks, without mutating AICall's local ``LLMContext``.
 - **Workflow-control deferral** so node transitions, call termination, and
   transfers wait for any current bot audio to finish while ordinary tools run
   immediately.
-- **finalized=True on TranscriptionFrame** for parity with Social Cangaroo's other
+- **finalized=True on TranscriptionFrame** for parity with AICall's other
   realtime providers.
 """
 
@@ -43,8 +43,8 @@ from pipecat.services.xai.realtime.llm import GrokRealtimeLLMService
 from pipecat.utils.time import time_now_iso8601
 
 
-class SocialCangarooGrokRealtimeLLMService(GrokRealtimeLLMService):
-    """Grok Realtime with Social Cangaroo engine integration quirks."""
+class RiltGrokRealtimeLLMService(GrokRealtimeLLMService):
+    """Grok Realtime with AICall engine integration quirks."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

@@ -1,4 +1,4 @@
-export const DOCS_BASE = "https://docs.socialcangaroo.com";
+export const DOCS_BASE = "https://docs.rilt.ai";
 
 export const NODE_DOCUMENTATION_URLS: Record<string, string> = {
     startCall: `${DOCS_BASE}/voice-agent/start-call`,

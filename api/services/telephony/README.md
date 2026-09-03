@@ -1,6 +1,6 @@
 # Telephony Provider Implementation
 
-This module implements the telephony provider abstraction for Social Cangaroo AI. For user-facing documentation, see the [Mintlify docs](https://docs.socialcangaroo.com/integrations/telephony/overview).
+This module implements the telephony provider abstraction for AICall. For user-facing documentation, see the [Mintlify docs](https://docs.rilt.ai/integrations/telephony/overview).
 
 ## Architecture
 
@@ -49,7 +49,7 @@ telephony/
 
 ## Implementing a New Provider
 
-See the [Custom Provider Guide](https://docs.socialcangaroo.com/integrations/telephony/custom) in the documentation for detailed implementation instructions.
+See the [Custom Provider Guide](https://docs.rilt.ai/integrations/telephony/custom) in the documentation for detailed implementation instructions.
 
 Quick checklist:
 1. Create `providers/your_provider.py` implementing `TelephonyProvider`
@@ -170,7 +170,7 @@ await provider.initiate_call(...)
 
 ## Related Documentation
 
-- [User Documentation](https://docs.socialcangaroo.com/integrations/telephony/overview)
-- [Twilio Integration](https://docs.socialcangaroo.com/integrations/telephony/twilio)
-- [Custom Providers](https://docs.socialcangaroo.com/integrations/telephony/custom)
-- [Webhooks Guide](https://docs.socialcangaroo.com/integrations/telephony/webhooks)
+- [User Documentation](https://docs.rilt.ai/integrations/telephony/overview)
+- [Twilio Integration](https://docs.rilt.ai/integrations/telephony/twilio)
+- [Custom Providers](https://docs.rilt.ai/integrations/telephony/custom)
+- [Webhooks Guide](https://docs.rilt.ai/integrations/telephony/webhooks)

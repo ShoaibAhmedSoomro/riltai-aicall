@@ -16,8 +16,8 @@ def extract_trace_id(gathered_context: dict) -> str | None:
     """Extract Langfuse trace_id from gathered_context trace_url.
 
     Supports both URL formats:
-    - New: https://langfuse.socialcangaroo.com/trace/<trace_id>
-    - Legacy: https://langfuse.socialcangaroo.com/project/<project_id>/traces/<trace_id>
+    - New: https://langfuse.rilt.ai/trace/<trace_id>
+    - Legacy: https://langfuse.rilt.ai/project/<project_id>/traces/<trace_id>
     """
     trace_url = gathered_context.get("trace_url")
     if not trace_url:

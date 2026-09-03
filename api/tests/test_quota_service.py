@@ -12,14 +12,14 @@ from api.services.quota_service import QuotaCheckResult
 _UNSET = object()
 
 
-def _social_cangaroo_config(
+def _rilt_config(
     api_key: str = "mps_sk_12345678",
     *,
     managed_service_version: int = 1,
 ):
     return SimpleNamespace(
         managed_service_version=managed_service_version,
-        llm=SimpleNamespace(provider=ServiceProviders.SOCIAL_CANGAROO, api_key=api_key),
+        llm=SimpleNamespace(provider=ServiceProviders.RILT, api_key=api_key),
         stt=None,
         tts=None,
         embeddings=None,
@@ -100,7 +100,7 @@ def _patch_workflow_context(monkeypatch, *, workflow=_UNSET, owner=None):
 async def test_authorize_workflow_run_uses_workflow_org_for_hosted_v2(
     monkeypatch,
 ):
-    get_config = AsyncMock(return_value=_social_cangaroo_config())
+    get_config = AsyncMock(return_value=_rilt_config())
     authorize = AsyncMock(
         return_value={
             "allowed": True,
@@ -144,9 +144,9 @@ async def test_authorize_workflow_run_uses_workflow_org_for_hosted_v2(
         workflow_run_id=None,
         service_key=None,
         require_correlation_id=False,
-        minimum_credits=quota_service.MINIMUM_SOCIAL_CANGAROO_CREDITS_FOR_CALL,
+        minimum_credits=quota_service.MINIMUM_RILT_CREDITS_FOR_CALL,
         created_by="provider-123",
-        metadata={"social_cangaroo_user_id": "123", "workflow_id": 7},
+        metadata={"rilt_user_id": "123", "workflow_id": 7},
     )
     check_usage.assert_not_awaited()
 
@@ -192,7 +192,7 @@ async def test_authorize_workflow_run_v2_insufficient_credits_prompts_billing(
     assert result.has_quota is False
     assert result.error_code == "insufficient_credits"
     assert "/billing" in result.error_message
-    assert "founders@socialcangaroo.com" not in result.error_message
+    assert "founders@rilt.ai" not in result.error_message
     authorize.assert_awaited_once()
     check_usage.assert_not_awaited()
 
@@ -202,7 +202,7 @@ async def test_authorize_workflow_run_oss_exhausted_key_blocks_run(
     monkeypatch,
 ):
     api_key = "mps_sk_12345678"
-    get_config = AsyncMock(return_value=_social_cangaroo_config(api_key))
+    get_config = AsyncMock(return_value=_rilt_config(api_key))
     check_usage = AsyncMock(
         return_value={"total_credits_used": 500.0, "remaining_credits": 0.0}
     )
@@ -227,7 +227,7 @@ async def test_authorize_workflow_run_oss_exhausted_key_blocks_run(
 
     assert result.has_quota is False
     assert result.error_code == "quota_exceeded"
-    assert "app.socialcangaroo.com" in result.error_message
+    assert "aicall.rilt.ai" in result.error_message
     assert "/billing" not in result.error_message
     check_usage.assert_awaited_once_with(api_key)
 
@@ -239,7 +239,7 @@ async def test_authorize_workflow_run_managed_v2_stores_hosted_correlation(
     api_key = "mps_sk_12345678"
     workflow_run = SimpleNamespace(initial_context={"existing": "value"})
     get_config = AsyncMock(
-        return_value=_social_cangaroo_config(api_key, managed_service_version=2)
+        return_value=_rilt_config(api_key, managed_service_version=2)
     )
     authorize = AsyncMock(
         return_value={
@@ -299,9 +299,9 @@ async def test_authorize_workflow_run_managed_v2_stores_hosted_correlation(
         workflow_run_id=88,
         service_key=api_key,
         require_correlation_id=True,
-        minimum_credits=quota_service.MINIMUM_SOCIAL_CANGAROO_CREDITS_FOR_CALL,
+        minimum_credits=quota_service.MINIMUM_RILT_CREDITS_FOR_CALL,
         created_by="provider-123",
-        metadata={"social_cangaroo_user_id": "123", "workflow_id": 7},
+        metadata={"rilt_user_id": "123", "workflow_id": 7},
     )
     update_workflow_run.assert_awaited_once_with(
         88,
@@ -333,7 +333,7 @@ async def test_hosted_managed_v2_authorization_rejects_missing_correlation(
         organization_id=42,
         workflow_id=7,
         workflow_run_id=88,
-        user_config=_social_cangaroo_config(managed_service_version=2),
+        user_config=_rilt_config(managed_service_version=2),
     )
 
     assert result.has_quota is False
@@ -346,7 +346,7 @@ async def test_authorize_workflow_run_service_token_from_wrong_org_prompts_new_t
 ):
     api_key = "mps_sk_12345678"
     get_config = AsyncMock(
-        return_value=_social_cangaroo_config(api_key, managed_service_version=2)
+        return_value=_rilt_config(api_key, managed_service_version=2)
     )
     request = httpx.Request(
         "POST",
@@ -403,9 +403,9 @@ async def test_authorize_workflow_run_service_token_from_wrong_org_prompts_new_t
         workflow_run_id=88,
         service_key=api_key,
         require_correlation_id=True,
-        minimum_credits=quota_service.MINIMUM_SOCIAL_CANGAROO_CREDITS_FOR_CALL,
+        minimum_credits=quota_service.MINIMUM_RILT_CREDITS_FOR_CALL,
         created_by="provider-123",
-        metadata={"social_cangaroo_user_id": "123", "workflow_id": 7},
+        metadata={"rilt_user_id": "123", "workflow_id": 7},
     )
 
 
@@ -416,7 +416,7 @@ async def test_authorize_workflow_run_oss_uses_key_paths_not_workflow_org(
     api_key = "mps_sk_12345678"
     workflow_run = SimpleNamespace(initial_context={})
     get_config = AsyncMock(
-        return_value=_social_cangaroo_config(api_key, managed_service_version=2)
+        return_value=_rilt_config(api_key, managed_service_version=2)
     )
     hosted_authorize = AsyncMock()
     service_key_authorize = AsyncMock(
@@ -485,7 +485,7 @@ async def test_authorize_workflow_run_oss_uses_key_paths_not_workflow_org(
         service_key=api_key,
         workflow_run_id=88,
         require_correlation_id=True,
-        minimum_credits=quota_service.MINIMUM_SOCIAL_CANGAROO_CREDITS_FOR_CALL,
+        minimum_credits=quota_service.MINIMUM_RILT_CREDITS_FOR_CALL,
         metadata={"workflow_id": 7},
     )
     check_usage.assert_not_awaited()
@@ -521,7 +521,7 @@ async def test_oss_run_authorization_rejects_missing_correlation(monkeypatch):
         workflow_id=7,
         workflow_run_id=88,
         service_key="mps_sk_12345678",
-        user_config=_social_cangaroo_config(managed_service_version=2),
+        user_config=_rilt_config(managed_service_version=2),
     )
 
     assert result.has_quota is False
@@ -548,7 +548,7 @@ async def test_oss_run_authorization_preserves_hosted_key_credit_denial(monkeypa
         workflow_id=7,
         workflow_run_id=88,
         service_key="mps_sk_12345678",
-        user_config=_social_cangaroo_config(managed_service_version=2),
+        user_config=_rilt_config(managed_service_version=2),
     )
 
     assert result.has_quota is False
@@ -606,7 +606,7 @@ async def test_oss_run_authorization_falls_back_for_older_mps(monkeypatch):
         workflow_id=7,
         workflow_run_id=88,
         service_key=api_key,
-        user_config=_social_cangaroo_config(api_key, managed_service_version=2),
+        user_config=_rilt_config(api_key, managed_service_version=2),
     )
 
     assert result.has_quota is True
@@ -633,7 +633,7 @@ async def test_legacy_oss_correlation_rejects_missing_id(monkeypatch):
     result = await quota_service._authorize_oss_managed_v2_correlation(
         workflow_id=7,
         workflow_run_id=88,
-        user_config=_social_cangaroo_config(managed_service_version=2),
+        user_config=_rilt_config(managed_service_version=2),
     )
 
     assert result.has_quota is False
@@ -779,7 +779,7 @@ async def test_authorize_workflow_run_resolves_config_from_pinned_definition(
 
     workflow.workflow_configurations is synced to the draft on save, while the
     run executes its pinned definition — if the draft carries a different
-    Social Cangaroo service key, minting from the workflow column binds the correlation
+    AICall service key, minting from the workflow column binds the correlation
     to a key the run never uses and MPS rejects every model service call.
     """
     draft_configs = {"model_configuration_v2_override": {"key": "draft"}}
@@ -1108,7 +1108,7 @@ async def test_authorize_workflow_run_opens_when_oss_quota_mps_is_unreachable(
     monkeypatch.setattr(
         quota_service,
         "get_effective_ai_model_configuration_for_workflow",
-        AsyncMock(return_value=_social_cangaroo_config()),
+        AsyncMock(return_value=_rilt_config()),
     )
     monkeypatch.setattr(
         quota_service.mps_service_key_client,
@@ -1139,7 +1139,7 @@ async def test_authorize_workflow_run_fails_closed_on_oss_quota_mps_http_error(
     monkeypatch.setattr(
         quota_service,
         "get_effective_ai_model_configuration_for_workflow",
-        AsyncMock(return_value=_social_cangaroo_config()),
+        AsyncMock(return_value=_rilt_config()),
     )
     monkeypatch.setattr(
         quota_service.mps_service_key_client,
@@ -1181,7 +1181,7 @@ async def test_authorize_workflow_run_denies_when_oss_run_authorization_is_unrea
     monkeypatch.setattr(
         quota_service,
         "get_effective_ai_model_configuration_for_workflow",
-        AsyncMock(return_value=_social_cangaroo_config(managed_service_version=2)),
+        AsyncMock(return_value=_rilt_config(managed_service_version=2)),
     )
     monkeypatch.setattr(
         quota_service.mps_service_key_client,
@@ -1220,7 +1220,7 @@ async def test_authorize_workflow_run_fails_closed_when_storing_oss_correlation(
     monkeypatch.setattr(
         quota_service,
         "get_effective_ai_model_configuration_for_workflow",
-        AsyncMock(return_value=_social_cangaroo_config(managed_service_version=2)),
+        AsyncMock(return_value=_rilt_config(managed_service_version=2)),
     )
     monkeypatch.setattr(
         quota_service.mps_service_key_client,

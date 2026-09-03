@@ -41,7 +41,7 @@ jobs:
 
           if [ "${{ github.event_name }}" = "release" ]; then
             VERSION="${{ github.event.release.tag_name }}"
-            VERSION="${VERSION#social-cangaroo-}"
+            VERSION="${VERSION#rilt-}"
             VERSION="${VERSION#v}"
             PUSH_LATEST="true"
           else
@@ -62,10 +62,10 @@ jobs:
       fail-fast: false
       matrix:
         service:
-          - name: social-cangaroo-api
+          - name: rilt-api
             dockerfile: api/Dockerfile
             context: .
-          - name: social-cangaroo-ui
+          - name: rilt-ui
             dockerfile: ui/Dockerfile
             context: .
         platform:
@@ -141,16 +141,16 @@ jobs:
       - name: Download API digests
         uses: actions/download-artifact@v4
         with:
-          pattern: digest-social-cangaroo-api-*
+          pattern: digest-rilt-api-*
           merge-multiple: true
-          path: /tmp/digests/social-cangaroo-api
+          path: /tmp/digests/rilt-api
 
       - name: Download UI digests
         uses: actions/download-artifact@v4
         with:
-          pattern: digest-social-cangaroo-ui-*
+          pattern: digest-rilt-ui-*
           merge-multiple: true
-          path: /tmp/digests/social-cangaroo-ui
+          path: /tmp/digests/rilt-ui
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -210,10 +210,10 @@ jobs:
             docker buildx imagetools create "${gh_tags[@]}" $gh_refs
           }
 
-          inspect_digests social-cangaroo-api
-          inspect_digests social-cangaroo-ui
-          create_manifests social-cangaroo-api
-          create_manifests social-cangaroo-ui
+          inspect_digests rilt-api
+          inspect_digests rilt-ui
+          create_manifests rilt-api
+          create_manifests rilt-ui
 
   notify:
     needs:

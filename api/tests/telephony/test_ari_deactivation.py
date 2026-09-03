@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from api.errors.failure import SocialCangarooFailure, ErrorSource, ErrorType
+from api.errors.failure import ErrorSource, ErrorType, RiltFailure
 from api.services.telephony import ari_manager
 
 
@@ -66,12 +66,12 @@ def _connection() -> ari_manager.ARIConnection:
         ari_endpoint="http://pbx.example.com:8088",
         app_name="dograh",
         app_password="secret",
-        ws_client_name="social_cangaroo_ws",
+        ws_client_name="rilt_ws",
     )
 
 
-def _permanent_failure() -> SocialCangarooFailure:
-    return SocialCangarooFailure(
+def _permanent_failure() -> RiltFailure:
+    return RiltFailure(
         source=ErrorSource.TELEPHONY,
         type=ErrorType.CONFIG_ERROR,
         code="ari-401",
@@ -83,8 +83,8 @@ def _permanent_failure() -> SocialCangarooFailure:
     )
 
 
-def _transient_failure() -> SocialCangarooFailure:
-    return SocialCangarooFailure(
+def _transient_failure() -> RiltFailure:
+    return RiltFailure(
         source=ErrorSource.TELEPHONY,
         type=ErrorType.PROVIDER_ERROR,
         code="ari-connection",
@@ -232,7 +232,7 @@ async def test_immediate_clean_close_is_accounted_as_a_failure(
     assert conn._reconnect_delay > 1
 
 
-def _row(config_id: int, ws_client_name: str = "social_cangaroo_ws") -> SimpleNamespace:
+def _row(config_id: int, ws_client_name: str = "rilt_ws") -> SimpleNamespace:
     return SimpleNamespace(
         id=config_id,
         organization_id=100 + config_id,

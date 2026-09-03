@@ -1,6 +1,6 @@
 ---
 title: "Prerequisites"
-description: "System requirements and setup needed to run Social Cangaroo AI locally"
+description: "System requirements and setup needed to run AICall locally"
 ---
 
 ## System Requirements (Local Setup)
@@ -16,7 +16,7 @@ description: "System requirements and setup needed to run Social Cangaroo AI loc
 
 ## Software Requirements
 
-To run Social Cangaroo AI locally, make sure you have the following installed:
+To run AICall locally, make sure you have the following installed:
 
 - [Docker](https://docs.docker.com/get-docker/) (version 20.10 or later)
 - [curl](https://curl.se/download.html) - usually preinstalled on macOS/Linux
@@ -69,10 +69,10 @@ netstat -ano | findstr :3010
 
 ## Docker Registry Options
 
-Social Cangaroo images are available from two registries:
+AICall images are available from two registries:
 
 - **GitHub Container Registry (Default)**: `ghcr.io/ShoaibAhmedSoomro` - Recommended for most users
-- **Docker Hub**: `socialcangaroo` - Alternative registry
+- **Docker Hub**: `riltai` - Alternative registry
 
 To use a specific registry, set the `REGISTRY` environment variable when running the startup script:
 
@@ -82,13 +82,13 @@ To use a specific registry, set the `REGISTRY` environment variable when running
 REGISTRY=ghcr.io/ShoaibAhmedSoomro ./start_docker.sh
 
 # Using Docker Hub
-REGISTRY=socialcangaroo ./start_docker.sh
+REGISTRY=riltai ./start_docker.sh
 ```
 ```powershell Windows
 # Using GitHub Container Registry (recommended)
 $env:REGISTRY = 'ghcr.io/ShoaibAhmedSoomro'; .\start_docker.ps1
 
 # Using Docker Hub
-$env:REGISTRY = 'socialcangaroo'; .\start_docker.ps1
+$env:REGISTRY = 'riltai'; .\start_docker.ps1
 ```
 </CodeGroup>

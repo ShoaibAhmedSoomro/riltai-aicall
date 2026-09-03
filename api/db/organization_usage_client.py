@@ -213,9 +213,9 @@ class OrganizationUsageClient(BaseDBClient):
             total_tokens = 0
             total_duration_seconds = 0
             for run in runs:
-                social_cangaroo_tokens = 0
+                rilt_tokens = 0
                 call_duration = (run.usage_info or {}).get("call_duration_seconds", 0)
-                total_tokens += social_cangaroo_tokens
+                total_tokens += rilt_tokens
                 total_duration_seconds += int(round(call_duration))
 
                 ic = run.initial_context or {}
@@ -241,7 +241,7 @@ class OrganizationUsageClient(BaseDBClient):
                     "workflow_name": run.workflow.name if run.workflow else None,
                     "name": run.name,
                     "created_at": run.created_at.isoformat(),
-                    "social_cangaroo_token_usage": social_cangaroo_tokens,
+                    "rilt_token_usage": rilt_tokens,
                     "call_duration_seconds": int(round(call_duration)),
                     "recording_url": run.recording_url,
                     "transcript_url": run.transcript_url,
@@ -386,24 +386,24 @@ class OrganizationUsageClient(BaseDBClient):
             breakdown = []
             total_minutes = 0
             total_cost_usd = 0
-            total_social_cangaroo_tokens = 0
+            total_rilt_tokens = 0
 
             for row in daily_usage:
                 seconds = row.total_seconds or 0
                 minutes = seconds / 60
                 cost_usd = seconds * price_per_second_usd
-                social_cangaroo_tokens = cost_usd * 100  # 1 cent = 1 token
+                rilt_tokens = cost_usd * 100  # 1 cent = 1 token
 
                 total_minutes += minutes
                 total_cost_usd += cost_usd
-                total_social_cangaroo_tokens += social_cangaroo_tokens
+                total_rilt_tokens += rilt_tokens
 
                 breakdown.append(
                     {
                         "date": row.date.isoformat(),
                         "minutes": round(minutes, 1),
                         "cost_usd": round(cost_usd, 2),
-                        "social_cangaroo_tokens": round(social_cangaroo_tokens, 0),
+                        "rilt_tokens": round(rilt_tokens, 0),
                         "call_count": row.call_count,
                     }
                 )
@@ -412,7 +412,7 @@ class OrganizationUsageClient(BaseDBClient):
                 "breakdown": breakdown,
                 "total_minutes": round(total_minutes, 1),
                 "total_cost_usd": round(total_cost_usd, 2),
-                "total_social_cangaroo_tokens": round(total_social_cangaroo_tokens, 0),
+                "total_rilt_tokens": round(total_rilt_tokens, 0),
                 "currency": "USD",
             }
 

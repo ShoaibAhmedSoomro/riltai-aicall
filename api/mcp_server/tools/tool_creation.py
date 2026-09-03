@@ -1,4 +1,4 @@
-"""MCP tool for creating reusable Social Cangaroo tools."""
+"""MCP tool for creating reusable AICall tools."""
 
 from __future__ import annotations
 

@@ -54,7 +54,7 @@ def is_local_or_private_url(url: str) -> bool:
     ):
         return True
     # Carrier-grade NAT (RFC 6598) — behind NAT, not publicly reachable. Kept in
-    # sync with scripts/lib/setup_common.sh:social_cangaroo_is_local_ipv4.
+    # sync with scripts/lib/setup_common.sh:rilt_is_local_ipv4.
     return isinstance(ip, ipaddress.IPv4Address) and ip in ipaddress.ip_network(
         "100.64.0.0/10"
     )

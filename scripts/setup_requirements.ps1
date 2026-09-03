@@ -48,13 +48,13 @@ if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
     $env:Path = "$env:USERPROFILE\.local\bin;$env:Path"
 }
 
-# Install social-cangaroo API requirements first so pipecat's extras win on any
+# Install rilt API requirements first so pipecat's extras win on any
 # shared transitive dependencies (matches api/Dockerfile and CI workflow).
-Write-Host "Installing social-cangaroo API requirements..."
+Write-Host "Installing rilt API requirements..."
 uv pip install -r api/requirements.txt
 
 if ($Dev) {
-    Write-Host "Installing social-cangaroo API dev requirements..."
+    Write-Host "Installing rilt API dev requirements..."
     uv pip install -r api/requirements.dev.txt
 }
 

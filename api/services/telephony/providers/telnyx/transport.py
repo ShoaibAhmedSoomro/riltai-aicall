@@ -40,15 +40,15 @@ async def create_transport(
         )
 
     # Pipecat's TelnyxFrameSerializer names its params from the call's POV,
-    # not Social Cangaroo's: ``inbound_encoding`` is what we *send into the call*
-    # (Social Cangaroo → Telnyx), and ``outbound_encoding`` is what we *receive out of
-    # the call* (Telnyx → Social Cangaroo).
+    # not AICall's: ``inbound_encoding`` is what we *send into the call*
+    # (AICall → Telnyx), and ``outbound_encoding`` is what we *receive out of
+    # the call* (Telnyx → AICall).
     serializer = TelnyxFrameSerializer(
         stream_id=stream_id,
         call_control_id=call_control_id,
         api_key=api_key,
-        inbound_encoding="PCMU",  # Social Cangaroo → Telnyx; matches stream_bidirectional_codec
-        outbound_encoding=encoding,  # Telnyx → Social Cangaroo; from media_format.encoding
+        inbound_encoding="PCMU",  # AICall → Telnyx; matches stream_bidirectional_codec
+        outbound_encoding=encoding,  # Telnyx → AICall; from media_format.encoding
         transfer_strategy=TelnyxConferenceStrategy(),
         hangup_strategy=TelnyxHangupStrategy(),
     )

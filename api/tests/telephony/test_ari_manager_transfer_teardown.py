@@ -36,7 +36,7 @@ class _RecordingARIConnection(ARIConnection):
             ari_endpoint="http://asterisk.test:8088",
             app_name="dograh",
             app_password="secret",
-            ws_client_name="social_cangaroo_ws",
+            ws_client_name="rilt_ws",
         )
         self.deleted_bridges = []
         self.deleted_channels = []

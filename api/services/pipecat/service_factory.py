@@ -19,7 +19,7 @@ from api.services.configuration.options import (
 )
 from api.services.configuration.registry import ServiceProviders
 from api.services.pipecat.gemini_json_schema_adapter import (
-    SocialCangarooGeminiJSONSchemaAdapter,
+    RiltGeminiJSONSchemaAdapter,
 )
 from api.services.pipecat.minimax_tts import MiniMaxOwnedSessionTTSService
 from api.utils.url_security import validate_user_configured_service_url
@@ -41,10 +41,12 @@ from pipecat.services.deepgram.flux.stt import (
 )
 from pipecat.services.deepgram.stt import DeepgramSTTService, DeepgramSTTSettings
 from pipecat.services.deepgram.tts import DeepgramTTSService, DeepgramTTSSettings
-from pipecat.services.dograh.flux.stt import DograhFluxSTTService as SocialCangarooFluxSTTService
-from pipecat.services.dograh.llm import DograhLLMService as SocialCangarooLLMService
-from pipecat.services.dograh.stt import DograhSTTService as SocialCangarooSTTService, DograhSTTSettings as SocialCangarooSTTSettings
-from pipecat.services.dograh.tts import DograhTTSService as SocialCangarooTTSService, DograhTTSSettings as SocialCangarooTTSSettings
+from pipecat.services.dograh.flux.stt import DograhFluxSTTService as RiltFluxSTTService
+from pipecat.services.dograh.llm import DograhLLMService as RiltLLMService
+from pipecat.services.dograh.stt import DograhSTTService as RiltSTTService
+from pipecat.services.dograh.stt import DograhSTTSettings as RiltSTTSettings
+from pipecat.services.dograh.tts import DograhTTSService as RiltTTSService
+from pipecat.services.dograh.tts import DograhTTSSettings as RiltTTSSettings
 from pipecat.services.elevenlabs.stt import (
     CommitStrategy,
     ElevenLabsRealtimeSTTService,
@@ -168,7 +170,7 @@ DEEPGRAM_FLUX_LANGUAGE_HINTS = {
 }
 
 
-def social_cangaroo_stt_uses_flux_language(language: str | None) -> bool:
+def rilt_stt_uses_flux_language(language: str | None) -> bool:
     language = language or "multi"
     return language in DEEPGRAM_FLUX_MULTILINGUAL_LANGUAGE_OPTIONS
 
@@ -222,19 +224,19 @@ def _elevenlabs_realtime_stt_host(base_url: str) -> str:
 def stt_uses_external_turns(user_config) -> bool:
     if user_config.stt.provider == ServiceProviders.DEEPGRAM.value:
         return user_config.stt.model in DEEPGRAM_FLUX_MODELS
-    if user_config.stt.provider == ServiceProviders.SOCIAL_CANGAROO.value:
-        return social_cangaroo_stt_uses_flux_language(getattr(user_config.stt, "language", None))
+    if user_config.stt.provider == ServiceProviders.RILT.value:
+        return rilt_stt_uses_flux_language(getattr(user_config.stt, "language", None))
     if user_config.stt.provider == ServiceProviders.CARTESIA.value:
         return user_config.stt.model == "ink-2"
     return False
 
 
-class SocialCangarooGoogleLLMService(GoogleLLMService):
-    adapter_class = SocialCangarooGeminiJSONSchemaAdapter
+class RiltGoogleLLMService(GoogleLLMService):
+    adapter_class = RiltGeminiJSONSchemaAdapter
 
 
-class SocialCangarooGoogleVertexLLMService(GoogleVertexLLMService):
-    adapter_class = SocialCangarooGeminiJSONSchemaAdapter
+class RiltGoogleVertexLLMService(GoogleVertexLLMService):
+    adapter_class = RiltGeminiJSONSchemaAdapter
 
 
 def _validate_runtime_service_url(url: str, field_name: str) -> None:
@@ -346,12 +348,12 @@ def create_stt_service(
             ),
             sample_rate=audio_config.transport_in_sample_rate,
         )
-    elif user_config.stt.provider == ServiceProviders.SOCIAL_CANGAROO.value:
+    elif user_config.stt.provider == ServiceProviders.RILT.value:
         base_url = MPS_API_URL.replace("http://", "ws://").replace("https://", "wss://")
         language = getattr(user_config.stt, "language", None) or "multi"
 
-        if social_cangaroo_stt_uses_flux_language(language):
-            # Social Cangaroo's Flux proxy only supports multilingual auto-detect and the
+        if rilt_stt_uses_flux_language(language):
+            # AICall's Flux proxy only supports multilingual auto-detect and the
             # same language hint subset as Deepgram Flux multilingual.
             settings_kwargs = {
                 "model": "flux-general-multi",
@@ -363,7 +365,7 @@ def create_stt_service(
             language_hint = DEEPGRAM_FLUX_LANGUAGE_HINTS.get(language)
             if language_hint:
                 settings_kwargs["language_hints"] = [language_hint]
-            return SocialCangarooFluxSTTService(
+            return RiltFluxSTTService(
                 base_url=base_url,
                 api_key=user_config.stt.api_key,
                 correlation_id=correlation_id,
@@ -372,11 +374,11 @@ def create_stt_service(
                 sample_rate=audio_config.transport_in_sample_rate,
             )
 
-        return SocialCangarooSTTService(
+        return RiltSTTService(
             base_url=base_url,
             api_key=user_config.stt.api_key,
             correlation_id=correlation_id,
-            settings=SocialCangarooSTTSettings(
+            settings=RiltSTTSettings(
                 model=user_config.stt.model,
                 language=language,
             ),
@@ -685,14 +687,14 @@ def create_tts_service(
             skip_aggregator_types=["recording_router", "recording"],
             silence_time_s=1.0,
         )
-    elif user_config.tts.provider == ServiceProviders.SOCIAL_CANGAROO.value:
+    elif user_config.tts.provider == ServiceProviders.RILT.value:
         # Convert HTTP URL to WebSocket URL for TTS
         base_url = MPS_API_URL.replace("http://", "ws://").replace("https://", "wss://")
-        return SocialCangarooTTSService(
+        return RiltTTSService(
             base_url=base_url,
             api_key=user_config.tts.api_key,
             correlation_id=correlation_id,
-            settings=SocialCangarooTTSSettings(
+            settings=RiltTTSSettings(
                 model=user_config.tts.model,
                 voice=user_config.tts.voice,
                 speed=user_config.tts.speed,
@@ -957,7 +959,7 @@ def create_llm_service_from_provider(
 
     Args:
         usage_context: Optional tag describing what the LLM instance is used for
-            (e.g. "voicemail_detection"). Sent as request metadata by the Social Cangaroo
+            (e.g. "voicemail_detection"). Sent as request metadata by the AICall
             provider; ignored by other providers.
     """
     logger.info(f"Creating LLM service: provider={provider}, model={model}")
@@ -1000,12 +1002,12 @@ def create_llm_service_from_provider(
         )
     elif provider == ServiceProviders.GOOGLE.value:
         model = _migrate_deprecated_google_model(model)
-        return SocialCangarooGoogleLLMService(
+        return RiltGoogleLLMService(
             api_key=api_key,
             settings=GoogleLLMSettings(model=model, temperature=0.1),
         )
     elif provider == ServiceProviders.GOOGLE_VERTEX.value:
-        return SocialCangarooGoogleVertexLLMService(
+        return RiltGoogleVertexLLMService(
             credentials=credentials,
             project_id=project_id,
             location=location or "us-east4",
@@ -1019,8 +1021,8 @@ def create_llm_service_from_provider(
             endpoint=endpoint,
             settings=AzureLLMSettings(model=model, temperature=0.1),
         )
-    elif provider == ServiceProviders.SOCIAL_CANGAROO.value:
-        return SocialCangarooLLMService(
+    elif provider == ServiceProviders.RILT.value:
+        return RiltLLMService(
             base_url=f"{MPS_API_URL}/api/v1/llm",
             api_key=api_key,
             correlation_id=correlation_id,
@@ -1094,7 +1096,7 @@ def create_realtime_llm_service(user_config, audio_config: "AudioConfig"):
 
     if provider == ServiceProviders.OPENAI_REALTIME.value:
         from api.services.pipecat.realtime.openai_realtime import (
-            SocialCangarooOpenAIRealtimeLLMService,
+            RiltOpenAIRealtimeLLMService,
         )
         from pipecat.services.openai.realtime.events import (
             AudioConfiguration,
@@ -1111,9 +1113,9 @@ def create_realtime_llm_service(user_config, audio_config: "AudioConfig"):
         if language:
             transcription_kwargs["language"] = language
 
-        return SocialCangarooOpenAIRealtimeLLMService(
+        return RiltOpenAIRealtimeLLMService(
             api_key=api_key,
-            settings=SocialCangarooOpenAIRealtimeLLMService.Settings(
+            settings=RiltOpenAIRealtimeLLMService.Settings(
                 model=model,
                 session_properties=SessionProperties(
                     audio=AudioConfiguration(
@@ -1131,7 +1133,7 @@ def create_realtime_llm_service(user_config, audio_config: "AudioConfig"):
         )
     elif provider == ServiceProviders.GROK_REALTIME.value:
         from api.services.pipecat.realtime.grok_realtime import (
-            SocialCangarooGrokRealtimeLLMService,
+            RiltGrokRealtimeLLMService,
         )
         from pipecat.services.xai.realtime.events import (
             AudioConfiguration,
@@ -1144,9 +1146,9 @@ def create_realtime_llm_service(user_config, audio_config: "AudioConfig"):
         if grok_voice.lower() in {"ara", "rex", "sal", "eve", "leo"}:
             grok_voice = grok_voice.lower()
 
-        return SocialCangarooGrokRealtimeLLMService(
+        return RiltGrokRealtimeLLMService(
             api_key=api_key,
-            settings=SocialCangarooGrokRealtimeLLMService.Settings(
+            settings=RiltGrokRealtimeLLMService.Settings(
                 model=model,
                 session_properties=SessionProperties(
                     voice=grok_voice,
@@ -1160,25 +1162,25 @@ def create_realtime_llm_service(user_config, audio_config: "AudioConfig"):
         )
     elif provider == ServiceProviders.ULTRAVOX_REALTIME.value:
         from api.services.pipecat.realtime.ultravox_realtime import (
-            SocialCangarooUltravoxOneShotInputParams,
-            SocialCangarooUltravoxRealtimeLLMService,
+            RiltUltravoxOneShotInputParams,
+            RiltUltravoxRealtimeLLMService,
         )
 
-        return SocialCangarooUltravoxRealtimeLLMService(
-            params=SocialCangarooUltravoxOneShotInputParams(
+        return RiltUltravoxRealtimeLLMService(
+            params=RiltUltravoxOneShotInputParams(
                 api_key=api_key,
                 model=model,
                 voice=voice,
                 output_medium="voice",
             ),
-            settings=SocialCangarooUltravoxRealtimeLLMService.Settings(
+            settings=RiltUltravoxRealtimeLLMService.Settings(
                 model=model,
                 output_medium="voice",
             ),
         )
     elif provider == ServiceProviders.GOOGLE_REALTIME.value:
         from api.services.pipecat.realtime.gemini_live import (
-            SocialCangarooGeminiLiveLLMService,
+            RiltGeminiLiveLLMService,
         )
 
         # Gemini Live enables input/output audio transcription by default
@@ -1192,13 +1194,13 @@ def create_realtime_llm_service(user_config, audio_config: "AudioConfig"):
         temperature = getattr(realtime_config, "temperature", None)
         if temperature is not None:
             settings_kwargs["temperature"] = temperature
-        return SocialCangarooGeminiLiveLLMService(
+        return RiltGeminiLiveLLMService(
             api_key=api_key,
-            settings=SocialCangarooGeminiLiveLLMService.Settings(**settings_kwargs),
+            settings=RiltGeminiLiveLLMService.Settings(**settings_kwargs),
         )
     elif provider == ServiceProviders.GOOGLE_VERTEX_REALTIME.value:
         from api.services.pipecat.realtime.gemini_live_vertex import (
-            SocialCangarooGeminiLiveVertexLLMService,
+            RiltGeminiLiveVertexLLMService,
         )
 
         project_id = getattr(realtime_config, "project_id", None)
@@ -1214,15 +1216,15 @@ def create_realtime_llm_service(user_config, audio_config: "AudioConfig"):
         temperature = getattr(realtime_config, "temperature", None)
         if temperature is not None:
             settings_kwargs["temperature"] = temperature
-        return SocialCangarooGeminiLiveVertexLLMService(
+        return RiltGeminiLiveVertexLLMService(
             credentials=credentials,
             project_id=project_id,
             location=location,
-            settings=SocialCangarooGeminiLiveVertexLLMService.Settings(**settings_kwargs),
+            settings=RiltGeminiLiveVertexLLMService.Settings(**settings_kwargs),
         )
     elif provider == ServiceProviders.AZURE_REALTIME.value:
         from api.services.pipecat.realtime.azure_realtime import (
-            SocialCangarooAzureRealtimeLLMService,
+            RiltAzureRealtimeLLMService,
         )
         from pipecat.services.openai.realtime.events import (
             AudioConfiguration,
@@ -1261,10 +1263,10 @@ def create_realtime_llm_service(user_config, audio_config: "AudioConfig"):
                 "",
             )
         )
-        return SocialCangarooAzureRealtimeLLMService(
+        return RiltAzureRealtimeLLMService(
             api_key=api_key,
             base_url=wss_url,
-            settings=SocialCangarooAzureRealtimeLLMService.Settings(
+            settings=RiltAzureRealtimeLLMService.Settings(
                 model=model,
                 session_properties=SessionProperties(
                     audio=AudioConfiguration(

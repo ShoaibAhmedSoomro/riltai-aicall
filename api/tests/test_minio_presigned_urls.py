@@ -96,7 +96,9 @@ async def test_force_inline_sets_response_overrides(fs, key, content_type):
 
 
 async def test_force_inline_ignored_for_other_types(fs):
-    qs = parse_qs(urlparse(await fs.aget_signed_url("a/b.csv", force_inline=True)).query)
+    qs = parse_qs(
+        urlparse(await fs.aget_signed_url("a/b.csv", force_inline=True)).query
+    )
     assert "response-content-disposition" not in qs
 
 

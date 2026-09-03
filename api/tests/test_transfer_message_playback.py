@@ -1,6 +1,6 @@
 """Tests for the pre-transfer message playing before the call is handed off.
 
-An external PBX (e.g. VICIdial) pulls the customer off the Social Cangaroo leg as soon
+An external PBX (e.g. VICIdial) pulls the customer off the AICall leg as soon
 as its transfer API returns, so queueing the "transferring you now" message and
 immediately calling that API means the caller never hears it. These tests cover
 the speech-playback tracking primitive on the engine and the ordering it

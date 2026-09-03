@@ -665,7 +665,7 @@ export interface components {
             parameters?: components["schemas"]["ToolParameter"][] | null;
             /**
              * Preset Parameters
-             * @description Parameters injected by Social Cangaroo from fixed values or workflow context templates.
+             * @description Parameters injected by AICall from fixed values or workflow context templates.
              */
             preset_parameters?: components["schemas"]["PresetToolParameter"][] | null;
             /**
@@ -753,7 +753,7 @@ export interface components {
             timeout_ms: number;
             /**
              * Wait Message
-             * @description Optional short message played while Social Cangaroo resolves routing.
+             * @description Optional short message played while AICall resolves routing.
              */
             wait_message?: string | null;
             /**
@@ -763,7 +763,7 @@ export interface components {
             parameters?: components["schemas"]["ToolParameter"][] | null;
             /**
              * Preset Parameters
-             * @description Parameters injected by Social Cangaroo from fixed values or workflow context templates.
+             * @description Parameters injected by AICall from fixed values or workflow context templates.
              */
             preset_parameters?: components["schemas"]["PresetToolParameter"][] | null;
         };
@@ -925,7 +925,7 @@ export interface components {
         };
         /**
          * PresetToolParameter
-         * @description A parameter injected by Social Cangaroo at runtime.
+         * @description A parameter injected by AICall at runtime.
          */
         PresetToolParameter: {
             /**

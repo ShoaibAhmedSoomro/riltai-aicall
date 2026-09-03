@@ -117,7 +117,7 @@ def _envelope(manifest=None, schema_version=NOVEUM_SNAPSHOT_SCHEMA_VERSION):
     }
 
 
-def _completion_context(logs=None, recording_url="https://social_cangaroo/rec.wav"):
+def _completion_context(logs=None, recording_url="https://rilt/rec.wav"):
     return types.SimpleNamespace(
         workflow_run_id=42,
         workflow_run=types.SimpleNamespace(
@@ -247,7 +247,7 @@ async def test_on_call_finished_returns_envelope_with_disposition():
     observer.build_payload_snapshot.return_value = _trace_snapshot()
     manifest = [{"audio_uuid": "a1", "storage_key": "k1", "kind": "tts"}]
     session = NoveumRuntimeSession(
-        observer, manifest=manifest, call_attributes={"social_cangaroo.workflow_run_id": 42}
+        observer, manifest=manifest, call_attributes={"rilt.workflow_run_id": 42}
     )
 
     result = await session.on_call_finished(
@@ -259,8 +259,8 @@ async def test_on_call_finished_returns_envelope_with_disposition():
     assert envelope["schema_version"] == NOVEUM_SNAPSHOT_SCHEMA_VERSION
     assert envelope["audio_manifest"] == manifest
     attrs = envelope["trace"]["attributes"]
-    assert attrs["social_cangaroo.workflow_run_id"] == 42
-    assert attrs["social_cangaroo.call_disposition"] == "completed"
+    assert attrs["rilt.workflow_run_id"] == 42
+    assert attrs["rilt.call_disposition"] == "completed"
 
 
 async def test_on_call_finished_none_when_no_trace():
@@ -432,7 +432,7 @@ async def test_completion_happy_path_uploads_audio_and_sends_trace():
     assert call_names.index("send_trace_dict") < call_names.index("send_audio_sync")
     sent_trace = client.send_trace_dict.call_args.args[0]
     assert sent_trace["trace_id"] == "trace-1"
-    assert sent_trace["attributes"]["social_cangaroo.recording_url"] == "https://social_cangaroo/rec.wav"
+    assert sent_trace["attributes"]["rilt.recording_url"] == "https://rilt/rec.wav"
     # Placeholder live-phase identity must be replaced with the node's values.
     assert sent_trace["attributes"]["noveum.project"] == "voice-agent"
     assert sent_trace["attributes"]["noveum.environment"] == "production"
@@ -446,11 +446,11 @@ async def test_completion_happy_path_uploads_audio_and_sends_trace():
 
 
 async def test_completion_passes_agent_version_as_service_version():
-    # social_cangaroo.agent_version stamped in the live phase must surface as the
+    # rilt.agent_version stamped in the live phase must surface as the
     # completion client's service_version (stringified).
     envelope = {
         "schema_version": NOVEUM_SNAPSHOT_SCHEMA_VERSION,
-        "trace": _trace_snapshot(**{"social_cangaroo.agent_version": 2}),
+        "trace": _trace_snapshot(**{"rilt.agent_version": 2}),
         "audio_manifest": [],
     }
     context = _completion_context(logs={NOVEUM_PAYLOAD_LOG_KEY: envelope})
@@ -662,7 +662,7 @@ async def test_read_stored_audio_cleans_temp_on_cancellation(tmp_path):
 async def test_envelope_sanitized_to_pure_json():
     # A non-JSON value in span attributes must not survive into the envelope:
     # workflow_run.logs is a JSON column and one bad value would make the
-    # whole commit (including social_cangaroo's own keys) fail. default=str converts.
+    # whole commit (including rilt's own keys) fail. default=str converts.
     from datetime import UTC as _UTC
     from datetime import datetime as _dt
 
@@ -673,7 +673,7 @@ async def test_envelope_sanitized_to_pure_json():
         "spans": [{"attributes": {"weird.timestamp": _dt(2026, 1, 1, tzinfo=_UTC)}}],
     }
 
-    envelope = build_payload_envelope(observer, [], {"social_cangaroo.workflow_run_id": 42})
+    envelope = build_payload_envelope(observer, [], {"rilt.workflow_run_id": 42})
 
     assert envelope is not None
     stamped = envelope["trace"]["spans"][0]["attributes"]["weird.timestamp"]

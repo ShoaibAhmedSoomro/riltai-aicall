@@ -2,13 +2,13 @@
 
 Two shapes share this provider and they fail differently:
 
-* **Social-Cangaroo-managed** (``managed_by == "social-cangaroo-mps"``) — Social Cangaroo owns the
+* **RiltAI-managed** (``managed_by == "rilt-mps"``) — AICall owns the
   Cloudonix domain and hands it to the customer empty. Nothing routes until
   the customer points their own SIP carrier or PBX at it, so a missing
   outbound trunk means there is no path off the platform at all.
 * **Customer-owned** — the customer brought their own Cloudonix account and
-  may already have trunks configured in the Cockpit that Social Cangaroo cannot see.
-  A missing Social-Cangaroo-managed trunk is then only a missing pin, not a dead end.
+  may already have trunks configured in the Cockpit that AICall cannot see.
+  A missing RiltAI-managed trunk is then only a missing pin, not a dead end.
 
 Either way Cloudonix rejects an outbound call with no ``caller-id``, so at
 least one active phone number is required in both.
@@ -24,8 +24,8 @@ from api.services.telephony.registry import (
 
 from .config import MANAGED_BY
 
-MANAGED_DOCS_URL = "https://docs.socialcangaroo.com/integrations/telephony/social-cangaroo-sip"
-SELF_SERVE_DOCS_URL = "https://docs.socialcangaroo.com/integrations/telephony/cloudonix"
+MANAGED_DOCS_URL = "https://docs.rilt.ai/integrations/telephony/rilt-sip"
+SELF_SERVE_DOCS_URL = "https://docs.rilt.ai/integrations/telephony/cloudonix"
 
 
 def resolve_setup_checklist(
@@ -42,7 +42,7 @@ def resolve_setup_checklist(
                 "SIP domain provisioned" if managed else "Cloudonix credentials saved"
             ),
             description=(
-                "Social Cangaroo provisioned a Cloudonix SIP domain for this "
+                "AICall provisioned a Cloudonix SIP domain for this "
                 "organization. Its inbound hostname and outbound origin IP "
                 "are listed under SIP connectivity below — you will need "
                 "them when configuring your carrier."
@@ -59,10 +59,10 @@ def resolve_setup_checklist(
             description=(
                 "Under Outbound trunks, add a trunk pointing at your SIP "
                 "carrier or PBX and allow its origin IP on your side. "
-                "Without one Social Cangaroo has nowhere to send outbound calls."
+                "Without one AICall has nowhere to send outbound calls."
                 if managed
                 else "Optional: add a trunk under Outbound trunks to pin "
-                "Social Cangaroo's calls to one route. Without it Cloudonix picks "
+                "AICall's calls to one route. Without it Cloudonix picks "
                 "among the active trunks on your domain."
             ),
             complete=state.enabled_trunk_count > 0,
@@ -91,11 +91,11 @@ def resolve_setup_checklist(
         steps.append(
             SetupStep(
                 key="trunk_assignment",
-                title="Tell Social Cangaroo which trunk each number dials out on",
+                title="Tell AICall which trunk each number dials out on",
                 description=(
                     "This configuration has more than one trunk, so a number's "
                     "carrier is no longer obvious. Assign each phone number to "
-                    "the trunk whose carrier authorised it — otherwise Social Cangaroo "
+                    "the trunk whose carrier authorised it — otherwise AICall "
                     "cannot pin the call and Cloudonix picks among your active "
                     "trunks."
                 ),

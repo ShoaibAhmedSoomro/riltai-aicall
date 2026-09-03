@@ -7,7 +7,7 @@ does what it was asked and no more.
 
 This used to be implicit: the first configuration an organization created
 became its default. That silently handed the flag to the SIP configuration
-Social Cangaroo provisions at signup — the one row guaranteed not to be able to place a
+AICall provisions at signup — the one row guaranteed not to be able to place a
 call — and then refused to move it when the customer added a real provider.
 """
 
@@ -41,7 +41,7 @@ async def test_creating_a_configuration_never_claims_the_default(
 ):
     organization = await _organization(async_session)
 
-    first = await _config(db_session, organization, "Social Cangaroo Cloudonix SIP", "cloudonix")
+    first = await _config(db_session, organization, "AICall Cloudonix SIP", "cloudonix")
     second = await _config(db_session, organization, "Twilio", "twilio")
 
     assert first.is_default_outbound is False
@@ -53,7 +53,7 @@ async def test_creating_a_configuration_never_claims_the_default(
 async def test_the_caller_asking_for_default_gets_it(async_session, db_session):
     organization = await _organization(async_session)
 
-    await _config(db_session, organization, "Social Cangaroo Cloudonix SIP", "cloudonix")
+    await _config(db_session, organization, "AICall Cloudonix SIP", "cloudonix")
     chosen = await _config(
         db_session, organization, "Twilio", "twilio", is_default_outbound=True
     )
@@ -126,7 +126,7 @@ async def test_setting_the_default_explicitly_is_how_it_moves(
     organization = await _organization(async_session)
 
     provisioned = await _config(
-        db_session, organization, "Social Cangaroo Cloudonix SIP", "cloudonix"
+        db_session, organization, "AICall Cloudonix SIP", "cloudonix"
     )
     customer = await _config(db_session, organization, "Twilio", "twilio")
 

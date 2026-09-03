@@ -2,7 +2,7 @@
 //
 // Regenerate with `./scripts/generate_sdk.sh`.
 //
-// `SocialCangarooClient` extends this base to get HTTP methods for every route
+// `RiltClient` extends this base to get HTTP methods for every route
 // decorated with `sdk_expose(...)`. Request/response types come from
 // `_generated_models` (openapi-typescript output, --root-types).
 

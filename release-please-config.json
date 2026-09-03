@@ -2,7 +2,7 @@
   "packages": {
     ".": {
       "release-type": "simple",
-      "package-name": "social-cangaroo",
+      "package-name": "rilt",
       "changelog-type": "github",
       "changelog-sections": [
         {

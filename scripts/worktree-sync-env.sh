@@ -53,8 +53,8 @@ UENV="$ROOT/ui/.env"
 # --- 1. absolute paths -------------------------------------------------------
 
 # Rewrite every "$MAIN/..." path in an env file to the same path under "$ROOT".
-# $ROOT can itself contain $MAIN as a string prefix (.../social-cangaroo versus
-# .../social-cangaroo.worktrees/x), so already-correct occurrences are parked on a
+# $ROOT can itself contain $MAIN as a string prefix (.../rilt versus
+# .../rilt.worktrees/x), so already-correct occurrences are parked on a
 # sentinel character first -- otherwise a second run would rewrite the paths the
 # first run just produced.
 SENTINEL="$(printf '\001')"

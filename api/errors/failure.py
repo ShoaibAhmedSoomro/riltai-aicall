@@ -66,8 +66,8 @@ _HTTP_STATUS_IN_MESSAGE_RE = re.compile(
     r"(?i)\b(?:http(?:\s+status)?|status(?:_code)?)\s*[:=]?\s*(\d{3})\b"
 )
 _MAX_MESSAGE_LENGTH = 4000
-_FAILURE_METADATA_ATTR = "_social_cangaroo_failure_metadata"
-_FAILURE_REPORTED_ATTR = "_social_cangaroo_failure_reported"
+_FAILURE_METADATA_ATTR = "_rilt_failure_metadata"
+_FAILURE_REPORTED_ATTR = "_rilt_failure_reported"
 
 
 def _redact_quoted_secret_assignment(match: re.Match[str]) -> str:
@@ -121,10 +121,10 @@ def _resolve_error_owner(
     owner the seam declared: the seam knows whose credentials were in play,
     which the shape of the exception cannot tell us. ``system_error`` used to
     force operator here, which silently overrode seams that had correctly said
-    "user" and made every unclassifiable provider error look like a Social Cangaroo bug.
+    "user" and made every unclassifiable provider error look like a AICall bug.
 
     An unstated owner still falls back to operator — an unattributed failure is
-    Social Cangaroo's to investigate until a seam claims otherwise.
+    AICall's to investigate until a seam claims otherwise.
     """
 
     if error_type in (ErrorType.CONFIG_ERROR, ErrorType.QUOTA_ERROR):
@@ -137,7 +137,7 @@ def _resolve_error_owner(
 
 
 @dataclass
-class SocialCangarooFailure:
+class RiltFailure:
     source: ErrorSource
     type: ErrorType
     code: str
@@ -179,7 +179,7 @@ def _external_message(source: ErrorSource, error_type: ErrorType) -> str:
         return f"The {label} account has insufficient quota or credits."
     if error_type == ErrorType.PROVIDER_ERROR:
         return f"The external {label} service is temporarily unavailable."
-    return f"Social Cangaroo encountered an internal error while processing {label}."
+    return f"AICall encountered an internal error while processing {label}."
 
 
 def _valid_http_status(value: object) -> int | None:
@@ -267,7 +267,7 @@ def classify_http_response(
     provider_error_code: object | None = None,
     error_owner: ErrorOwner | str | None = None,
     context: dict[str, Any] | None = None,
-) -> SocialCangarooFailure:
+) -> RiltFailure:
     """Classify an HTTP response at a known external boundary."""
 
     normalized_provider = _normalize_provider(provider)
@@ -296,7 +296,7 @@ def classify_http_response(
         detail = str(status_code)
 
     code_provider = normalized_provider or source.value.replace("_", "-")
-    return SocialCangarooFailure(
+    return RiltFailure(
         source=source,
         type=error_type,
         code=f"{code_provider}-{detail}",
@@ -317,7 +317,7 @@ def classify_message(
     provider: object | None = None,
     error_owner: ErrorOwner | str | None = None,
     context: dict[str, Any] | None = None,
-) -> SocialCangarooFailure:
+) -> RiltFailure:
     """Classify string-only errors using protocol signals or the safe default."""
 
     internal_message = redact_failure_message(message)
@@ -343,7 +343,7 @@ def classify_message(
         error_type, detail, retryable = ErrorType.SYSTEM_ERROR, "unknown", None
 
     code_provider = normalized_provider or source.value.replace("_", "-")
-    return SocialCangarooFailure(
+    return RiltFailure(
         source=source,
         type=error_type,
         code=f"{code_provider}-{detail}",
@@ -363,7 +363,7 @@ def classify_exception(
     provider: object | None = None,
     error_owner: ErrorOwner | str | None = None,
     context: dict[str, Any] | None = None,
-) -> SocialCangarooFailure:
+) -> RiltFailure:
     """Pure exception classifier used by all execution seams."""
 
     failure_context = dict(context or {})
@@ -418,10 +418,10 @@ def classify_exception(
             if isinstance(exc, httpx.TimeoutException | TimeoutError)
             else ("connection" if transient else "unknown")
         )
-        return SocialCangarooFailure(
+        return RiltFailure(
             source=source,
             type=ErrorType.SYSTEM_ERROR,
-            code=f"social-cangaroo-{detail_code}",
+            code=f"rilt-{detail_code}",
             internal_message=internal_message,
             external_message=_external_message(source, ErrorType.SYSTEM_ERROR),
             provider="dograh",
@@ -462,7 +462,7 @@ def classify_exception(
     detail_code = "connection" if transient_exception else "unknown"
     if isinstance(exc, httpx.TimeoutException | TimeoutError):
         detail_code = "timeout"
-    return SocialCangarooFailure(
+    return RiltFailure(
         source=source,
         type=error_type,
         code=f"{code_provider}-{detail_code}",
@@ -582,7 +582,7 @@ def failure_metadata_for_processor(processor: object | None) -> ServiceFailureMe
         # path if the configuration registry is unavailable during startup.
         pass
 
-    # A Social-Cangaroo-prefixed wrapper is not sufficient evidence that the dependency is
+    # A Rilt-prefixed wrapper is not sufficient evidence that the dependency is
     # operator-owned; several BYOK adapters use that prefix. Only factory metadata
     # is authoritative for ownership.
     return ServiceFailureMetadata(source, provider, ErrorOwner.OPERATOR)
@@ -605,7 +605,7 @@ def _safe_log_context(context: dict[str, Any]) -> dict[str, Any]:
 
 
 def log_failure(
-    failure: SocialCangarooFailure,
+    failure: RiltFailure,
     *,
     level: str = "ERROR",
     **extra_context: Any,
@@ -634,7 +634,7 @@ def log_failure(
         )
         bound.opt(depth=1).log(
             level.upper(),
-            "SOCIAL_CANGAROO_FAILURE [src={} type={} code={}] [owner={}] {}",
+            "RILT_FAILURE [src={} type={} code={}] [owner={}] {}",
             failure.source.value,
             failure.type.value,
             failure.code,

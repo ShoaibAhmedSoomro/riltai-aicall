@@ -88,13 +88,13 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Social Cangaroo API",
-    description="API for the Social Cangaroo app",
+    title="AICall API",
+    description="API for the AICall app",
     version="1.0.0",
     openapi_url=f"{API_PREFIX}/openapi.json",
     lifespan=lifespan,
     servers=[
-        {"url": "https://app.socialcangaroo.com", "description": "Production"},
+        {"url": "https://aicall.rilt.ai", "description": "Production"},
         {"url": "http://localhost:8000", "description": "Local development"},
     ],
 )
@@ -105,7 +105,7 @@ async def handle_mps_unavailable_error(
     _request: Request,
     _exc: MPSUnavailableError,
 ) -> JSONResponse:
-    """Tell callers this is a Social Cangaroo outage, not invalid customer config."""
+    """Tell callers this is a AICall outage, not invalid customer config."""
 
     return JSONResponse(
         status_code=503,

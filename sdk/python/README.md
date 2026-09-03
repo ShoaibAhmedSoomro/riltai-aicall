@@ -1,13 +1,13 @@
-# social-cangaroo-sdk
+# rilt-sdk
 
-Typed builder for Social Cangaroo voice-AI workflows. Fetches the node-spec catalog from
-the Social Cangaroo backend at session start, validates every call against it at the
+Typed builder for AICall voice-AI workflows. Fetches the node-spec catalog from
+the AICall backend at session start, validates every call against it at the
 call site, and produces `ReactFlowDTO`-compatible JSON.
 
 ## Install
 
 ```bash
-pip install social-cangaroo-sdk
+pip install rilt-sdk
 ```
 
 For local development against a checked-out monorepo:
@@ -19,9 +19,9 @@ pip install -e sdk/python/
 ## Usage
 
 ```python
-from social_cangaroo_sdk import SocialCangarooClient, Workflow
+from rilt_sdk import RiltClient, Workflow
 
-with SocialCangarooClient(base_url="http://localhost:8000", api_key="...") as client:
+with RiltClient(base_url="http://localhost:8000", api_key="...") as client:
     wf = Workflow(client=client, name="loan_qualification")
 
     start = wf.add(
@@ -68,8 +68,8 @@ through (compound invariants, cross-field rules).
 ## Environment
 
 ```bash
-SOCIAL_CANGAROO_API_URL=http://localhost:8000   # default
-SOCIAL_CANGAROO_API_KEY=sk-...                  # sent as X-API-Key
+RILT_API_URL=http://localhost:8000   # default
+RILT_API_KEY=sk-...                  # sent as X-API-Key
 ```
 
 ## License

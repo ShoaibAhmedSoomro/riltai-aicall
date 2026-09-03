@@ -47,100 +47,111 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Palette derived from the brand lockup (logo-socialcangaroo/):
-     #f1924e  oklch(0.747 0.142 54)  kangaroo orange — the single accent
-     #2b2b2b  oklch(0.289 0.006 54)  wordmark ink — text, primary surfaces
+   Palette derived from the brand lockup (logo-rilt/):
+     #000000 / #ffffff   the artwork is pure monochrome — it contains no accent
 
-   The logo's own structure sets the rule: near-black carries the weight, the
-   orange appears once. So ink drives `--primary`/`--foreground` and orange is
-   reserved for `--cta`, focus rings, and the first chart series. Neutrals carry
-   a deliberate sliver of chroma at the orange's hue (54) so the greys read as
-   part of the same family rather than stock shadcn slate.
+   So the palette contains none either. Neutrals sit at chroma 0, and the one
+   bold surface is ink: --cta is near-black with white on it, which is the
+   logo's own contrast rather than an invented brand colour. --primary and
+   --foreground are the same ink, so buttons, headings and body text read as one
+   material.
+
+   Contrast was measured (oklch → sRGB → WCAG), not eyeballed. Every text pair
+   clears AA; the ratios are noted inline. Charts are the deliberate exception:
+   categorical series need hue to stay distinguishable, so --chart-* carry a
+   cool ramp that is explicitly NOT part of the brand.
    ──────────────────────────────────────────────────────────────────────────── */
 :root {
   --radius: 0.625rem;
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.289 0.006 54);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.289 0.006 54);
-  --primary: oklch(0.289 0.006 54);
-  --primary-foreground: oklch(0.985 0.003 54);
-  --secondary: oklch(0.968 0.006 54);
-  --secondary-foreground: oklch(0.289 0.006 54);
-  --muted: oklch(0.968 0.006 54);
-  --muted-foreground: oklch(0.552 0.012 54);
-  --accent: oklch(0.962 0.014 54);
-  --accent-foreground: oklch(0.289 0.006 54);
-  /* semantic, deliberately outside the brand hue so danger still reads danger */
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.916 0.007 54);
-  --input: oklch(0.916 0.007 54);
-  --ring: oklch(0.747 0.142 54);
-  /* categorical series anchored on the brand orange, then spread by hue so
-     adjacent series stay separable (not a gradient of one colour) */
-  --chart-1: oklch(0.747 0.142 54);
-  --chart-2: oklch(0.60 0.105 200);
-  --chart-3: oklch(0.455 0.09 265);
-  --chart-4: oklch(0.83 0.14 88);
-  --chart-5: oklch(0.585 0.16 12);
-  --sidebar: oklch(0.985 0.004 54);
-  --sidebar-foreground: oklch(0.289 0.006 54);
-  --sidebar-primary: oklch(0.747 0.142 54);
-  --sidebar-primary-foreground: oklch(0.19 0.025 54);
-  --sidebar-accent: oklch(0.962 0.014 54);
-  --sidebar-accent-foreground: oklch(0.289 0.006 54);
-  --sidebar-border: oklch(0.916 0.007 54);
-  --sidebar-ring: oklch(0.747 0.142 54);
   --background: oklch(1 0 0);
-  --foreground: oklch(0.289 0.006 54);
-  /* The one bold move: brand orange on primary CTAs and focus rings. Its
-     foreground is ink, not white — white on #f1924e is about 2.3:1 and fails
-     AA, while ink clears 6:1. */
-  --cta: oklch(0.747 0.142 54);
-  --cta-foreground: oklch(0.19 0.025 54);
-  /* Giant faded wordmark, generated from the real lockup in
-     logo-socialcangaroo/ with fill + opacity baked in. Theme-switched here;
-     consumed by .app-surface and .auth-imprint. */
+  --foreground: oklch(0.205 0 0);          /* 17.9:1 on background */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.205 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.205 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0); /* 17.2:1 on primary */
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  /* 0.525, not the shadcn default 0.556: at 0.556 this scored 4.34 against
+     --muted and failed AA for body text. Now 4.94 on muted, 5.39 on white. */
+  --muted-foreground: oklch(0.525 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  /* semantic, and the only hue in the non-chart palette: danger must still
+     read as danger even in a monochrome system */
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.205 0 0);
+  /* Categorical ramp — cool, hue-spread so adjacent series stay separable.
+     Not brand colour; deliberately outside the monochrome system. Each clears
+     3:1 against the page for a chart mark (amber is the tight one at 3.17,
+     which is why it sits at L 0.66 rather than a brighter 0.83). */
+  --chart-1: oklch(0.50 0.035 250);       /* slate   5.98:1 */
+  --chart-2: oklch(0.63 0.105 195);       /* teal    3.33:1 */
+  --chart-3: oklch(0.52 0.145 265);       /* indigo  5.64:1 */
+  --chart-4: oklch(0.66 0.125 75);        /* amber   3.17:1 */
+  --chart-5: oklch(0.60 0.165 15);        /* rose    4.30:1 */
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.205 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.205 0 0);
+  /* The one bold move, and it is monochrome: ink CTAs with white on them.
+     17.2:1 — the retired accent could only carry dark text; white on it
+     measured about 2.3:1 and failed AA outright. */
+  --cta: oklch(0.205 0 0);
+  --cta-foreground: oklch(0.985 0 0);
+  /* Giant faded wordmark generated from the real lockup in logo-rilt/, with
+     fill + opacity baked in. Theme-switched here; consumed by .app-surface
+     and .auth-imprint. */
   --brand-imprint: url("/brand-imprint-light.svg");
 }
 
-/* Dark is now opt-in (the app defaults to light — see ThemeProvider in
-   app/layout.tsx). Same family: warm near-blacks at the brand hue, and the
-   orange lifted slightly so it holds up against a dark ground. */
+/* Dark is opt-in (the app defaults to light — see ThemeProvider in
+   app/layout.tsx). Same monochrome family, mirrored: ink and paper
+   swap roles, and the chart ramp lifts to hold against a dark ground. */
 .dark {
-  --background: oklch(0.185 0.006 54);
-  --foreground: oklch(0.975 0.004 54);
-  --card: oklch(0.235 0.008 54);
-  --card-foreground: oklch(0.975 0.004 54);
-  --popover: oklch(0.235 0.008 54);
-  --popover-foreground: oklch(0.975 0.004 54);
-  --primary: oklch(0.93 0.006 54);
-  --primary-foreground: oklch(0.235 0.008 54);
-  --secondary: oklch(0.29 0.010 54);
-  --secondary-foreground: oklch(0.975 0.004 54);
-  --muted: oklch(0.29 0.010 54);
-  --muted-foreground: oklch(0.715 0.014 54);
-  --accent: oklch(0.315 0.016 54);
-  --accent-foreground: oklch(0.975 0.004 54);
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);          /* 19.0:1 on background */
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);     /* 17.2:1 on card */
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);    /* 7.6:1 on bg, 6.9:1 on card */
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.775 0.145 54);
-  --chart-1: oklch(0.775 0.145 54);
-  --chart-2: oklch(0.685 0.115 200);
-  --chart-3: oklch(0.605 0.115 265);
-  --chart-4: oklch(0.855 0.145 88);
-  --chart-5: oklch(0.665 0.165 12);
-  --sidebar: oklch(0.235 0.008 54);
-  --sidebar-foreground: oklch(0.975 0.004 54);
-  --sidebar-primary: oklch(0.775 0.145 54);
-  --sidebar-primary-foreground: oklch(0.19 0.025 54);
-  --sidebar-accent: oklch(0.315 0.016 54);
-  --sidebar-accent-foreground: oklch(0.975 0.004 54);
+  --ring: oklch(0.985 0 0);
+  /* same ramp, lifted so it holds against a dark ground (all ≥ 6.2:1) */
+  --chart-1: oklch(0.68 0.045 250);
+  --chart-2: oklch(0.74 0.105 195);
+  --chart-3: oklch(0.66 0.145 265);
+  --chart-4: oklch(0.83 0.135 75);
+  --chart-5: oklch(0.70 0.165 15);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.985 0 0);
+  --sidebar-primary-foreground: oklch(0.205 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.775 0.145 54);
-  --cta: oklch(0.775 0.145 54);
-  --cta-foreground: oklch(0.19 0.025 54);
+  --sidebar-ring: oklch(0.985 0 0);
+  /* inverted: white CTA carrying ink, the mirror of the light theme */
+  --cta: oklch(0.985 0 0);
+  --cta-foreground: oklch(0.205 0 0);
   --brand-imprint: url("/brand-imprint-dark.svg");
 }
 
@@ -207,55 +218,18 @@
 }
 
 @layer components {
-  /* CSS-only audio-waveform motif for the auth brand panel. A row of bars that
-     breathe at staggered intervals, evoking live voice. Decorative only. */
-  .auth-waveform {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    height: 3.5rem;
-  }
-
-  .auth-waveform span {
-    display: block;
-    width: 0.25rem;
-    border-radius: 9999px;
-    background: linear-gradient(
-      to top,
-      color-mix(in oklch, var(--cta) 70%, transparent),
-      color-mix(in oklch, var(--cta) 25%, transparent)
-    );
-    animation: auth-wave 1.4s ease-in-out infinite;
-    transform-origin: center;
-  }
-
-  .auth-waveform span:nth-child(1) { animation-delay: 0s; height: 35%; }
-  .auth-waveform span:nth-child(2) { animation-delay: 0.15s; height: 65%; }
-  .auth-waveform span:nth-child(3) { animation-delay: 0.3s; height: 100%; }
-  .auth-waveform span:nth-child(4) { animation-delay: 0.45s; height: 55%; }
-  .auth-waveform span:nth-child(5) { animation-delay: 0.6s; height: 80%; }
-  .auth-waveform span:nth-child(6) { animation-delay: 0.3s; height: 45%; }
-  .auth-waveform span:nth-child(7) { animation-delay: 0.15s; height: 70%; }
-  .auth-waveform span:nth-child(8) { animation-delay: 0s; height: 30%; }
-
-  @keyframes auth-wave {
-    0%, 100% { transform: scaleY(0.4); opacity: 0.7; }
-    50% { transform: scaleY(1); opacity: 1; }
-  }
 
   @media (prefers-reduced-motion: reduce) {
-    .auth-waveform span { animation: none; }
-  }
-
+  
   /* Matte app background — flat charcoal (dark) / soft paper (light), NO
      gradients, with one subtle graphic in BOTH themes: the giant faded
-     "Social Cangaroo" wordmark (--brand-imprint, defined in :root/.dark) pinned to
-     the bottom of the viewport, echoing the socialcangaroo.com footer. */
+     "AICall" wordmark (--brand-imprint, defined in :root/.dark) pinned to
+     the bottom of the viewport, echoing the rilt.ai footer. */
   /* NOTE: background-attachment: fixed positions in VIEWPORT space but only
      paints inside .app-surface, which starts right of the ~270px sidebar —
      the +135px x-shift recentres the wordmark on the VISIBLE canvas. */
   .app-surface {
-    background-color: oklch(0.984 0.001 80);
+    background-color: oklch(0.985 0 0);
     background-image: var(--brand-imprint);
     background-size: min(68vw, 980px) auto;
     background-position: calc(50% + 135px) calc(100% - 24px);
@@ -269,10 +243,10 @@
     }
   }
   .dark .app-surface {
-    background-color: oklch(0.165 0.002 80);
+    background-color: oklch(0.165 0 0);
   }
 
-  /* Giant faded "Social Cangaroo" imprint for the auth pages (applied to the AuthShell
+  /* Giant faded "AICall" imprint for the auth pages (applied to the AuthShell
      form column, shared by Stack + OSS login/signup). Same --brand-imprint as
      .app-surface; element-relative here (no fixed attachment), so it centers
      and scales to whatever element carries the class. */

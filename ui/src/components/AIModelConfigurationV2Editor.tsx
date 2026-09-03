@@ -29,7 +29,7 @@ type ModelMode = "realtime" | "dograh" | "byok";
 // Sentinel language value for "Multilingual (Auto-detect)".
 const MULTILINGUAL_LANGUAGE_CODE = "multi";
 
-interface SocialCangarooDefaults {
+interface RiltDefaults {
     voices: string[];
     allow_custom_input?: boolean;
     speeds: number[];
@@ -49,7 +49,7 @@ interface SocialCangarooDefaults {
 }
 
 export interface ModelConfigurationDefaultsV2 {
-    dograh: SocialCangarooDefaults;
+    dograh: RiltDefaults;
     byok: {
         pipeline: ServiceConfigurationDefaults;
         realtime: {
@@ -61,7 +61,7 @@ export interface ModelConfigurationDefaultsV2 {
     };
 }
 
-interface SocialCangarooFormState {
+interface RiltFormState {
     api_key: string;
     voice: string;
     speed: number;
@@ -93,7 +93,7 @@ function asRecord(value: unknown): Record<string, unknown> | null {
         : null;
 }
 
-function isSocialCangarooEffectiveConfig(config: Record<string, unknown> | null | undefined): boolean {
+function isRiltEffectiveConfig(config: Record<string, unknown> | null | undefined): boolean {
     if (!config || config.is_realtime) return false;
     const llm = asRecord(config.llm);
     const tts = asRecord(config.tts);
@@ -172,7 +172,7 @@ function getByokInitialConfig(
         return matchesTab(byokConfiguration) ? byokConfiguration : emptyByokInitialConfig(wantRealtime);
     }
 
-    if (configuration?.mode === "dograh" || isSocialCangarooEffectiveConfig(effectiveConfiguration)) {
+    if (configuration?.mode === "dograh" || isRiltEffectiveConfig(effectiveConfiguration)) {
         return emptyByokInitialConfig(wantRealtime);
     }
 
@@ -180,23 +180,23 @@ function getByokInitialConfig(
     return matchesTab(effective) ? (effective as Record<string, unknown>) : emptyByokInitialConfig(wantRealtime);
 }
 
-function buildSocialCangarooState(
+function buildRiltState(
     defaults: ModelConfigurationDefaultsV2,
     configuration: Record<string, unknown> | null,
     effectiveConfiguration: Record<string, unknown> | null,
-): SocialCangarooFormState {
+): RiltFormState {
     const fallback = defaults.dograh.defaults;
-    const configuredSocialCangaroo = configuration?.mode === "dograh" ? asRecord(configuration.dograh) : null;
-    if (configuredSocialCangaroo) {
+    const configuredRilt = configuration?.mode === "dograh" ? asRecord(configuration.dograh) : null;
+    if (configuredRilt) {
         return {
-            api_key: String(configuredSocialCangaroo.api_key || ""),
-            voice: String(configuredSocialCangaroo.voice || fallback.voice),
-            speed: numberOrDefault(configuredSocialCangaroo.speed, fallback.speed),
-            language: String(configuredSocialCangaroo.language || fallback.language),
+            api_key: String(configuredRilt.api_key || ""),
+            voice: String(configuredRilt.voice || fallback.voice),
+            speed: numberOrDefault(configuredRilt.speed, fallback.speed),
+            language: String(configuredRilt.language || fallback.language),
         };
     }
 
-    if (isSocialCangarooEffectiveConfig(effectiveConfiguration)) {
+    if (isRiltEffectiveConfig(effectiveConfiguration)) {
         const llm = asRecord(effectiveConfiguration?.llm);
         const tts = asRecord(effectiveConfiguration?.tts);
         const stt = asRecord(effectiveConfiguration?.stt);
@@ -224,7 +224,7 @@ function preferredMode(
     if (configuration?.mode === "byok") {
         return asRecord(configuration.byok)?.mode === "realtime" ? "realtime" : "byok";
     }
-    if (isSocialCangarooEffectiveConfig(effectiveConfiguration)) return "dograh";
+    if (isRiltEffectiveConfig(effectiveConfiguration)) return "dograh";
     return Boolean(effectiveConfiguration?.is_realtime) ? "realtime" : "byok";
 }
 
@@ -278,7 +278,7 @@ function ThirdPartyProviderNotice() {
             <div>
                 <p className="font-medium">Third-party provider data notice</p>
                 <p className="mt-1 leading-6">
-                    Social Cangaroo sends data required by the selected model service. This may include prompts,
+                    AICall sends data required by the selected model service. This may include prompts,
                     transcripts, audio, generated text, tool data, and request metadata depending on the
                     provider and service type. Review the provider&apos;s data and retention policies before
                     using sensitive data.
@@ -318,16 +318,16 @@ function MetricPrice({
 
 function PricingSummary({
     pricing,
-    includeSocialCangarooModel,
+    includeRiltModel,
     thirdPartyModels,
 }: {
     pricing?: ModelConfigurationPricingResponse | null;
-    includeSocialCangarooModel: boolean;
+    includeRiltModel: boolean;
     thirdPartyModels?: boolean;
 }) {
     const platformPrice = pricing?.platform_usage;
-    const socialCangarooModelPrice = includeSocialCangarooModel ? pricing?.social_cangaroo_model : null;
-    if (!platformPrice && !socialCangarooModelPrice) return null;
+    const riltModelPrice = includeRiltModel ? pricing?.rilt_model : null;
+    if (!platformPrice && !riltModelPrice) return null;
 
     return (
         <Card className="mb-4 border-primary/20 bg-primary/[0.03]">
@@ -336,8 +336,8 @@ function PricingSummary({
                 {platformPrice && (
                     <MetricPrice label="Platform usage" price={platformPrice} />
                 )}
-                {socialCangarooModelPrice && (
-                    <MetricPrice label="Social Cangaroo model usage" price={socialCangarooModelPrice} />
+                {riltModelPrice && (
+                    <MetricPrice label="AICall model usage" price={riltModelPrice} />
                 )}
                 {thirdPartyModels && (
                     <p className="text-muted-foreground">
@@ -359,7 +359,7 @@ export function AIModelConfigurationV2Editor({
 }: AIModelConfigurationV2EditorProps) {
     const defaultsForByok = useMemo(() => byokDefaults(defaults), [defaults]);
     const [mode, setMode] = useState<ModelMode>("dograh");
-    const [socialCangaroo, setSocialCangaroo] = useState<SocialCangarooFormState>(() => ({
+    const [rilt, setRilt] = useState<RiltFormState>(() => ({
         api_key: "",
         voice: defaults.dograh.defaults.voice,
         speed: defaults.dograh.defaults.speed,
@@ -367,11 +367,11 @@ export function AIModelConfigurationV2Editor({
     }));
     const [realtimeInitialConfig, setRealtimeInitialConfig] = useState<Record<string, unknown> | null>(null);
     const [pipelineInitialConfig, setPipelineInitialConfig] = useState<Record<string, unknown> | null>(null);
-    const [isSavingSocialCangaroo, setIsSavingSocialCangaroo] = useState(false);
+    const [isSavingRilt, setIsSavingRilt] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const allowCustomVoice = defaults.dograh.allow_custom_input ?? false;
-    const socialCangarooSpeedRange = defaults.dograh.speed_range ?? { min: 0.5, max: 2.0, step: 0.1 };
+    const riltSpeedRange = defaults.dograh.speed_range ?? { min: 0.5, max: 2.0, step: 0.1 };
     const multilingualLanguageNames = useMemo(() => {
         const codes = defaults.dograh.multilingual_languages ?? [];
         if (codes.length === 0) return null;
@@ -382,39 +382,39 @@ export function AIModelConfigurationV2Editor({
         const rawConfiguration = asRecord(configuration);
         const rawEffectiveConfiguration = asRecord(effectiveConfiguration);
         setMode(preferredMode(rawConfiguration, rawEffectiveConfiguration));
-        const nextSocialCangaroo = buildSocialCangarooState(defaults, rawConfiguration, rawEffectiveConfiguration);
-        setSocialCangaroo(nextSocialCangaroo);
+        const nextRilt = buildRiltState(defaults, rawConfiguration, rawEffectiveConfiguration);
+        setRilt(nextRilt);
         setRealtimeInitialConfig(getByokInitialConfig(rawConfiguration, rawEffectiveConfiguration, true));
         setPipelineInitialConfig(getByokInitialConfig(rawConfiguration, rawEffectiveConfiguration, false));
     }, [configuration, defaults, effectiveConfiguration, allowCustomVoice]);
 
-    const saveSocialCangarooConfiguration = async () => {
-        setIsSavingSocialCangaroo(true);
+    const saveRiltConfiguration = async () => {
+        setIsSavingRilt(true);
         setError(null);
         try {
             if (
-                !Number.isFinite(socialCangaroo.speed)
-                || socialCangaroo.speed < socialCangarooSpeedRange.min
-                || socialCangaroo.speed > socialCangarooSpeedRange.max
+                !Number.isFinite(rilt.speed)
+                || rilt.speed < riltSpeedRange.min
+                || rilt.speed > riltSpeedRange.max
             ) {
                 throw new Error(
-                    `Social Cangaroo speed must be between ${socialCangarooSpeedRange.min} and ${socialCangarooSpeedRange.max}.`,
+                    `AICall speed must be between ${riltSpeedRange.min} and ${riltSpeedRange.max}.`,
                 );
             }
             await onSave({
                 version: 2,
                 mode: "dograh",
                 dograh: {
-                    api_key: socialCangaroo.api_key.trim(),
-                    voice: socialCangaroo.voice,
-                    speed: socialCangaroo.speed,
-                    language: socialCangaroo.language,
+                    api_key: rilt.api_key.trim(),
+                    voice: rilt.voice,
+                    speed: rilt.speed,
+                    language: rilt.language,
                 },
             });
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to save configuration");
         } finally {
-            setIsSavingSocialCangaroo(false);
+            setIsSavingRilt(false);
         }
     };
 
@@ -460,7 +460,7 @@ export function AIModelConfigurationV2Editor({
             <Tabs value={mode} onValueChange={(value) => setMode(value as ModelMode)} className="space-y-6">
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="realtime">Speech to Speech</TabsTrigger>
-                    <TabsTrigger value="dograh">Social Cangaroo</TabsTrigger>
+                    <TabsTrigger value="dograh">RiltAI</TabsTrigger>
                     <TabsTrigger value="byok">BYOK</TabsTrigger>
                 </TabsList>
 
@@ -468,7 +468,7 @@ export function AIModelConfigurationV2Editor({
                     <p className="mb-4 text-sm text-muted-foreground">
                         A single speech-to-speech model handles the conversation in realtime (no separate transcriber or voice). An LLM is still required for variable extraction and QA.
                     </p>
-                    <PricingSummary pricing={pricing} includeSocialCangarooModel={false} thirdPartyModels />
+                    <PricingSummary pricing={pricing} includeRiltModel={false} thirdPartyModels />
                     <ServiceConfigurationForm
                         key={`realtime-${JSON.stringify(realtimeInitialConfig)}`}
                         mode="global"
@@ -483,10 +483,10 @@ export function AIModelConfigurationV2Editor({
 
                 <TabsContent value="dograh" className="mt-0">
                     <p className="mb-4 text-sm text-muted-foreground">
-                        Social Cangaroo provides a managed transcriber, LLM, and voice pipeline. Select a voice and language while Social Cangaroo manages the underlying model providers.{" "}
+                        AICall provides a managed transcriber, LLM, and voice pipeline. Select a voice and language while AICall manages the underlying model providers.{" "}
                         We offer custom pricing and a 15-second pulse with a monthly commitment.{" "}
                         <a
-                            href="https://www.socialcangaroo.com/contact"
+                            href="https://www.rilt.ai/contact"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="underline"
@@ -495,7 +495,7 @@ export function AIModelConfigurationV2Editor({
                         </a>
                         .
                     </p>
-                    <PricingSummary pricing={pricing} includeSocialCangarooModel />
+                    <PricingSummary pricing={pricing} includeRiltModel />
                     <Card>
                         <CardContent className="pt-6">
                             <div className="grid gap-4 sm:grid-cols-2">
@@ -503,15 +503,15 @@ export function AIModelConfigurationV2Editor({
                                     <Label>Voice</Label>
                                     <VoiceSelectorModal
                                         provider="dograh"
-                                        value={socialCangaroo.voice}
-                                        onChange={(voice) => setSocialCangaroo({ ...socialCangaroo, voice })}
+                                        value={rilt.voice}
+                                        onChange={(voice) => setRilt({ ...rilt, voice })}
                                         allowManualInput={allowCustomVoice}
                                     />
                                 </div>
 
                                 <div className="space-y-2 sm:col-span-2">
                                     <Label>Language</Label>
-                                    <Select value={socialCangaroo.language} onValueChange={(language) => setSocialCangaroo({ ...socialCangaroo, language })}>
+                                    <Select value={rilt.language} onValueChange={(language) => setRilt({ ...rilt, language })}>
                                         <SelectTrigger className="w-full">
                                             <SelectValue placeholder="Select language" />
                                         </SelectTrigger>
@@ -523,7 +523,7 @@ export function AIModelConfigurationV2Editor({
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    {socialCangaroo.language === MULTILINGUAL_LANGUAGE_CODE && multilingualLanguageNames && (
+                                    {rilt.language === MULTILINGUAL_LANGUAGE_CODE && multilingualLanguageNames && (
                                         <p className="text-xs text-muted-foreground">
                                             Auto-detects {multilingualLanguageNames}.
                                         </p>
@@ -531,18 +531,18 @@ export function AIModelConfigurationV2Editor({
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="social-cangaroo-speed">Speed</Label>
+                                    <Label htmlFor="rilt-speed">Speed</Label>
                                     <Input
-                                        id="social-cangaroo-speed"
+                                        id="rilt-speed"
                                         type="number"
-                                        min={socialCangarooSpeedRange.min}
-                                        max={socialCangarooSpeedRange.max}
-                                        step={socialCangarooSpeedRange.step ?? 0.1}
-                                        value={socialCangaroo.speed}
+                                        min={riltSpeedRange.min}
+                                        max={riltSpeedRange.max}
+                                        step={riltSpeedRange.step ?? 0.1}
+                                        value={rilt.speed}
                                         onChange={(event) => {
                                             const speed = event.currentTarget.valueAsNumber;
-                                            setSocialCangaroo({
-                                                ...socialCangaroo,
+                                            setRilt({
+                                                ...rilt,
                                                 speed: Number.isFinite(speed) ? speed : defaults.dograh.defaults.speed,
                                             });
                                         }}
@@ -550,23 +550,23 @@ export function AIModelConfigurationV2Editor({
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="social-cangaroo-api-key">API Key</Label>
+                                    <Label htmlFor="rilt-api-key">API Key</Label>
                                     <div className="relative">
                                         <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                         <Input
-                                            id="social-cangaroo-api-key"
+                                            id="rilt-api-key"
                                             className="pl-9"
-                                            value={socialCangaroo.api_key}
-                                            onChange={(event) => setSocialCangaroo({ ...socialCangaroo, api_key: event.target.value })}
+                                            value={rilt.api_key}
+                                            onChange={(event) => setRilt({ ...rilt, api_key: event.target.value })}
                                             placeholder="Enter API key"
                                         />
                                     </div>
                                 </div>
                             </div>
 
-                            <Button type="button" className="mt-6 w-full" onClick={saveSocialCangarooConfiguration} disabled={isSavingSocialCangaroo}>
+                            <Button type="button" className="mt-6 w-full" onClick={saveRiltConfiguration} disabled={isSavingRilt}>
                                 <Save className="mr-2 h-4 w-4" />
-                                {isSavingSocialCangaroo ? "Saving..." : submitLabel}
+                                {isSavingRilt ? "Saving..." : submitLabel}
                             </Button>
                         </CardContent>
                     </Card>
@@ -576,7 +576,7 @@ export function AIModelConfigurationV2Editor({
                     <p className="mb-4 text-sm text-muted-foreground">
                         Configure separate transcriber, LLM, and voice providers using your own API keys. An embeddings model can also be configured for knowledge retrieval.
                     </p>
-                    <PricingSummary pricing={pricing} includeSocialCangarooModel={false} thirdPartyModels />
+                    <PricingSummary pricing={pricing} includeRiltModel={false} thirdPartyModels />
                     <ServiceConfigurationForm
                         key={`byok-${JSON.stringify(pipelineInitialConfig)}`}
                         mode="global"

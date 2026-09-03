@@ -53,7 +53,7 @@ async def _ensure_connection_id(
     backend_endpoint, _ = await get_backend_endpoints()
     inbound_url = f"{backend_endpoint}/api/v1/telephony/inbound/run"
 
-    application_name = f"social-cangaroo-{uuid.uuid4().hex[:12]}"
+    application_name = f"rilt-{uuid.uuid4().hex[:12]}"
     endpoint = f"{TELNYX_API_BASE_URL}/call_control_applications"
     body = {
         "application_name": application_name,
@@ -113,7 +113,7 @@ async def _ensure_connection_id(
 
 _UI_METADATA = ProviderUIMetadata(
     display_name="Telnyx",
-    docs_url="https://docs.socialcangaroo.com/integrations/telephony/telnyx",
+    docs_url="https://docs.rilt.ai/integrations/telephony/telnyx",
     fields=[
         ProviderUIField(
             name="api_key", label="API Key", type="password", sensitive=True

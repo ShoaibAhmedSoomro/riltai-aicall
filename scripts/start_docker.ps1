@@ -17,7 +17,7 @@ function New-HexSecret {
 }
 
 function New-MinioRootUser {
-    return "social-cangaroo$((New-HexSecret).Substring(0, 12))"
+    return "rilt$((New-HexSecret).Substring(0, 12))"
 }
 
 function Get-DotEnvValue {
@@ -134,11 +134,11 @@ function Sync-PostgresPassword {
 
     Wait-PostgresReady
 
-    "ALTER USER postgres WITH PASSWORD :'social_cangaroo_password';" | docker compose exec -T postgres psql `
+    "ALTER USER postgres WITH PASSWORD :'rilt_password';" | docker compose exec -T postgres psql `
         -U postgres `
         -d postgres `
         -v 'ON_ERROR_STOP=1' `
-        -v "social_cangaroo_password=$Password" > $null
+        -v "rilt_password=$Password" > $null
     if ($LASTEXITCODE -ne 0) {
         Write-Error 'Failed to sync POSTGRES_PASSWORD with the existing Postgres volume.'
         exit $LASTEXITCODE
@@ -217,9 +217,9 @@ Write-Host 'This will run:'
 Write-Host "  `$env:REGISTRY = '$Registry'; `$env:ENABLE_TELEMETRY = '$EnableTelemetry'; docker compose --profile tunnel up --pull always"
 Write-Host ''
 
-$answer = Read-Host 'Start Social Cangaroo now? [Y/n]'
+$answer = Read-Host 'Start AICall now? [Y/n]'
 if ($answer -match '^[Nn]') {
-    Write-Host 'Social Cangaroo was not started.'
+    Write-Host 'AICall was not started.'
     exit 0
 }
 

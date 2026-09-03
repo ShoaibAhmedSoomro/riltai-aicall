@@ -40,7 +40,7 @@ class _OrgAttributeSpanProcessor(SpanProcessor):
 
         org_id = get_current_org_id()
         if org_id:
-            span.set_attribute("social_cangaroo.org_id", str(org_id))
+            span.set_attribute("rilt.org_id", str(org_id))
 
     def on_end(self, span):
         pass
@@ -55,7 +55,7 @@ class _OrgAttributeSpanProcessor(SpanProcessor):
 class _OrgRoutingExporter(SpanExporter):
     """Routes spans to org-specific or default Langfuse exporter.
 
-    Spans with a ``social_cangaroo.org_id`` attribute whose org has registered
+    Spans with a ``rilt.org_id`` attribute whose org has registered
     credentials are forwarded to that org's exporter.  All other spans
     go to the default exporter (env-var credentials).
     """
@@ -126,7 +126,7 @@ class _OrgRoutingExporter(SpanExporter):
             if scope is not None and scope.name == "fastmcp":
                 continue
 
-            org_id = span.attributes.get("social_cangaroo.org_id") if span.attributes else None
+            org_id = span.attributes.get("rilt.org_id") if span.attributes else None
             if org_id and str(org_id) in self._org_exporters:
                 org_buckets.setdefault(str(org_id), []).append(span)
             else:
@@ -187,7 +187,7 @@ def ensure_tracing() -> bool:
         )
 
     _org_routing_exporter = _OrgRoutingExporter(default_exporter)
-    setup_tracing(service_name="social-cangaroo-pipeline", exporter=_org_routing_exporter)
+    setup_tracing(service_name="rilt-pipeline", exporter=_org_routing_exporter)
 
     # Add processor that stamps every span with the current org_id context var
     from opentelemetry import trace as otel_trace

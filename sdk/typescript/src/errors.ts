@@ -1,10 +1,10 @@
-// SDK-level exceptions. All subclass `SocialCangarooSdkError` so callers can
+// SDK-level exceptions. All subclass `RiltSdkError` so callers can
 // catch them as one category.
 
-export class SocialCangarooSdkError extends Error {
+export class RiltSdkError extends Error {
     constructor(message: string) {
         super(message);
-        this.name = "SocialCangarooSdkError";
+        this.name = "RiltSdkError";
     }
 }
 
@@ -16,15 +16,15 @@ export class SocialCangarooSdkError extends Error {
  * errors via `ApiError` — this class covers the fast-fail cases caught
  * at the `Workflow.add()` call site.
  */
-export class ValidationError extends SocialCangarooSdkError {
+export class ValidationError extends RiltSdkError {
     constructor(message: string) {
         super(message);
         this.name = "ValidationError";
     }
 }
 
-/** Raised when the Social Cangaroo backend returns a non-2xx response. */
-export class ApiError extends SocialCangarooSdkError {
+/** Raised when the AICall backend returns a non-2xx response. */
+export class ApiError extends RiltSdkError {
     readonly statusCode: number;
     readonly body: unknown;
 
@@ -37,7 +37,7 @@ export class ApiError extends SocialCangarooSdkError {
 }
 
 /** Raised when a referenced node type isn't registered on the server. */
-export class SpecMismatchError extends SocialCangarooSdkError {
+export class SpecMismatchError extends RiltSdkError {
     constructor(message: string) {
         super(message);
         this.name = "SpecMismatchError";

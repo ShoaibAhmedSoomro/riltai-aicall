@@ -1,16 +1,16 @@
 /**
- * Social Cangaroo SDK — typed builder for voice-AI workflows.
+ * AICall SDK — typed builder for voice-AI workflows.
  *
- * Runtime SDK: fetches the spec catalog from the Social Cangaroo backend at session
+ * Runtime SDK: fetches the spec catalog from the AICall backend at session
  * start and validates every `Workflow.add()` call against it. Don't import
  * per-node-type classes — the `type` argument is a string keyed against the
  * fetched spec catalog.
  *
  * @example
  * ```ts
- * import { SocialCangarooClient, Workflow } from "@socialCangaroo/sdk";
+ * import { RiltClient, Workflow } from "@rilt/sdk";
  *
- * const client = new SocialCangarooClient({ baseUrl: "http://localhost:8000", apiKey: "..." });
+ * const client = new RiltClient({ baseUrl: "http://localhost:8000", apiKey: "..." });
  * const wf = new Workflow({ client, name: "loan_qualification" });
  *
  * const start = await wf.add({
@@ -25,16 +25,16 @@
  * ```
  */
 
-export { SocialCangarooClient } from "./client.js";
+export { RiltClient } from "./client.js";
 export type {
-    SocialCangarooClientOptions,
-    SocialCangarooFetch,
-    SocialCangarooFetchInit,
-    SocialCangarooFetchResponse,
+    RiltClientOptions,
+    RiltFetch,
+    RiltFetchInit,
+    RiltFetchResponse,
 } from "./client.js";
 export {
     ApiError,
-    SocialCangarooSdkError,
+    RiltSdkError,
     SpecMismatchError,
     ValidationError,
 } from "./errors.js";
@@ -59,6 +59,6 @@ export type {
 } from "./types.js";
 
 // Typed SDK — generated per-node interfaces + factories. Importable as
-// `import { startCall, type StartCall } from "@socialCangaroo/sdk/typed"` for
+// `import { startCall, type StartCall } from "@rilt/sdk/typed"` for
 // tree-shaking, or via the `TypedNode` union here.
 export type { TypedNode } from "./typed/index.js";

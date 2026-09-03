@@ -11,7 +11,7 @@ Request/response types come from sibling model files already produced by
 here; this script doesn't generate types itself.
 
 Output:
-    --py-out  sdk/python/src/social_cangaroo_sdk/_generated_client.py
+    --py-out  sdk/python/src/rilt_sdk/_generated_client.py
     --ts-out  sdk/typescript/src/_generated_client.ts
 """
 
@@ -216,7 +216,7 @@ _PY_HEADER = '''\
 
 Regenerate with `./scripts/generate_sdk.sh`.
 
-`SocialCangarooClient` mixes in this class to get HTTP methods for every route
+`RiltClient` mixes in this class to get HTTP methods for every route
 decorated with `sdk_expose(...)` on the backend. Request/response types
 come from `_generated_models` (datamodel-codegen output).
 """
@@ -225,13 +225,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from social_cangaroo_sdk._generated_models import (
+from rilt_sdk._generated_models import (
 {imports}
 )
 
 
 class _GeneratedClient:
-    # `SocialCangarooClient.__init__` installs `self._request` (see client.py).
+    # `RiltClient.__init__` installs `self._request` (see client.py).
 
 '''
 
@@ -305,7 +305,7 @@ _TS_HEADER = """\
 //
 // Regenerate with `./scripts/generate_sdk.sh`.
 //
-// `SocialCangarooClient` extends this base to get HTTP methods for every route
+// `RiltClient` extends this base to get HTTP methods for every route
 // decorated with `sdk_expose(...)`. Request/response types come from
 // `_generated_models` (openapi-typescript output, --root-types).
 

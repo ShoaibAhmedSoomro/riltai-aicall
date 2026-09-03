@@ -8,8 +8,8 @@ import { NextResponse } from 'next/server';
 
 import { getAuthProvider } from '@/lib/auth/config';
 
-const OSS_TOKEN_COOKIE = 'social_cangaroo_auth_token';
-const OSS_USER_COOKIE = 'social_cangaroo_auth_user';
+const OSS_TOKEN_COOKIE = 'rilt_auth_token';
+const OSS_USER_COOKIE = 'rilt_auth_user';
 
 export async function GET() {
   const authProvider = await getAuthProvider();

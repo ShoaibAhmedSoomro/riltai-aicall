@@ -1,12 +1,12 @@
 """Errors raised at the Model Proxy Service boundary."""
 
 MPS_UNAVAILABLE_PUBLIC_MESSAGE = (
-    "A Social Cangaroo service is temporarily unavailable. Please try again later."
+    "A AICall service is temporarily unavailable. Please try again later."
 )
 
 
 class MPSUnavailableError(ConnectionError):
-    """MPS could not complete an operation for a Social-Cangaroo-owned reason.
+    """MPS could not complete an operation for a Rilt-owned reason.
 
     ``status_code`` is retained as structured classifier input. Response bodies are
     deliberately excluded because upstream payloads may contain sensitive details.

@@ -1,31 +1,31 @@
 // Load an existing workflow, edit a node prompt, and save it as a draft.
 //
 // Requirements:
-//   npm install @socialCangaroo/sdk
+//   npm install @rilt/sdk
 //
 // Environment variables:
-//   SOCIAL_CANGAROO_API_ENDPOINT  - Social Cangaroo API base URL (e.g. http://localhost:8000)
-//   SOCIAL_CANGAROO_API_TOKEN     - API token sent as X-API-Key
+//   RILT_API_ENDPOINT  - AICall API base URL (e.g. http://localhost:8000)
+//   RILT_API_TOKEN     - API token sent as X-API-Key
 //
 // Run:
 //   npx tsx load_and_edit_workflow.ts
 
-import { SocialCangarooClient } from "@socialCangaroo/sdk";
+import { RiltClient } from "@rilt/sdk";
 
-// Replace with the numeric ID of an existing agent in your Social Cangaroo account.
+// Replace with the numeric ID of an existing agent in your AICall account.
 const WORKFLOW_ID = 0;
 
 // Sentence appended to the startCall node's prompt when the script runs.
 const PROMPT_SUFFIX = " Please be concise — keep all responses under two sentences.";
 
 async function main(): Promise<void> {
-    const apiEndpoint = process.env.SOCIAL_CANGAROO_API_ENDPOINT ?? "http://localhost:8000";
-    const apiToken = process.env.SOCIAL_CANGAROO_API_TOKEN;
+    const apiEndpoint = process.env.RILT_API_ENDPOINT ?? "http://localhost:8000";
+    const apiToken = process.env.RILT_API_TOKEN;
 
-    if (!apiToken) throw new Error("SOCIAL_CANGAROO_API_TOKEN is required");
+    if (!apiToken) throw new Error("RILT_API_TOKEN is required");
     if (WORKFLOW_ID === 0) throw new Error("Set WORKFLOW_ID at the top of this file to an existing workflow ID");
 
-    const client = new SocialCangarooClient({
+    const client = new RiltClient({
         baseUrl: apiEndpoint,
         apiKey: apiToken,
     });

@@ -1,23 +1,23 @@
 ---
 title: Setup
-description: Get a Social Cangaroo dev environment running and learn the daily commands.
+description: Get a AICall dev environment running and learn the daily commands.
 ---
 
-Social Cangaroo is a Next.js UI (`ui/`), a FastAPI backend (`api/`), and a [Pipecat](https://github.com/pipecat-ai/pipecat)-based voice pipeline (`pipecat/`, a git submodule), backed by Postgres, Redis, and MinIO.
+AICall is a Next.js UI (`ui/`), a FastAPI backend (`api/`), and a [Pipecat](https://github.com/pipecat-ai/pipecat)-based voice pipeline (`pipecat/`, a git submodule), backed by Postgres, Redis, and MinIO.
 
 <Tip>
-**Using Claude Code or Codex?** Install the [Social Cangaroo setup skill](https://github.com/ShoaibAhmedSoomro/social-cangaroo-plugins) (`/plugin marketplace add ShoaibAhmedSoomro/social-cangaroo-plugins`, then `/plugin install social-cangaroo@social-cangaroo`) and ask your agent to *"set up Social Cangaroo for development"* — it runs the steps below for you and verifies the stack is healthy.
+**Using Claude Code or Codex?** Install the [AICall setup skill](https://github.com/ShoaibAhmedSoomro/riltai-aicall-plugins) (`/plugin marketplace add ShoaibAhmedSoomro/rilt-plugins`, then `/plugin install rilt@rilt`) and ask your agent to *"set up AICall for development"* — it runs the steps below for you and verifies the stack is healthy.
 </Tip>
 
 ## Set up
 
 You need Git, a local Docker engine (such as Docker Desktop), and VS Code with the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers).
 
-1. Fork [ShoaibAhmedSoomro/social-cangaroo](https://github.com/ShoaibAhmedSoomro/social-cangaroo) and clone **your fork**:
+1. Fork [ShoaibAhmedSoomro/rilt](https://github.com/ShoaibAhmedSoomro/riltai-aicall) and clone **your fork**:
 
 ```bash
-git clone https://github.com/<YOUR_HANDLE>/social-cangaroo
-cd social-cangaroo
+git clone https://github.com/<YOUR_HANDLE>/rilt
+cd rilt
 ```
 
 2. Open the folder in VS Code and run **Dev Containers: Reopen in Container**. The first build takes several minutes — it starts Postgres, Redis, and MinIO, seeds the Python venv, creates the `.env` files, and installs UI dependencies. Later opens are fast.
@@ -36,11 +36,11 @@ cd ui && npm run dev -- --hostname 0.0.0.0
 
 5. Open the app at `http://localhost:3000`.
 
-If these steps do not work for you, please open an issue on [GitHub](https://github.com/ShoaibAhmedSoomro/social-cangaroo/issues).
+If these steps do not work for you, please open an issue on [GitHub](https://github.com/ShoaibAhmedSoomro/riltai-aicall/issues).
 
 <AccordionGroup>
-<Accordion title="Cloned ShoaibAhmedSoomro/social-cangaroo directly instead of your fork?">
-Run `bash scripts/setup_fork.sh` once. It prompts for your fork URL, points `origin` at it, and adds `upstream` as `ShoaibAhmedSoomro/social-cangaroo`. See [Fork and upstream remotes](/contribution/reference#fork-and-upstream-remotes).
+<Accordion title="Cloned ShoaibAhmedSoomro/rilt directly instead of your fork?">
+Run `bash scripts/setup_fork.sh` once. It prompts for your fork URL, points `origin` at it, and adds `upstream` as `ShoaibAhmedSoomro/rilt`. See [Fork and upstream remotes](/contribution/reference#fork-and-upstream-remotes).
 </Accordion>
 <Accordion title="No VS Code? No devcontainer at all?">
 The devcontainer also runs headless via the [Dev Container CLI](/contribution/reference#dev-container-cli), or you can run everything [directly on your host](/contribution/reference#host-managed-setup).
@@ -87,16 +87,16 @@ All configurations load `api/.env` (test configs use `api/.env.test`) and set `j
 | `api/` | FastAPI backend — REST API, campaign orchestration, telephony, ARQ background workers |
 | `pipecat/` | Git submodule for the voice pipeline (STT → LLM → TTS) |
 | `docs/` | This documentation site, written in MDX, previewed with `mint dev` |
-| `sdk/` | Python/TypeScript SDKs for driving Social Cangaroo programmatically |
+| `sdk/` | Python/TypeScript SDKs for driving AICall programmatically |
 | `scripts/` | Setup, deployment, and update scripts |
 | `deploy/` | nginx and coturn config templates used by remote deployment |
 
 ## Contributing a change
 
 1. Create a branch and make your change.
-2. Push to your fork (`origin`) and open a pull request against `ShoaibAhmedSoomro/social-cangaroo:main`.
+2. Push to your fork (`origin`) and open a pull request against `ShoaibAhmedSoomro/rilt:main`.
 3. A maintainer reviews and merges.
 
-Bug reports and feature ideas go through [GitHub Issues](https://github.com/ShoaibAhmedSoomro/social-cangaroo/issues) and [Ideas](https://github.com/orgs/ShoaibAhmedSoomro/discussions/categories/ideas). Issues tagged `good first issue` are a good place to start. For questions while you're working, use the [Social Cangaroo Community Slack](https://join.slack.com/t/social-cangaroo-community/shared_invite/zt-4787daqcn-3TDiQUh~3xrr3pwAqR9wpQ).
+Bug reports and feature ideas go through [GitHub Issues](https://github.com/ShoaibAhmedSoomro/riltai-aicall/issues) and [Ideas](https://github.com/orgs/ShoaibAhmedSoomro/discussions/categories/ideas). Issues tagged `good first issue` are a good place to start. For questions while you're working, use the [AICall GitHub Discussions](https://github.com/ShoaibAhmedSoomro/riltai-aicall/discussions).
 
 Deploying your own build instead of contributing upstream? See [Deployments](/deployment/introduction) instead.

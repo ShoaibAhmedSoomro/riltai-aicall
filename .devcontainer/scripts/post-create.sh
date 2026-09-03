@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="/workspaces/social-cangaroo"
+ROOT_DIR="/workspaces/rilt"
 UI_ENV_EXAMPLE="$ROOT_DIR/ui/.env.example"
 UI_ENV_FILE="$ROOT_DIR/ui/.env"
 VENV_PATH="$ROOT_DIR/venv"

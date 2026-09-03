@@ -7,16 +7,16 @@ from pipecat.adapters.services.gemini_live_adapter import GeminiLiveLLMAdapter
 
 from api.services.configuration.registry import ServiceProviders
 from api.services.pipecat.gemini_json_schema_adapter import (
-    SocialCangarooGeminiJSONSchemaAdapter,
-    SocialCangarooGeminiLiveJSONSchemaAdapter,
+    RiltGeminiJSONSchemaAdapter,
+    RiltGeminiLiveJSONSchemaAdapter,
 )
-from api.services.pipecat.realtime.gemini_live import SocialCangarooGeminiLiveLLMService
+from api.services.pipecat.realtime.gemini_live import RiltGeminiLiveLLMService
 from api.services.pipecat.realtime.gemini_live_vertex import (
-    SocialCangarooGeminiLiveVertexLLMService,
+    RiltGeminiLiveVertexLLMService,
 )
 from api.services.pipecat.service_factory import (
-    SocialCangarooGoogleLLMService,
-    SocialCangarooGoogleVertexLLMService,
+    RiltGoogleLLMService,
+    RiltGoogleVertexLLMService,
     create_llm_service_from_provider,
 )
 
@@ -41,7 +41,7 @@ def test_gemini_tools_use_json_schema_parameters_for_external_schemas():
         required=["customerEmail"],
     )
 
-    tools = SocialCangarooGeminiJSONSchemaAdapter().to_provider_tools_format(
+    tools = RiltGeminiJSONSchemaAdapter().to_provider_tools_format(
         ToolsSchema(standard_tools=[function_schema])
     )
 
@@ -74,7 +74,7 @@ def test_gemini_tools_use_json_schema_parameters_for_no_argument_tools():
         required=[],
     )
 
-    tools = SocialCangarooGeminiJSONSchemaAdapter().to_provider_tools_format(
+    tools = RiltGeminiJSONSchemaAdapter().to_provider_tools_format(
         ToolsSchema(standard_tools=[function_schema])
     )
 
@@ -89,14 +89,14 @@ def test_gemini_tools_use_json_schema_parameters_for_no_argument_tools():
     GenerateContentConfig(tools=tools)
 
 
-def test_google_service_classes_use_social_cangaroo_gemini_adapter_class():
-    assert SocialCangarooGoogleLLMService.adapter_class is SocialCangarooGeminiJSONSchemaAdapter
-    assert SocialCangarooGoogleVertexLLMService.adapter_class is SocialCangarooGeminiJSONSchemaAdapter
+def test_google_service_classes_use_rilt_gemini_adapter_class():
+    assert RiltGoogleLLMService.adapter_class is RiltGeminiJSONSchemaAdapter
+    assert RiltGoogleVertexLLMService.adapter_class is RiltGeminiJSONSchemaAdapter
 
 
-def test_google_llm_service_factory_uses_social_cangaroo_service_class():
+def test_google_llm_service_factory_uses_rilt_service_class():
     with patch(
-        "api.services.pipecat.service_factory.SocialCangarooGoogleLLMService",
+        "api.services.pipecat.service_factory.RiltGoogleLLMService",
     ) as mock_service:
         result = create_llm_service_from_provider(
             provider=ServiceProviders.GOOGLE.value,
@@ -109,9 +109,9 @@ def test_google_llm_service_factory_uses_social_cangaroo_service_class():
     assert mock_service.call_args.kwargs["settings"].model == "gemini-3.5-flash"
 
 
-def test_google_vertex_llm_service_factory_uses_social_cangaroo_service_class():
+def test_google_vertex_llm_service_factory_uses_rilt_service_class():
     with patch(
-        "api.services.pipecat.service_factory.SocialCangarooGoogleVertexLLMService",
+        "api.services.pipecat.service_factory.RiltGoogleVertexLLMService",
     ) as mock_service:
         result = create_llm_service_from_provider(
             provider=ServiceProviders.GOOGLE_VERTEX.value,
@@ -128,35 +128,34 @@ def test_google_vertex_llm_service_factory_uses_social_cangaroo_service_class():
     assert mock_service.call_args.kwargs["settings"].model == "gemini-2.5-pro"
 
 
-def test_gemini_live_service_classes_use_social_cangaroo_gemini_adapter_class():
-    assert SocialCangarooGeminiLiveLLMService.adapter_class is SocialCangarooGeminiLiveJSONSchemaAdapter
-    # Vertex Live inherits adapter_class from SocialCangarooGeminiLiveLLMService via MRO.
+def test_gemini_live_service_classes_use_rilt_gemini_adapter_class():
+    assert RiltGeminiLiveLLMService.adapter_class is RiltGeminiLiveJSONSchemaAdapter
+    # Vertex Live inherits adapter_class from RiltGeminiLiveLLMService via MRO.
     assert (
-        SocialCangarooGeminiLiveVertexLLMService.adapter_class
-        is SocialCangarooGeminiLiveJSONSchemaAdapter
+        RiltGeminiLiveVertexLLMService.adapter_class is RiltGeminiLiveJSONSchemaAdapter
     )
     # The Live adapter must keep upstream's tool-call-to-text conversion for
     # seeded contexts (GeminiLiveLLMAdapter) alongside the JSON Schema fix.
-    assert issubclass(SocialCangarooGeminiLiveJSONSchemaAdapter, GeminiLiveLLMAdapter)
-    assert issubclass(SocialCangarooGeminiLiveJSONSchemaAdapter, SocialCangarooGeminiJSONSchemaAdapter)
+    assert issubclass(RiltGeminiLiveJSONSchemaAdapter, GeminiLiveLLMAdapter)
+    assert issubclass(RiltGeminiLiveJSONSchemaAdapter, RiltGeminiJSONSchemaAdapter)
     assert (
-        SocialCangarooGeminiLiveJSONSchemaAdapter.to_provider_tools_format
-        is SocialCangarooGeminiJSONSchemaAdapter.to_provider_tools_format
+        RiltGeminiLiveJSONSchemaAdapter.to_provider_tools_format
+        is RiltGeminiJSONSchemaAdapter.to_provider_tools_format
     )
 
 
-def test_vertex_live_inherits_social_cangaroo_node_transition_lifecycle():
+def test_vertex_live_inherits_rilt_node_transition_lifecycle():
     assert (
-        SocialCangarooGeminiLiveVertexLLMService._requires_node_transition_context_aggregation
-        is SocialCangarooGeminiLiveLLMService._requires_node_transition_context_aggregation
+        RiltGeminiLiveVertexLLMService._requires_node_transition_context_aggregation
+        is RiltGeminiLiveLLMService._requires_node_transition_context_aggregation
     )
     assert (
-        SocialCangarooGeminiLiveVertexLLMService._run_or_defer_function_calls
-        is SocialCangarooGeminiLiveLLMService._run_or_defer_function_calls
+        RiltGeminiLiveVertexLLMService._run_or_defer_function_calls
+        is RiltGeminiLiveLLMService._run_or_defer_function_calls
     )
     assert (
-        SocialCangarooGeminiLiveVertexLLMService._reconnect_for_node_transition
-        is SocialCangarooGeminiLiveLLMService._reconnect_for_node_transition
+        RiltGeminiLiveVertexLLMService._reconnect_for_node_transition
+        is RiltGeminiLiveLLMService._reconnect_for_node_transition
     )
 
 
@@ -173,7 +172,7 @@ def test_gemini_live_config_accepts_json_schema_tools():
         required=["customerEmail"],
     )
 
-    tools = SocialCangarooGeminiJSONSchemaAdapter().to_provider_tools_format(
+    tools = RiltGeminiJSONSchemaAdapter().to_provider_tools_format(
         ToolsSchema(standard_tools=[function_schema])
     )
 

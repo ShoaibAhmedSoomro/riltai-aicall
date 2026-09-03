@@ -83,7 +83,7 @@ export default function TelephonyConfigurationDetailPage() {
   const organizationTimezone = useOrganizationTimezone();
   const inboundWebhookUrl = `${resolveWebhookBaseUrl(appConfig?.tunnelUrl)}${INBOUND_WEBHOOK_PATH}`;
   const [config, setConfig] = useState<TelephonyConfigurationDetail | null>(null);
-  // ARI only: Social Cangaroo generates the Stasis application name, so the dialplan
+  // ARI only: AICall generates the Stasis application name, so the dialplan
   // line cannot be written until the configuration has been saved.
   const stasisAppName =
     typeof config?.credentials?.stasis_app_name === "string"
@@ -311,7 +311,7 @@ export default function TelephonyConfigurationDetailPage() {
                     This configuration is disabled
                   </p>
                   <p className="text-muted-foreground">
-                    Social Cangaroo stopped reconnecting after repeated connection
+                    AICall stopped reconnecting after repeated connection
                     failures
                     {config.inactive_reason ? `: ${config.inactive_reason}` : ""}.
                     Calls will not work until it is reconnected. Correct the
@@ -346,7 +346,7 @@ export default function TelephonyConfigurationDetailPage() {
               <p className="text-xs text-muted-foreground">
                 Add this line to your Asterisk <code>extensions.conf</code>, then run{" "}
                 <code>dialplan reload</code>. Until you do, calls reach Asterisk but never
-                arrive at Social Cangaroo.
+                arrive at AICall.
               </p>
               <button
                 type="button"
@@ -418,7 +418,7 @@ export default function TelephonyConfigurationDetailPage() {
               Numbers used as caller ID for outbound and accepted for inbound matching.
               SIP URIs and extensions are supported alongside PSTN numbers.{" "}
               <a
-                href="https://docs.socialcangaroo.com/integrations/telephony/inbound"
+                href="https://docs.rilt.ai/integrations/telephony/inbound"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-0.5 underline"

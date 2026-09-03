@@ -19,7 +19,7 @@ export default function OverviewPage() {
                     <CardHeader>
                         <CardTitle className="text-3xl">
                             {isOSSMode ? (
-                                "Welcome to Social Cangaroo"
+                                "Welcome to AICall"
                             ) : (
                                 `Welcome${user?.displayName ? `, ${user.displayName.split(' ')[0]}` : ''}!`
                             )}
@@ -83,14 +83,14 @@ export default function OverviewPage() {
                     <CardHeader>
                         <CardTitle>Resources</CardTitle>
                         <CardDescription>
-                            Get help and learn more about Social Cangaroo
+                            Get help and learn more about AICall
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="flex flex-wrap gap-4">
                             <Button asChild variant="outline">
                                 <a
-                                    href="https://docs.socialcangaroo.com"
+                                    href="https://docs.rilt.ai"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                 >
@@ -99,7 +99,7 @@ export default function OverviewPage() {
                             </Button>
                             <Button asChild variant="outline">
                                 <a
-                                    href="https://github.com/ShoaibAhmedSoomro/social-cangaroo/issues"
+                                    href="https://github.com/ShoaibAhmedSoomro/riltai-aicall/issues"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                 >

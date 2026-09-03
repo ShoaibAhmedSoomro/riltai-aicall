@@ -92,7 +92,7 @@ async def _ensure_with(provider) -> tuple[HTTPException, list]:
 
 
 async def test_auth_rejection_is_a_user_config_error():
-    """A Twilio 401 is bad customer credentials, not a Social Cangaroo fault."""
+    """A Twilio 401 is bad customer credentials, not a AICall fault."""
     provider = TwilioProvider(
         {"account_sid": "AC123", "auth_token": "token", "from_numbers": []}
     )

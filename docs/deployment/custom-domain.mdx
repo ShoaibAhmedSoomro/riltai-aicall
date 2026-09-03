@@ -1,9 +1,9 @@
 ---
 title: "Custom Domain"
-description: "Deploy Social Cangaroo AI with custom domain names and SSL certificates"
+description: "Deploy AICall with custom domain names and SSL certificates"
 ---
 
-Deploy Social Cangaroo AI with your own custom domain name for a professional production setup. By now, you should be able to create and test a voice agent by following the previous guide to setup the platform on a remote server using [Docker](docker#option-2%3A-remote-server-deployment)
+Deploy AICall with your own custom domain name for a professional production setup. By now, you should be able to create and test a voice agent by following the previous guide to setup the platform on a remote server using [Docker](docker#option-2%3A-remote-server-deployment)
 
 <Tip>
 **You don't need to own a domain just to remove the browser warning.** If your server has a public IP, the [remote setup](docker#option-2%3A-remote-server-deployment) already issues a free, auto-renewing Let's Encrypt certificate via [sslip.io](https://sslip.io) (e.g. `https://203-0-113-10.sslip.io`) — no DNS configuration required. Follow this Custom Domain guide only when you want your **own** domain name (e.g. `voice.yourcompany.com`).
@@ -11,7 +11,7 @@ Deploy Social Cangaroo AI with your own custom domain name for a professional pr
 
 ## What is Custom Domain Deployment?
 
-Custom domain deployment allows you to run Social Cangaroo AI with a personalized domain name (like `voice.yourcompany.com`) instead of using IP addresses. This setup includes:
+Custom domain deployment allows you to run AICall with a personalized domain name (like `voice.yourcompany.com`) instead of using IP addresses. This setup includes:
 
 - **Custom Domain**: Access your application via a memorable domain name
 - **Automatic SSL**: Proper SSL certificates from Let's Encrypt or similar providers
@@ -24,7 +24,7 @@ Before starting, ensure you have:
 
 - A domain name you own (e.g., `yourcompany.com`)
 - Access to your domain's DNS settings (usually through your domain registrar)
-- Social Cangaroo AI already running on your server via the [remote deployment](docker#option-2%3A-remote-server-deployment) guide
+- AICall already running on your server via the [remote deployment](docker#option-2%3A-remote-server-deployment) guide
 - Your server's public IP address
 
 ## Step 1: Configure DNS Records
@@ -61,14 +61,14 @@ You should see your server's IP address in the response.
 Once your DNS is configured, run the automated setup script that handles the rest.
 
 <Note>
-You must be at the same place where you had run `setup_remote.sh` from. The directory should contain `social-cangaroo/` with the artifacts that got created when `setup_remote.sh` was run.
+You must be at the same place where you had run `setup_remote.sh` from. The directory should contain `rilt/` with the artifacts that got created when `setup_remote.sh` was run.
 </Note>
 <Note>
-You must not move the `social-cangaroo/` directory to a different location after running `setup_custom_domain.sh`, since we set up auto certificate renewal script as certbot renewal hook pointing to the `social-cangaroo/` directory.
+You must not move the `rilt/` directory to a different location after running `setup_custom_domain.sh`, since we set up auto certificate renewal script as certbot renewal hook pointing to the `rilt/` directory.
 </Note>
 
 ```bash
-curl -o setup_custom_domain.sh https://raw.githubusercontent.com/ShoaibAhmedSoomro/social-cangaroo/main/scripts/setup_custom_domain.sh && chmod +x setup_custom_domain.sh && sudo ./setup_custom_domain.sh
+curl -o setup_custom_domain.sh https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/scripts/setup_custom_domain.sh && chmod +x setup_custom_domain.sh && sudo ./setup_custom_domain.sh
 ```
 
 The script will prompt you for:
@@ -80,9 +80,9 @@ It will automatically:
 - Install Certbot
 - Generate Let's Encrypt SSL certificates
 - Update the canonical public host/base URL settings in `.env`
-- Validate the runtime config that `social-cangaroo-init` will render from `.env`
+- Validate the runtime config that `rilt-init` will render from `.env`
 - Configure automatic certificate renewal
-- Restart Social Cangaroo services through the validated startup wrapper
+- Restart AICall services through the validated startup wrapper
 
 Once complete, your application will be available at `https://voice.yourcompany.com`.
 
@@ -115,10 +115,10 @@ sudo yum install certbot -y
 
 ### Point `.env` at your domain
 
-Update `.env` so the canonical remote settings use your domain — `social-cangaroo-init` reads these to render nginx's `server_name`. Replace `voice.yourcompany.com` with your actual domain throughout:
+Update `.env` so the canonical remote settings use your domain — `rilt-init` reads these to render nginx's `server_name`. Replace `voice.yourcompany.com` with your actual domain throughout:
 
 ```bash
-cd social-cangaroo
+cd rilt
 sed -i "s/^PUBLIC_HOST=.*/PUBLIC_HOST=voice.yourcompany.com/" .env
 sed -i "s|^PUBLIC_BASE_URL=.*|PUBLIC_BASE_URL=https://voice.yourcompany.com|" .env
 ```
@@ -176,27 +176,27 @@ Let's Encrypt certificates expire after 90 days. Set up automatic renewal.
 Create a renewal hook script that copies the new certificates:
 
 ```bash
-sudo nano /etc/letsencrypt/renewal-hooks/deploy/social-cangaroo-reload.sh
+sudo nano /etc/letsencrypt/renewal-hooks/deploy/rilt-reload.sh
 ```
 
 Add the following content (replace paths as needed):
 
 ```bash
 #!/bin/bash
-# Copy renewed certificates to social-cangaroo certs directory
-cp /etc/letsencrypt/live/voice.yourcompany.com/fullchain.pem /home/ubuntu/social-cangaroo/certs/local.crt
-cp /etc/letsencrypt/live/voice.yourcompany.com/privkey.pem /home/ubuntu/social-cangaroo/certs/local.key
-chmod 644 /home/ubuntu/social-cangaroo/certs/local.crt /home/ubuntu/social-cangaroo/certs/local.key
+# Copy renewed certificates to rilt certs directory
+cp /etc/letsencrypt/live/voice.yourcompany.com/fullchain.pem /home/ubuntu/rilt/certs/local.crt
+cp /etc/letsencrypt/live/voice.yourcompany.com/privkey.pem /home/ubuntu/rilt/certs/local.key
+chmod 644 /home/ubuntu/rilt/certs/local.crt /home/ubuntu/rilt/certs/local.key
 
 # Restart nginx to load new certificates
-cd /home/ubuntu/social-cangaroo
+cd /home/ubuntu/rilt
 docker compose --profile remote restart nginx
 ```
 
 Make the script executable:
 
 ```bash
-sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/social-cangaroo-reload.sh
+sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/rilt-reload.sh
 ```
 
 Test that renewal works:
@@ -219,8 +219,8 @@ If Certbot fails to generate certificates:
 
 If you see SSL errors after setup:
 
-1. Verify the certificates were copied correctly: `ls -la social-cangaroo/certs/`
-2. Run `./remote_up.sh --preflight-only` in `social-cangaroo/` to verify the `social-cangaroo-init` runtime render matches `.env`
+1. Verify the certificates were copied correctly: `ls -la rilt/certs/`
+2. Run `./remote_up.sh --preflight-only` in `rilt/` to verify the `rilt-init` runtime render matches `.env`
 3. Restart the nginx container: `sudo docker compose --profile remote restart nginx`
 
 ### WebRTC Connection Issues

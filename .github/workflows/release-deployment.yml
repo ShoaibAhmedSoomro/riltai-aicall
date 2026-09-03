@@ -72,7 +72,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "✅ Social Cangaroo Dashboard - Vercel Deployment Successful - ${{ steps.deploy.outputs.deployment_url || 'URL not captured' }} on ${{ github.ref_name }} by ${{ github.actor }} - <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
+              "text": "✅ AICall Dashboard - Vercel Deployment Successful - ${{ steps.deploy.outputs.deployment_url || 'URL not captured' }} on ${{ github.ref_name }} by ${{ github.actor }} - <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
             }
 
       - name: Send Slack notification - Failure
@@ -81,5 +81,5 @@ jobs:
         with:
           payload: |
             {
-              "text": "❌ Social Cangaroo Dashboard - Vercel Deployment Failed on ${{ github.ref_name }} by ${{ github.actor }} - <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
+              "text": "❌ AICall Dashboard - Vercel Deployment Failed on ${{ github.ref_name }} by ${{ github.actor }} - <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
             }

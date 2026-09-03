@@ -5,8 +5,8 @@ import pytest
 
 from api.db.organization_configuration_client import LEASE_COMPLETED, LEASE_PENDING
 from api.schemas.ai_model_configuration import (
-    SocialCangarooManagedAIModelConfiguration,
     OrganizationAIModelConfigurationV2,
+    RiltManagedAIModelConfiguration,
 )
 from api.services import organization_bootstrap as bootstrap
 
@@ -17,16 +17,16 @@ MINTED_KEY = "minted-svc-key"
 LEASE_OWNER_TOKEN = "lease-owner-token"
 
 
-def _social_cangaroo_config(api_key: str) -> OrganizationAIModelConfigurationV2:
+def _rilt_config(api_key: str) -> OrganizationAIModelConfigurationV2:
     return OrganizationAIModelConfigurationV2(
         mode="dograh",
-        social_cangaroo=SocialCangarooManagedAIModelConfiguration(api_key=api_key),
+        rilt=RiltManagedAIModelConfiguration(api_key=api_key),
     )
 
 
 def _byok_config() -> OrganizationAIModelConfigurationV2:
-    """A BYOK org: real ones carry provider blocks, but only `social_cangaroo` matters here."""
-    return OrganizationAIModelConfigurationV2.model_construct(mode="byok", social_cangaroo=None)
+    """A BYOK org: real ones carry provider blocks, but only `rilt` matters here."""
+    return OrganizationAIModelConfigurationV2.model_construct(mode="byok", rilt=None)
 
 
 @pytest.fixture(autouse=True)
@@ -124,7 +124,7 @@ async def test_pending_sentinel_does_not_short_circuit(
 ):
     """Only a terminal sentinel means done; a pending one is work in progress."""
     sentinel.row = SimpleNamespace(value={"status": LEASE_PENDING})
-    config.return_value = _social_cangaroo_config(EXISTING_KEY)
+    config.return_value = _rilt_config(EXISTING_KEY)
 
     await bootstrap.ensure_organization_bootstrapped(ORG_ID, created_by=CREATED_BY)
 
@@ -136,7 +136,7 @@ async def test_fully_provisioned_org_backfills_the_sentinel(
     config, lease, mps, upsert, sip, sip_present
 ):
     """Orgs provisioned before the sentinel existed must reach the fast path."""
-    config.return_value = _social_cangaroo_config(EXISTING_KEY)
+    config.return_value = _rilt_config(EXISTING_KEY)
     sip_present.return_value = True
 
     assert await bootstrap.ensure_organization_bootstrapped(
@@ -160,7 +160,7 @@ async def test_existing_org_gets_owner_scoped_sip_without_minting_a_second_key(
     Re-minting would strand the org's current key and issue a second billable
     one. SIP is independent and uses the bootstrap owner's identity.
     """
-    config.return_value = _social_cangaroo_config(EXISTING_KEY)
+    config.return_value = _rilt_config(EXISTING_KEY)
 
     assert await bootstrap.ensure_organization_bootstrapped(
         ORG_ID, created_by=CREATED_BY
@@ -246,7 +246,7 @@ async def test_sip_failure_leaves_the_lease_pending_for_a_throttled_retry(
 ):
     """The config is persisted, so releasing would retry a failing provider on
     every request; the staleness window should pace it instead."""
-    config.return_value = _social_cangaroo_config(EXISTING_KEY)
+    config.return_value = _rilt_config(EXISTING_KEY)
     sip.return_value = False
 
     assert not await bootstrap.ensure_organization_bootstrapped(

@@ -136,9 +136,9 @@ async def _ensure_application_name(credentials: dict[str, Any]) -> dict[str, Any
     provisioning_id = credentials.get("provisioning_id")
     if isinstance(provisioning_id, str) and provisioning_id.strip():
         stable_id = "".join(ch for ch in provisioning_id.lower() if ch.isalnum())
-        name = f"social-cangaroo-{stable_id[:24]}"
+        name = f"rilt-{stable_id[:24]}"
     else:
-        name = f"social-cangaroo-{uuid.uuid4().hex[:12]}"
+        name = f"rilt-{uuid.uuid4().hex[:12]}"
 
     encoded_domain_id = quote(str(domain_id), safe="")
     endpoint = (
@@ -281,7 +281,7 @@ def _build_outbound_trunk_payload(
     """Expand the two operator fields into a full Cloudonix trunk payload.
 
     The remote peer comes from the configured region rather than the operator:
-    a Social-Cangaroo-managed trunk always terminates on that region's Cloudonix edge.
+    a RiltAI-managed trunk always terminates on that region's Cloudonix edge.
     """
     region = get_cloudonix_region(configuration.get("region"))
     if region is None:
@@ -716,7 +716,7 @@ async def _preprocess_credentials_on_save(
 
 _UI_METADATA = ProviderUIMetadata(
     display_name="Cloudonix",
-    docs_url="https://docs.socialcangaroo.com/integrations/telephony/cloudonix",
+    docs_url="https://docs.rilt.ai/integrations/telephony/cloudonix",
     fields=[
         ProviderUIField(
             name="bearer_token",
@@ -731,7 +731,7 @@ _UI_METADATA = ProviderUIMetadata(
             type="text",
             description=(
                 "Your Cloudonix domain (for example, acme.cloudonix.net). "
-                "Social Cangaroo fetches and stores its UUID automatically."
+                "AICall fetches and stores its UUID automatically."
             ),
         ),
         ProviderUIField(

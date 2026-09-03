@@ -1,16 +1,16 @@
 // Fetch a workflow by ID and place a test phone call using the TypeScript SDK.
 //
 // Requirements:
-//   npm install @socialCangaroo/sdk
+//   npm install @rilt/sdk
 //
 // Environment variables:
-//   SOCIAL_CANGAROO_API_ENDPOINT  - Social Cangaroo API base URL (e.g. http://localhost:8000)
-//   SOCIAL_CANGAROO_API_TOKEN     - API token sent as X-API-Key
+//   RILT_API_ENDPOINT  - AICall API base URL (e.g. http://localhost:8000)
+//   RILT_API_TOKEN     - API token sent as X-API-Key
 //
 // Run:
 //   npx tsx fetch_workflow_and_call.ts
 
-import { SocialCangarooClient } from "@socialCangaroo/sdk";
+import { RiltClient } from "@rilt/sdk";
 
 // Numeric workflow ID to fetch and call with.
 const WORKFLOW_ID = 1;
@@ -18,12 +18,12 @@ const WORKFLOW_ID = 1;
 const PHONE_NUMBER = "+11187619471";
 
 async function main(): Promise<void> {
-    const apiEndpoint = process.env.SOCIAL_CANGAROO_API_ENDPOINT ?? "http://localhost:8000";
-    const apiToken = process.env.SOCIAL_CANGAROO_API_TOKEN;
+    const apiEndpoint = process.env.RILT_API_ENDPOINT ?? "http://localhost:8000";
+    const apiToken = process.env.RILT_API_TOKEN;
 
-    if (!apiToken) throw new Error("SOCIAL_CANGAROO_API_TOKEN is required");
+    if (!apiToken) throw new Error("RILT_API_TOKEN is required");
 
-    const client = new SocialCangarooClient({
+    const client = new RiltClient({
         baseUrl: apiEndpoint,
         apiKey: apiToken,
     });

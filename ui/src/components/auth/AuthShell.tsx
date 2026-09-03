@@ -1,7 +1,7 @@
 // Shared dark two-column auth shell, used by BOTH the Stack Auth handler
 // (/handler/[...stack], cloud) and the local/OSS auth pages (/auth/login,
 // /auth/signup). LEFT: a centered card that wraps the auth form (`children`).
-// RIGHT (lg+ only): a brand/value panel with the Social Cangaroo logo, proof points, and
+// RIGHT (lg+ only): a brand/value panel with the AICall logo, proof points, and
 // a Bland-style enterprise CTA block at the bottom (passed in as `enterpriseSlot`).
 // Mobile collapses to the single card column. The form column scrolls and stays
 // centered so tall (sign-up) forms never clip on short viewports. Palette is the
@@ -27,7 +27,7 @@ export function AuthShell({
   return (
     <div className="grid min-h-screen w-full bg-background lg:grid-cols-[55%_45%]">
       {/* Form column (LEFT) — scrolls and stays centered so tall forms never
-          clip. Carries the giant faded "Social Cangaroo" imprint along its bottom. */}
+          clip. Carries the giant faded "AICall" imprint along its bottom. */}
       <main className="auth-imprint flex min-h-screen flex-col overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-6 sm:p-10">
           <div className="w-full max-w-md space-y-6 rounded-2xl border border-border/60 bg-card p-6 shadow-lg sm:p-8">
@@ -41,7 +41,10 @@ export function AuthShell({
       </main>
 
       {/* Brand / value panel (RIGHT) — hidden on mobile */}
-      <aside className="relative hidden flex-col justify-between overflow-hidden border-l border-border/60 bg-zinc-950 p-10 lg:flex xl:p-14">
+      {/* `dark` is deliberate, not inherited: this panel is always near-black,
+          so token consumers inside it (the --cta glow below) must resolve
+          against the dark theme or they paint ink on ink in light mode. */}
+      <aside className="dark relative hidden flex-col justify-between overflow-hidden border-l border-border/60 bg-zinc-950 p-10 lg:flex xl:p-14">
         {/* Ambient depth: soft radial glow behind the content */}
         <div
           aria-hidden
@@ -76,7 +79,7 @@ export function AuthShell({
             Need on-prem, data residency &amp; a data perimeter?
           </h2>
           <p className="text-sm text-zinc-400">
-            We deploy Social Cangaroo inside your environment for regulated and
+            We deploy AICall inside your environment for regulated and
             high-scale teams.
           </p>
           {enterpriseSlot}

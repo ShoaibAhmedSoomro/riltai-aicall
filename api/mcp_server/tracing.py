@@ -2,7 +2,7 @@
 
 The project-wide tracing setup in
 `api/services/pipecat/tracing_config.py` already routes spans to
-per-organization Langfuse projects based on the `social_cangaroo.org_id` span
+per-organization Langfuse projects based on the `rilt.org_id` span
 attribute. This module plugs MCP tool calls into that pipeline:
 
     @mcp.tool
@@ -29,7 +29,7 @@ from opentelemetry.trace import Status, StatusCode
 
 R = TypeVar("R")
 
-_TRACER = trace.get_tracer("social_cangaroo.mcp")
+_TRACER = trace.get_tracer("rilt.mcp")
 # Langfuse truncates long payloads anyway; cap here to keep span size
 # bounded. Tune up if you find tool outputs consistently clipped.
 _MAX_ATTR_LEN = 8000

@@ -669,7 +669,7 @@ export default function UsagePage() {
                                     <div className="mt-4 p-3 bg-muted rounded-md">
                                         <p className="text-sm text-muted-foreground">
                                             Total for filtered period: <span className="font-semibold text-foreground">
-                                                {usageHistory.total_social_cangaroo_tokens.toLocaleString()} Social Cangaroo Tokens
+                                                {usageHistory.total_rilt_tokens.toLocaleString()} RiltAI Tokens
                                             </span>
                                             {' • '}
                                             <span className="font-semibold text-foreground">

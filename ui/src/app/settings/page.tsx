@@ -41,10 +41,10 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle>MCP Server</CardTitle>
             <CardDescription>
-              Let AI agents access your Social Cangaroo workspace and documentation via
+              Let AI agents access your AICall workspace and documentation via
               the Model Context Protocol.{" "}
               <a
-                href="https://docs.socialcangaroo.com/integrations/mcp"
+                href="https://docs.rilt.ai/integrations/mcp"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-0.5 underline"
@@ -64,7 +64,7 @@ export default function SettingsPage() {
             <CardDescription>
               Configure Langfuse tracing for your voice agent calls.{" "}
               <a
-                href="https://docs.socialcangaroo.com/configurations/tracing"
+                href="https://docs.rilt.ai/configurations/tracing"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-0.5 underline"

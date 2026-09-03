@@ -90,7 +90,7 @@ async def test_report_workflow_run_platform_usage_reports_duration_without_corre
         metadata={
             "source": "workflow_run_completion",
             "workflow_id": workflow_run.workflow_id,
-            "duration_source": "social_cangaroo_usage_info",
+            "duration_source": "rilt_usage_info",
         },
     )
 

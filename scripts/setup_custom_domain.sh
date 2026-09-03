@@ -14,7 +14,7 @@ BOOTSTRAP_LIB=""
 
 if [[ ! -f "$LIB_PATH" ]]; then
     BOOTSTRAP_LIB="$(mktemp)"
-    curl -fsSL -o "$BOOTSTRAP_LIB" "https://raw.githubusercontent.com/ShoaibAhmedSoomro/social-cangaroo/main/scripts/lib/setup_common.sh"
+    curl -fsSL -o "$BOOTSTRAP_LIB" "https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/scripts/lib/setup_common.sh"
     LIB_PATH="$BOOTSTRAP_LIB"
 fi
 
@@ -28,9 +28,9 @@ cleanup() {
     # install back to the user who invoked sudo. SUDO_UID is unset when running
     # as real root — nothing to restore then. Runs from the EXIT trap so a
     # mid-setup failure also leaves ownership fixed.
-    if [[ -n "${SUDO_UID:-}" && -n "${SUDO_GID:-}" && -n "${SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR:-}" && -d "$SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR" ]]; then
-        echo -e "${BLUE}Restoring ownership of $SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR to ${SUDO_USER:-uid $SUDO_UID}...${NC}"
-        chown -R "$SUDO_UID:$SUDO_GID" "$SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR" || true
+    if [[ -n "${SUDO_UID:-}" && -n "${SUDO_GID:-}" && -n "${RILT_DEPLOY_PROJECT_DIR:-}" && -d "$RILT_DEPLOY_PROJECT_DIR" ]]; then
+        echo -e "${BLUE}Restoring ownership of $RILT_DEPLOY_PROJECT_DIR to ${SUDO_USER:-uid $SUDO_UID}...${NC}"
+        chown -R "$SUDO_UID:$SUDO_GID" "$RILT_DEPLOY_PROJECT_DIR" || true
     fi
 }
 trap cleanup EXIT
@@ -40,34 +40,34 @@ trap cleanup EXIT
 
 echo -e "${BLUE}"
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║              Social Cangaroo Custom Domain Setup                      ║"
+echo "║              AICall Custom Domain Setup                      ║"
 echo "║     Automated Let's Encrypt SSL certificate setup            ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
 
 if [[ $EUID -ne 0 ]]; then
-    social_cangaroo_fail "This script must be run as root or with sudo"
+    rilt_fail "This script must be run as root or with sudo"
 fi
 
-if [[ ! -d "social-cangaroo" ]]; then
-    echo -e "${RED}Error: 'social-cangaroo' directory not found.${NC}"
-    echo -e "${YELLOW}Please run this script from the directory containing your Social Cangaroo installation.${NC}"
-    echo -e "${YELLOW}If you haven't set up Social Cangaroo yet, run the remote setup first:${NC}"
-    echo -e "${BLUE}  curl -o setup_remote.sh https://raw.githubusercontent.com/ShoaibAhmedSoomro/social-cangaroo/main/scripts/setup_remote.sh && chmod +x setup_remote.sh && sudo ./setup_remote.sh${NC}"
+if [[ ! -d "rilt" ]]; then
+    echo -e "${RED}Error: 'rilt' directory not found.${NC}"
+    echo -e "${YELLOW}Please run this script from the directory containing your AICall installation.${NC}"
+    echo -e "${YELLOW}If you haven't set up AICall yet, run the remote setup first:${NC}"
+    echo -e "${BLUE}  curl -o setup_remote.sh https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/scripts/setup_remote.sh && chmod +x setup_remote.sh && sudo ./setup_remote.sh${NC}"
     exit 1
 fi
 
 echo -e "${YELLOW}Enter your domain name (e.g., voice.yourcompany.com):${NC}"
 read -p "> " DOMAIN_NAME
-[[ -n "$DOMAIN_NAME" ]] || social_cangaroo_fail "Domain name cannot be empty"
+[[ -n "$DOMAIN_NAME" ]] || rilt_fail "Domain name cannot be empty"
 
 if ! [[ "$DOMAIN_NAME" =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$ ]]; then
-    social_cangaroo_fail "Invalid domain name format"
+    rilt_fail "Invalid domain name format"
 fi
 
 echo -e "${YELLOW}Enter your email address for SSL certificate notifications:${NC}"
 read -p "> " EMAIL_ADDRESS
-[[ -n "$EMAIL_ADDRESS" ]] || social_cangaroo_fail "Email address cannot be empty (required by Let's Encrypt)"
+[[ -n "$EMAIL_ADDRESS" ]] || rilt_fail "Email address cannot be empty (required by Let's Encrypt)"
 
 echo ""
 echo -e "${GREEN}Configuration:${NC}"
@@ -80,7 +80,7 @@ SERVER_IP="$(curl -s ifconfig.me || curl -s icanhazip.com || echo "")"
 RESOLVED_IP="$(dig +short "$DOMAIN_NAME" | tail -1)"
 
 if [[ -z "$SERVER_IP" ]]; then
-    social_cangaroo_warn "Warning: Could not detect server's public IP"
+    rilt_warn "Warning: Could not detect server's public IP"
 elif [[ "$RESOLVED_IP" != "$SERVER_IP" ]]; then
     echo -e "${YELLOW}Warning: Domain '$DOMAIN_NAME' resolves to '$RESOLVED_IP' but this server's IP is '$SERVER_IP'${NC}"
     echo -e "${YELLOW}Make sure your DNS A record points to this server before proceeding.${NC}"
@@ -95,40 +95,40 @@ else
 fi
 
 echo -e "${BLUE}[2/6] Installing Certbot...${NC}"
-social_cangaroo_install_certbot || social_cangaroo_fail "Could not install certbot. Please install it manually and re-run."
+rilt_install_certbot || rilt_fail "Could not install certbot. Please install it manually and re-run."
 echo -e "${GREEN}✓ Certbot installed${NC}"
 
 echo -e "${BLUE}[3/6] Pointing .env at $DOMAIN_NAME and starting services...${NC}"
-cd social-cangaroo
-SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR="$(pwd)"
-SOCIAL_CANGAROO_PATH="$(pwd)"
+cd rilt
+RILT_DEPLOY_PROJECT_DIR="$(pwd)"
+RILT_PATH="$(pwd)"
 
 if [[ ! -f remote_up.sh || ! -f scripts/lib/setup_common.sh ]]; then
-    social_cangaroo_download_remote_support_bundle "$(pwd)" "main"
+    rilt_download_remote_support_bundle "$(pwd)" "main"
 fi
 
-social_cangaroo_require_init_compose_layout "$(pwd)"
+rilt_require_init_compose_layout "$(pwd)"
 
-social_cangaroo_load_env_file .env
+rilt_load_env_file .env
 if [[ -z "${SERVER_IP:-}" ]]; then
-    SERVER_IP="$(social_cangaroo_infer_server_ip "$(pwd)" || true)"
+    SERVER_IP="$(rilt_infer_server_ip "$(pwd)" || true)"
 fi
-[[ -n "${SERVER_IP:-}" ]] || social_cangaroo_fail "Could not determine SERVER_IP from the existing install"
+[[ -n "${SERVER_IP:-}" ]] || rilt_fail "Could not determine SERVER_IP from the existing install"
 
-social_cangaroo_set_env_key .env SERVER_IP "$SERVER_IP"
-social_cangaroo_set_env_key .env PUBLIC_HOST "$DOMAIN_NAME"
-social_cangaroo_set_env_key .env PUBLIC_BASE_URL "https://$DOMAIN_NAME"
-social_cangaroo_delete_env_key .env BACKEND_URL
+rilt_set_env_key .env SERVER_IP "$SERVER_IP"
+rilt_set_env_key .env PUBLIC_HOST "$DOMAIN_NAME"
+rilt_set_env_key .env PUBLIC_BASE_URL "https://$DOMAIN_NAME"
+rilt_delete_env_key .env BACKEND_URL
 # Switching domains is an explicit repoint of the whole deployment. Drop any
 # legacy per-subsystem endpoint keys an older install pinned to the previous host
 # so they re-derive from the new PUBLIC_BASE_URL / PUBLIC_HOST (see api/constants.py).
 # No-op on current installs, which don't write these keys.
-social_cangaroo_delete_env_key .env BACKEND_API_ENDPOINT
-social_cangaroo_delete_env_key .env MINIO_PUBLIC_ENDPOINT
-social_cangaroo_delete_env_key .env TURN_HOST
-social_cangaroo_prepare_remote_install "$(pwd)"
+rilt_delete_env_key .env BACKEND_API_ENDPOINT
+rilt_delete_env_key .env MINIO_PUBLIC_ENDPOINT
+rilt_delete_env_key .env TURN_HOST
+rilt_prepare_remote_install "$(pwd)"
 
-# Bring the stack up (recreating it) so social-cangaroo-init re-renders nginx with the
+# Bring the stack up (recreating it) so rilt-init re-renders nginx with the
 # domain server_name and the ACME challenge location, served with the existing
 # certificate. certbot --webroot then validates against the running nginx:
 # no downtime, and (unlike --standalone) renewal keeps working later while
@@ -144,11 +144,11 @@ for ((i=1; i<=60; i++)); do
     fi
     sleep 2
 done
-[[ "$nginx_ready" == "1" ]] || social_cangaroo_fail "nginx did not come up on port 80; cannot run the ACME challenge."
+[[ "$nginx_ready" == "1" ]] || rilt_fail "nginx did not come up on port 80; cannot run the ACME challenge."
 echo -e "${GREEN}✓ Services running and serving the ACME challenge${NC}"
 
 echo -e "${BLUE}[4/6] Obtaining Let's Encrypt certificate for $DOMAIN_NAME...${NC}"
-if ! social_cangaroo_issue_letsencrypt_webroot "$(pwd)" "$DOMAIN_NAME" "$EMAIL_ADDRESS"; then
+if ! rilt_issue_letsencrypt_webroot "$(pwd)" "$DOMAIN_NAME" "$EMAIL_ADDRESS"; then
     echo -e "${RED}✗ Certificate issuance failed${NC}"
     echo ""
     echo -e "${YELLOW}Common causes:${NC}"
@@ -170,7 +170,7 @@ docker compose --profile remote restart nginx >/dev/null 2>&1 || true
 echo -e "${GREEN}✓ nginx restarted${NC}"
 
 echo -e "${BLUE}[6/6] Configuring automatic certificate renewal...${NC}"
-social_cangaroo_install_cert_renewal_hook "$(pwd)" "$DOMAIN_NAME"
+rilt_install_cert_renewal_hook "$(pwd)" "$DOMAIN_NAME"
 if certbot renew --dry-run --quiet; then
     echo -e "${GREEN}✓ Auto-renewal configured and tested${NC}"
 else
@@ -187,15 +187,15 @@ echo ""
 echo -e "  ${BLUE}https://$DOMAIN_NAME${NC}"
 echo ""
 echo -e "${GREEN}SSL Certificate Details:${NC}"
-echo -e "  Certificate: $SOCIAL_CANGAROO_PATH/certs/local.crt"
-echo -e "  Private Key: $SOCIAL_CANGAROO_PATH/certs/local.key"
+echo -e "  Certificate: $RILT_PATH/certs/local.crt"
+echo -e "  Private Key: $RILT_PATH/certs/local.key"
 echo -e "  Auto-renewal: Enabled (certificates renew automatically)"
 echo ""
 echo -e "${YELLOW}Files modified:${NC}"
-echo "  - social-cangaroo/.env (canonical public host/base URL updated)"
-echo "  - social-cangaroo/certs/local.crt (SSL certificate)"
-echo "  - social-cangaroo/certs/local.key (SSL private key)"
-echo "  - /etc/letsencrypt/renewal-hooks/deploy/social-cangaroo-reload.sh (renewal hook)"
+echo "  - rilt/.env (canonical public host/base URL updated)"
+echo "  - rilt/certs/local.crt (SSL certificate)"
+echo "  - rilt/certs/local.key (SSL private key)"
+echo "  - /etc/letsencrypt/renewal-hooks/deploy/rilt-reload.sh (renewal hook)"
 echo ""
 echo -e "${GREEN}Your SSL certificate will automatically renew before expiration.${NC}"
 echo ""

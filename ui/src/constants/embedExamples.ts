@@ -1,23 +1,23 @@
 export const HEADLESS_CHAT_EXAMPLE = `let chatState = 'idle';
 
-function withSocialCangarooWidget(callback) {
-  if (window.SocialCangarooWidget) {
-    callback(window.SocialCangarooWidget);
+function withRiltWidget(callback) {
+  if (window.RiltWidget) {
+    callback(window.RiltWidget);
     return;
   }
 
-  const script = document.getElementById('social-cangaroo-widget');
+  const script = document.getElementById('rilt-widget');
   if (!script) {
-    console.error('Social Cangaroo embed script not found');
+    console.error('AICall embed script not found');
     return;
   }
 
   script.addEventListener('load', () => {
-    if (window.SocialCangarooWidget) callback(window.SocialCangarooWidget);
+    if (window.RiltWidget) callback(window.RiltWidget);
   }, { once: true });
 }
 
-withSocialCangarooWidget((widget) => {
+withRiltWidget((widget) => {
   widget.onChatStateChange((state) => {
     chatState = state; // idle | starting | ready | waiting | ended | expired | error
   });

@@ -514,7 +514,7 @@ def test_log_webhook_request_redacts_headers_and_payload():
             headers={
                 "Content-Type": "application/json",
                 "Authorization": "Bearer header-secret",
-                "X-Social-Cangaroo-Delivery-Id": "uuid-1",
+                "X-Rilt-Delivery-Id": "uuid-1",
                 "X-Customer": "customer-secret",
             },
         )
@@ -656,7 +656,7 @@ async def test_deliver_webhook_no_op_when_claim_fails():
 async def test_deliver_webhook_delivered_but_record_failure_does_not_dead_letter():
     # If the HTTP POST is accepted (2xx) but recording success fails (DB blip),
     # the row must NOT be dead-lettered -- it stays pending for the sweeper to
-    # reconcile (the receiver dedups the re-send via X-Social-Cangaroo-Delivery-Id).
+    # reconcile (the receiver dedups the re-send via X-Rilt-Delivery-Id).
     delivery = _fake_delivery()
     db = _delivery_db(delivery)
     db.mark_webhook_delivery_succeeded = AsyncMock(

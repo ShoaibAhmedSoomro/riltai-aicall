@@ -11,9 +11,9 @@ from loguru import logger
 
 from api.db import db_client
 from api.errors.failure import (
-    SocialCangarooFailure,
     ErrorSource,
     ErrorType,
+    RiltFailure,
     classify_exception,
     classify_http_response,
     log_failure,
@@ -89,7 +89,7 @@ async def execute_pre_call_fetch(
                 headers.update(build_auth_header(credential))
             else:
                 log_failure(
-                    SocialCangarooFailure(
+                    RiltFailure(
                         source=ErrorSource.INTEGRATION,
                         type=ErrorType.CONFIG_ERROR,
                         code="pre-call-fetch-credential-not-found",
@@ -128,7 +128,7 @@ async def execute_pre_call_fetch(
             if response.is_success:
                 if not isinstance(response_data, dict):
                     log_failure(
-                        SocialCangarooFailure(
+                        RiltFailure(
                             source=ErrorSource.INTEGRATION,
                             type=ErrorType.CONFIG_ERROR,
                             code="pre-call-fetch-invalid-response",

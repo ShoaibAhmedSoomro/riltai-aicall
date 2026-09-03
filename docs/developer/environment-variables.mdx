@@ -1,16 +1,16 @@
 ---
 title: "Environment Variables"
-description: "Complete reference for all environment variables used by the Social Cangaroo backend"
+description: "Complete reference for all environment variables used by the AICall backend"
 ---
 
 Core environment variables are centralized in `api/constants.py`. Variables marked **Required** in the description must be explicitly set — the application will either fail to boot or behave insecurely without them.
 
 ## Deployment Modes
 
-Social Cangaroo supports two deployment modes, set via `DEPLOYMENT_MODE`:
+AICall supports two deployment modes, set via `DEPLOYMENT_MODE`:
 
-- **OSS**: The default mode. Designed for self-hosted deployments using [Docker Compose](/deployment/docker) — the fastest way to get Social Cangaroo running. Uses local JWT authentication and MinIO for storage.
-- **SaaS**: Intended for customised deployments outside of Docker. Authentication and API key management are handled through Social Cangaroo Managed Platform Services (MPS), allowing greater flexibility in how the platform is hosted and integrated.
+- **OSS**: The default mode. Designed for self-hosted deployments using [Docker Compose](/deployment/docker) — the fastest way to get AICall running. Uses local JWT authentication and MinIO for storage.
+- **SaaS**: Intended for customised deployments outside of Docker. Authentication and API key management are handled through RiltAI Managed Platform Services (MPS), allowing greater flexibility in how the platform is hosted and integrated.
 
 The relevant required variables for each mode are noted in the descriptions below.
 
@@ -70,15 +70,15 @@ Set these when `AUTH_PROVIDER=stack` to delegate sign-in to [Stack Auth](https:/
 | `PUBLIC_HOST` | `null` | Public host without scheme (e.g. `203-0-113-10.sslip.io`); `TURN_HOST` derives from it |
 | `BACKEND_API_ENDPOINT` | `PUBLIC_BASE_URL`, else `http://localhost:8000` | Public URL the backend builds webhook / callback / embed links from. Set explicitly only to override the value derived from `PUBLIC_BASE_URL` |
 | `UI_APP_URL` | `http://localhost:3010` | URL of the frontend application |
-| `MPS_API_URL` | `https://services.dograh.com` | Social Cangaroo Managed Platform Services URL |
-| `SOCIAL_CANGAROO_MPS_SECRET_KEY` | `null` | **Required for non-OSS deployments.** Secret key for authenticating with MPS |
+| `MPS_API_URL` | `https://services.dograh.com` | RiltAI Managed Platform Services URL |
+| `RILT_MPS_SECRET_KEY` | `null` | **Required for non-OSS deployments.** Secret key for authenticating with MPS |
 | `CORS_ALLOWED_ORIGINS` | `null` | **Required for non-OSS deployments.** Comma-separated list of origins allowed to make credentialed cross-origin requests (e.g. `https://app.example.com,https://admin.example.com`). Ignored in OSS mode, which serves a permissive same-origin policy without credentials |
 
 ---
 
 ## Storage
 
-Social Cangaroo uses **MinIO by default**, which is bundled with the self-hosted deployment and requires no external setup. Set `ENABLE_AWS_S3=true` to switch to AWS S3 — typically used for cloud or managed deployments where S3 is already part of the infrastructure.
+AICall uses **MinIO by default**, which is bundled with the self-hosted deployment and requires no external setup. Set `ENABLE_AWS_S3=true` to switch to AWS S3 — typically used for cloud or managed deployments where S3 is already part of the infrastructure.
 
 ### MinIO (OSS default)
 
@@ -122,7 +122,7 @@ AWS_SECRET_ACCESS_KEY=...
 ```
 
 <Note>
-Presigned URLs point at `S3_ENDPOINT_URL`, so that host must be reachable from the browser. Because browsers fetch transcripts cross-origin, the bucket also needs a CORS rule allowing your app's origin for `GET`/`HEAD` — configure this on the storage server (e.g. via `PutBucketCors`), not in Social Cangaroo.
+Presigned URLs point at `S3_ENDPOINT_URL`, so that host must be reachable from the browser. Because browsers fetch transcripts cross-origin, the bucket also needs a CORS rule allowing your app's origin for `GET`/`HEAD` — configure this on the storage server (e.g. via `PutBucketCors`), not in AICall.
 </Note>
 
 ---
@@ -155,7 +155,7 @@ Tracing activates automatically as soon as credentials are available — either 
 
 ## Telephony
 
-Carriers dial the media WebSocket back at `/api/v1/telephony/ws/{workflow_id}/{organization_id}/{workflow_run_id}`. Those ids travel in a caller-visible URL, so on their own they are a guessable capability. Setting a secret makes Social Cangaroo sign that URL with an HMAC and verify the signature when the socket opens.
+Carriers dial the media WebSocket back at `/api/v1/telephony/ws/{workflow_id}/{organization_id}/{workflow_run_id}`. Those ids travel in a caller-visible URL, so on their own they are a guessable capability. Setting a secret makes AICall sign that URL with an HMAC and verify the signature when the socket opens.
 
 The signature travels as a trailing path segment — `/api/v1/telephony/ws/{workflow_id}/{organization_id}/{workflow_run_id}/{token}` — because carriers do not reliably forward query strings. Twilio [documents that its `<Stream>` url "does not support query string parameters"](https://www.twilio.com/docs/voice/twiml/stream) and drops them outright. Asterisk ARI is the exception: it connects to `/api/v1/telephony/ws/ari` and passes `token` as a query parameter alongside its other routing values, which works because Asterisk builds that URL itself.
 
@@ -201,7 +201,7 @@ The signed URL is a bearer credential, and it is not hidden: the token appears i
 
 ## Campaigns
 
-Controls concurrency for [Campaigns](/core-concepts/campaigns), Social Cangaroo's bulk outbound calling feature.
+Controls concurrency for [Campaigns](/core-concepts/campaigns), AICall's bulk outbound calling feature.
 
 | Variable | Default | Description |
 |---|---|---|

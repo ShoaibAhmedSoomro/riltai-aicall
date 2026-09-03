@@ -6,24 +6,24 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 from api.services.configuration.registry import (
-    SocialCangarooEmbeddingsConfiguration,
-    SocialCangarooLLMService,
-    SocialCangarooSTTService,
-    SocialCangarooTTSService,
     EmbeddingsConfig,
     LLMConfig,
     RealtimeConfig,
+    RiltEmbeddingsConfiguration,
+    RiltLLMService,
+    RiltSTTService,
+    RiltTTSService,
     ServiceProviders,
     STTConfig,
     TTSConfig,
 )
 
-SOCIAL_CANGAROO_SPEED_MIN = 0.5
-SOCIAL_CANGAROO_SPEED_MAX = 2.0
-SOCIAL_CANGAROO_SPEED_STEP = 0.1
-SOCIAL_CANGAROO_SPEED_OPTIONS: tuple[float, ...] = (0.8, 1.0, 1.2)
-SOCIAL_CANGAROO_DEFAULT_VOICE = "default"
-SOCIAL_CANGAROO_DEFAULT_LANGUAGE = "multi"
+RILT_SPEED_MIN = 0.5
+RILT_SPEED_MAX = 2.0
+RILT_SPEED_STEP = 0.1
+RILT_SPEED_OPTIONS: tuple[float, ...] = (0.8, 1.0, 1.2)
+RILT_DEFAULT_VOICE = "default"
+RILT_DEFAULT_LANGUAGE = "multi"
 
 
 class EffectiveAIModelConfiguration(BaseModel):
@@ -49,11 +49,11 @@ class EffectiveAIModelConfiguration(BaseModel):
         return data
 
 
-class SocialCangarooManagedAIModelConfiguration(BaseModel):
+class RiltManagedAIModelConfiguration(BaseModel):
     api_key: str
-    voice: str = SOCIAL_CANGAROO_DEFAULT_VOICE
-    speed: float = Field(default=1.0, ge=SOCIAL_CANGAROO_SPEED_MIN, le=SOCIAL_CANGAROO_SPEED_MAX)
-    language: str = SOCIAL_CANGAROO_DEFAULT_LANGUAGE
+    voice: str = RILT_DEFAULT_VOICE
+    speed: float = Field(default=1.0, ge=RILT_SPEED_MIN, le=RILT_SPEED_MAX)
+    language: str = RILT_DEFAULT_LANGUAGE
 
 
 class BYOKPipelineAIModelConfiguration(BaseModel):
@@ -63,11 +63,11 @@ class BYOKPipelineAIModelConfiguration(BaseModel):
     embeddings: EmbeddingsConfig | None = None
 
     @model_validator(mode="after")
-    def reject_social_cangaroo_providers(self):
-        _reject_social_cangaroo_provider("llm", self.llm)
-        _reject_social_cangaroo_provider("tts", self.tts)
-        _reject_social_cangaroo_provider("stt", self.stt)
-        _reject_social_cangaroo_provider("embeddings", self.embeddings)
+    def reject_rilt_providers(self):
+        _reject_rilt_provider("llm", self.llm)
+        _reject_rilt_provider("tts", self.tts)
+        _reject_rilt_provider("stt", self.stt)
+        _reject_rilt_provider("embeddings", self.embeddings)
         return self
 
 
@@ -77,9 +77,9 @@ class BYOKRealtimeAIModelConfiguration(BaseModel):
     embeddings: EmbeddingsConfig | None = None
 
     @model_validator(mode="after")
-    def reject_social_cangaroo_providers(self):
-        _reject_social_cangaroo_provider("llm", self.llm)
-        _reject_social_cangaroo_provider("embeddings", self.embeddings)
+    def reject_rilt_providers(self):
+        _reject_rilt_provider("llm", self.llm)
+        _reject_rilt_provider("embeddings", self.embeddings)
         return self
 
 
@@ -100,13 +100,13 @@ class BYOKAIModelConfiguration(BaseModel):
 class OrganizationAIModelConfigurationV2(BaseModel):
     version: Literal[2] = 2
     mode: Literal["dograh", "byok"]
-    dograh: SocialCangarooManagedAIModelConfiguration | None = None
+    dograh: RiltManagedAIModelConfiguration | None = None
     byok: BYOKAIModelConfiguration | None = None
 
     @model_validator(mode="after")
     def validate_selected_mode(self):
         if self.mode == "dograh" and self.dograh is None:
-            raise ValueError("social_cangaroo configuration is required when mode is social_cangaroo")
+            raise ValueError("rilt configuration is required when mode is rilt")
         if self.mode == "byok" and self.byok is None:
             raise ValueError("byok configuration is required when mode is byok")
         return self
@@ -123,8 +123,8 @@ def compile_ai_model_configuration_v2(
 ) -> EffectiveAIModelConfiguration:
     if configuration.mode == "dograh":
         if configuration.dograh is None:
-            raise ValueError("social_cangaroo configuration is required")
-        return _compile_social_cangaroo_configuration(configuration.dograh)
+            raise ValueError("rilt configuration is required")
+        return _compile_rilt_configuration(configuration.dograh)
 
     if configuration.byok is None:
         raise ValueError("byok configuration is required")
@@ -151,40 +151,40 @@ def compile_ai_model_configuration_v2(
     )
 
 
-def _compile_social_cangaroo_configuration(
-    configuration: SocialCangarooManagedAIModelConfiguration,
+def _compile_rilt_configuration(
+    configuration: RiltManagedAIModelConfiguration,
 ) -> EffectiveAIModelConfiguration:
     return EffectiveAIModelConfiguration(
-        llm=SocialCangarooLLMService(
-            provider=ServiceProviders.SOCIAL_CANGAROO,
+        llm=RiltLLMService(
+            provider=ServiceProviders.RILT,
             api_key=configuration.api_key,
             model="default",
         ),
-        tts=SocialCangarooTTSService(
-            provider=ServiceProviders.SOCIAL_CANGAROO,
+        tts=RiltTTSService(
+            provider=ServiceProviders.RILT,
             api_key=configuration.api_key,
             model="default",
             voice=configuration.voice,
             speed=configuration.speed,
         ),
-        stt=SocialCangarooSTTService(
-            provider=ServiceProviders.SOCIAL_CANGAROO,
+        stt=RiltSTTService(
+            provider=ServiceProviders.RILT,
             api_key=configuration.api_key,
             model="default",
             language=configuration.language,
         ),
-        embeddings=SocialCangarooEmbeddingsConfiguration(
-            provider=ServiceProviders.SOCIAL_CANGAROO,
+        embeddings=RiltEmbeddingsConfiguration(
+            provider=ServiceProviders.RILT,
             api_key=configuration.api_key,
-            model="social_cangaroo_embedding_v1",
+            model="dograh_embedding_v1",
         ),
         is_realtime=False,
         managed_service_version=2,
     )
 
 
-def _reject_social_cangaroo_provider(section: str, service) -> None:
+def _reject_rilt_provider(section: str, service) -> None:
     if service is None:
         return
-    if getattr(service, "provider", None) == ServiceProviders.SOCIAL_CANGAROO:
-        raise ValueError(f"BYOK {section} cannot use Social Cangaroo provider")
+    if getattr(service, "provider", None) == ServiceProviders.RILT:
+        raise ValueError(f"BYOK {section} cannot use AICall provider")

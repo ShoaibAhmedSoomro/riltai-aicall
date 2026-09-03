@@ -5,7 +5,7 @@ Centralizes error handling across all telephony providers.
 
 from enum import Enum
 
-from api.errors.failure import SocialCangarooFailure, ErrorSource, ErrorType, log_failure
+from api.errors.failure import ErrorSource, ErrorType, RiltFailure, log_failure
 
 
 class TelephonyError(Enum):
@@ -45,7 +45,7 @@ def failure_from_telephony_error(
     error: TelephonyError,
     *,
     provider: str | None = None,
-) -> SocialCangarooFailure | None:
+) -> RiltFailure | None:
     """Map an inbound validation result onto the stable failure taxonomy."""
 
     if not isinstance(error, TelephonyError):
@@ -53,12 +53,12 @@ def failure_from_telephony_error(
             error = TelephonyError(error)
         except (TypeError, ValueError):
             provider_code = (provider or "telephony").replace("_", "-")
-            return SocialCangarooFailure(
+            return RiltFailure(
                 source=ErrorSource.TELEPHONY,
                 type=ErrorType.SYSTEM_ERROR,
                 code=f"{provider_code}-unknown-validation-error",
                 internal_message=f"Unknown inbound telephony validation result: {error}",
-                external_message="Social Cangaroo could not process the inbound telephony validation result.",
+                external_message="AICall could not process the inbound telephony validation result.",
                 provider=provider,
                 retryable=None,
                 context={
@@ -76,7 +76,7 @@ def failure_from_telephony_error(
     external_message = TELEPHONY_ERROR_MESSAGES.get(
         error, TELEPHONY_ERROR_MESSAGES[TelephonyError.GENERAL_AUTH_FAILED]
     )
-    return SocialCangarooFailure(
+    return RiltFailure(
         source=ErrorSource.TELEPHONY,
         type=error_type,
         code=f"{provider_code}-{error.value.lower().replace('_', '-')}",

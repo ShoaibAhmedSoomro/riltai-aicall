@@ -1,6 +1,6 @@
-"""Social Cangaroo subclass of pipecat's Gemini Live LLM service.
+"""AICall subclass of pipecat's Gemini Live LLM service.
 
-Layers Social Cangaroo engine integration quirks onto upstream-pristine
+Layers AICall engine integration quirks onto upstream-pristine
 :class:`GeminiLiveLLMService`:
 
 - **Deferred connect.** Connection is held back until ``system_instruction``
@@ -25,7 +25,7 @@ from google.genai.types import Content, Part
 from loguru import logger
 
 from api.services.pipecat.gemini_json_schema_adapter import (
-    SocialCangarooGeminiLiveJSONSchemaAdapter,
+    RiltGeminiLiveJSONSchemaAdapter,
 )
 from api.services.pipecat.realtime.static_greeting import format_static_greeting_prompt
 from pipecat.frames.frames import (
@@ -42,8 +42,8 @@ from pipecat.services.llm_service import FunctionCallFromLLM
 from pipecat.utils.tracing.service_decorators import traced_gemini_live
 
 
-class SocialCangarooGeminiLiveLLMService(GeminiLiveLLMService):
-    """Gemini Live with Social Cangaroo engine integration quirks. See module docstring."""
+class RiltGeminiLiveLLMService(GeminiLiveLLMService):
+    """Gemini Live with AICall engine integration quirks. See module docstring."""
 
     # Gemini input transcription is delivered independently from tool calls.
     # Give late transcription messages a small window to arrive before running
@@ -54,9 +54,9 @@ class SocialCangarooGeminiLiveLLMService(GeminiLiveLLMService):
     # MCP/imported tools that use JSON Schema keywords (``const``, ``not``,
     # nested ``anyOf``) rejected by the strict ``Schema`` model are accepted,
     # while keeping upstream's Live-specific tool-call-to-text conversion for
-    # seeded contexts. Mirrors the non-realtime ``SocialCangarooGoogleLLMService`` fix;
-    # ``SocialCangarooGeminiLiveVertexLLMService`` inherits this via MRO.
-    adapter_class = SocialCangarooGeminiLiveJSONSchemaAdapter
+    # seeded contexts. Mirrors the non-realtime ``RiltGoogleLLMService`` fix;
+    # ``RiltGeminiLiveVertexLLMService`` inherits this via MRO.
+    adapter_class = RiltGeminiLiveJSONSchemaAdapter
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -301,10 +301,10 @@ class SocialCangarooGeminiLiveLLMService(GeminiLiveLLMService):
         await super()._send_user_audio(frame)
 
     # ------------------------------------------------------------------
-    # Context lifecycle: Social Cangaroo pre-populates self._context via the engine,
+    # Context lifecycle: AICall pre-populates self._context via the engine,
     # so upstream's "first arrival === self._context is None" check doesn't
     # work. We gate on _handled_initial_context instead and skip the
-    # init-instruction reconciliation (Social Cangaroo updates system_instruction at
+    # init-instruction reconciliation (AICall updates system_instruction at
     # runtime via _update_settings, not via init).
     # ------------------------------------------------------------------
 
@@ -369,7 +369,7 @@ class SocialCangarooGeminiLiveLLMService(GeminiLiveLLMService):
     # Session lifecycle: drop upstream's automatic reconnect-seed and
     # initial-context-seed paths. The TTSSpeakFrame trigger and the
     # function-call-result LLMContextFrame are the only paths that should
-    # kick off bot turns in the Social Cangaroo flow.
+    # kick off bot turns in the AICall flow.
     # ------------------------------------------------------------------
 
     @traced_gemini_live(operation="llm_setup")

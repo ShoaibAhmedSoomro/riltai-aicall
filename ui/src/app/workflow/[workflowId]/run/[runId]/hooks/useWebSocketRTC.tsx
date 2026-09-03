@@ -725,13 +725,13 @@ export const useWebSocketRTC = ({ workflowId, workflowRunId, accessToken, initia
                 const message = detailFromError(
                     response.error,
                     isServiceUnavailable
-                        ? 'Social Cangaroo is temporarily unavailable. Please try again later.'
+                        ? 'AICall is temporarily unavailable. Please try again later.'
                         : 'API Key Error',
                 );
 
                 if (isServiceUnavailable) {
-                    // MPS is a Social-Cangaroo-owned dependency. Do not tell the customer
-                    // to change credentials when Social Cangaroo could not validate them.
+                    // MPS is a Rilt-owned dependency. Do not tell the customer
+                    // to change credentials when AICall could not validate them.
                     setApiKeyModalOpen(false);
                     setApiKeyError(null);
                     setApiKeyErrorCode(null);

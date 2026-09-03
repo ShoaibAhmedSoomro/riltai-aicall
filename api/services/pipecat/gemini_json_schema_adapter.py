@@ -1,4 +1,4 @@
-"""Social-Cangaroo-specific Gemini adapter customizations."""
+"""Rilt-specific Gemini adapter customizations."""
 
 from typing import Any
 
@@ -7,7 +7,7 @@ from pipecat.adapters.services.gemini_adapter import GeminiLLMAdapter
 from pipecat.adapters.services.gemini_live_adapter import GeminiLiveLLMAdapter
 
 
-class SocialCangarooGeminiJSONSchemaAdapter(GeminiLLMAdapter):
+class RiltGeminiJSONSchemaAdapter(GeminiLLMAdapter):
     """Use Gemini's full JSON Schema tool parameter field.
 
     Pipecat's default Gemini adapter maps ``FunctionSchema.parameters`` into
@@ -40,8 +40,8 @@ class SocialCangarooGeminiJSONSchemaAdapter(GeminiLLMAdapter):
         return formatted_standard_tools + custom_gemini_tools
 
 
-class SocialCangarooGeminiLiveJSONSchemaAdapter(
-    GeminiLiveLLMAdapter, SocialCangarooGeminiJSONSchemaAdapter
+class RiltGeminiLiveJSONSchemaAdapter(
+    GeminiLiveLLMAdapter, RiltGeminiJSONSchemaAdapter
 ):
     """Gemini Live adapter with the JSON Schema tool-parameter fix.
 

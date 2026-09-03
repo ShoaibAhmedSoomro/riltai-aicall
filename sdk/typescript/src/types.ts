@@ -1,4 +1,4 @@
-// Structural types mirroring the NodeSpec schema served by the Social Cangaroo
+// Structural types mirroring the NodeSpec schema served by the AICall
 // backend at /api/v1/node-types. Kept local (no dependency on the UI's
 // generated client) so this package is self-contained and publishable.
 

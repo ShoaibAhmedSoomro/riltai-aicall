@@ -59,8 +59,8 @@ def _response_summary(response_text: str) -> str:
     not worth logging is the block VICIdial appends after it, which repeats the
     API user and the search values it was given:
 
-        ERROR: update_lead NO MATCHES FOUND IN THE SYSTEM: |SOCIAL_CANGAROOAPI|1||
-        ERROR: update_lead NO VALID SEARCH METHOD - SOCIAL_CANGAROOAPI|LEAD_ID|||
+        ERROR: update_lead NO MATCHES FOUND IN THE SYSTEM: |RILTAPI|1||
+        ERROR: update_lead NO VALID SEARCH METHOD - RILTAPI|LEAD_ID|||
 
     Either ``|`` or `` - `` can introduce that block, so cut at whichever comes
     first and keep only the reason ahead of it.

@@ -148,7 +148,7 @@ When trunks also exist on the provider's side, pair the schema with
 store in `external_id`) and `remove_trunk_on_delete`. Both receive the stored
 credentials and a `TrunkDesiredState`. Integrations that route through the
 provider account itself leave all three unset and their numbers carry a null
-trunk — that is a property of how Social Cangaroo drives the provider, not of the
+trunk — that is a property of how AICall drives the provider, not of the
 vendor. Twilio, Plivo and Telnyx all sell SIP trunking with per-number trunk
 assignment; we simply don't use it, because these integrations dial through
 their call-control APIs.

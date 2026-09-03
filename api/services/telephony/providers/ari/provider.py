@@ -52,7 +52,7 @@ class ARIProvider(TelephonyProvider):
 
         ``app_name`` authenticates to Asterisk; ``stasis_app_name`` names the
         dialplan application calls are placed into. Asterisk treats these as
-        unrelated namespaces, and Social Cangaroo generates the second one so two
+        unrelated namespaces, and AICall generates the second one so two
         configurations can never claim the same application. Configurations
         written before the split have only ``app_name`` and use it for both.
         """

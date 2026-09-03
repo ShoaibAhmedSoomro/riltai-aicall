@@ -3,10 +3,10 @@ import { NextResponse } from 'next/server';
 
 import { getServerBackendUrl } from '@/lib/apiClient';
 
-const OSS_TOKEN_COOKIE = 'social_cangaroo_auth_token';
+const OSS_TOKEN_COOKIE = 'rilt_auth_token';
 
 // Paths that don't require authentication in OSS mode.
-// `/embed` serves the public website widget (e.g. /embed/social-cangaroo-widget.js),
+// `/embed` serves the public website widget (e.g. /embed/rilt-widget.js),
 // which must be fetchable without a session cookie so third-party sites can
 // embed it — otherwise the middleware 307-redirects the asset to /auth/login.
 const PUBLIC_PATHS = ['/auth/login', '/auth/signup', '/embed'];
@@ -80,7 +80,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public static assets (anything with a file extension, e.g. /social-cangaroo-logo.svg)
+     * - public static assets (anything with a file extension, e.g. /rilt-logo.svg)
      */
     '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpe?g|gif|svg|webp|avif|ico|woff2?|ttf|otf)).*)',
   ],

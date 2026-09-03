@@ -64,12 +64,12 @@ def _format_errors(errors: list[dict[str, Any]]) -> str:
 async def create_workflow(code: str) -> dict[str, Any]:
     """Parse SDK TypeScript and create a new published workflow.
 
-    `code` is TypeScript source using `@social_cangaroo/sdk`. The workflow name
+    `code` is TypeScript source using `@rilt/sdk`. The workflow name
     comes from `new Workflow({ name: "..." })` — it is required.
 
     Example code:
-        import { Workflow } from "@social_cangaroo/sdk";
-        import { startCall, endCall } from "@social_cangaroo/sdk/typed";
+        import { Workflow } from "@rilt/sdk";
+        import { startCall, endCall } from "@rilt/sdk/typed";
 
         const wf = new Workflow({ name: "lead_qualification" });
         const greeting = wf.addTyped(startCall({ name: "Greeting", prompt: "Hi!" }));

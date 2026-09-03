@@ -56,7 +56,7 @@ from api.services.workflow.node_specs.model_spec import (
         },
         "noveum_enabled": {
             "display_name": "Enabled",
-            "description": "When false, Social Cangaroo skips exporting this call to Noveum.",
+            "description": "When false, AICall skips exporting this call to Noveum.",
         },
         "noveum_api_key": {
             "display_name": "Noveum API Key",
@@ -75,7 +75,7 @@ class NoveumNodeData(BaseNodeData):
         default=True,
         ui_type=PropertyType.boolean,
         display_name="Enabled",
-        description="When false, Social Cangaroo skips exporting this call to Noveum.",
+        description="When false, AICall skips exporting this call to Noveum.",
     )
     noveum_api_key: str | None = spec_field(
         default=None,

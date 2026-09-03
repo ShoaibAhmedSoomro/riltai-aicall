@@ -24,12 +24,12 @@ BASE_LOG_DIR="$BASE_DIR/logs"
 LATEST_LINK="$BASE_LOG_DIR/latest"
 VENV_PATH="$BASE_DIR/venv"
 
-NGINX_UPSTREAM_TEMPLATE="$BASE_DIR/nginx/social_cangaroo_upstream.conf.template"
-NGINX_UPSTREAM_CONF="/etc/nginx/conf.d/social_cangaroo_upstream.conf"
+NGINX_UPSTREAM_TEMPLATE="$BASE_DIR/nginx/rilt_upstream.conf.template"
+NGINX_UPSTREAM_CONF="/etc/nginx/conf.d/rilt_upstream.conf"
 
 HEALTH_CHECK_ENDPOINT="/api/v1/health"
 ACTIVE_CALLS_ENDPOINT="/api/v1/health/active-calls"
-SOCIAL_CANGAROO_DEVOPS_SECRET_HEADER="X-Social-Cangaroo-Devops-Secret"
+RILT_DEVOPS_SECRET_HEADER="X-Rilt-Devops-Secret"
 
 # Load environment
 if [[ -f "$ENV_FILE" ]]; then
@@ -62,12 +62,12 @@ log_info()  { echo "[$(date '+%Y-%m-%d %H:%M:%S')] INFO:  $*"; }
 log_warn()  { echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARN:  $*"; }
 log_error() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $*" >&2; }
 
-if [[ -z "${SOCIAL_CANGAROO_DEVOPS_SECRET:-}" ]]; then
-  log_error "SOCIAL_CANGAROO_DEVOPS_SECRET is not set. Add it to $ENV_FILE before running rolling_update.sh."
+if [[ -z "${RILT_DEVOPS_SECRET:-}" ]]; then
+  log_error "RILT_DEVOPS_SECRET is not set. Add it to $ENV_FILE before running rolling_update.sh."
   exit 1
 fi
-if [[ "$SOCIAL_CANGAROO_DEVOPS_SECRET" == "change-me-social-cangaroo-devops-secret" ]]; then
-  log_error "SOCIAL_CANGAROO_DEVOPS_SECRET still has the example placeholder value. Replace it in $ENV_FILE."
+if [[ "$RILT_DEVOPS_SECRET" == "change-me-rilt-devops-secret" ]]; then
+  log_error "RILT_DEVOPS_SECRET still has the example placeholder value. Replace it in $ENV_FILE."
   exit 1
 fi
 
@@ -121,7 +121,7 @@ count_active_calls_on_port() {
   local port=$1
   local response http_code body n
   response=$(curl -sS --max-time 3 \
-    -H "${SOCIAL_CANGAROO_DEVOPS_SECRET_HEADER}: ${SOCIAL_CANGAROO_DEVOPS_SECRET}" \
+    -H "${RILT_DEVOPS_SECRET_HEADER}: ${RILT_DEVOPS_SECRET}" \
     -w $'\n%{http_code}' \
     "http://127.0.0.1:${port}${ACTIVE_CALLS_ENDPOINT}" 2>/dev/null || true)
   http_code="${response##*$'\n'}"
@@ -133,7 +133,7 @@ count_active_calls_on_port() {
   fi
 
   if [[ "$http_code" != "200" ]]; then
-    log_error "uvicorn_${port} active-calls endpoint returned HTTP ${http_code}. Check SOCIAL_CANGAROO_DEVOPS_SECRET in $ENV_FILE."
+    log_error "uvicorn_${port} active-calls endpoint returned HTTP ${http_code}. Check RILT_DEVOPS_SECRET in $ENV_FILE."
     return 1
   fi
 

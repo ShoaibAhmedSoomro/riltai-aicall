@@ -183,7 +183,7 @@ async def test_completed_aioice_task_without_exception_stays_error():
 
 async def test_our_task_failures_keep_default_error_reporting():
     task = await _finished_task(
-        "/data/social_cangaroo/app/api/services/thing.py", "raise RuntimeError('boom')"
+        "/data/rilt/app/api/services/thing.py", "raise RuntimeError('boom')"
     )
     context = {
         "message": "Task exception was never retrieved",

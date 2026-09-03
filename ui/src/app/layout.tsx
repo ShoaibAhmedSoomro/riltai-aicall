@@ -30,7 +30,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Social Cangaroo",
+  title: "AICall",
   description: "Open Source Voice Assistant Workflow Builder",
 };
 

@@ -1,7 +1,7 @@
-# Social Cangaroo AI Documentation
+# AICall Documentation
 
 ### Local Setup
 
 1. Install mintlify `npm i -g mint`
 1. Clone the repository
-1. `cd social-cangaroo/docs` and run `mint dev`
+1. `cd rilt/docs` and run `mint dev`

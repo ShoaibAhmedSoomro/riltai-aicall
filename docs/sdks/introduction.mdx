@@ -1,12 +1,12 @@
 ---
 title: "Introduction"
-description: "Build and operate Social Cangaroo voice AI agents programmatically from Python or TypeScript"
+description: "Build and operate AICall voice AI agents programmatically from Python or TypeScript"
 ---
 
-Social Cangaroo ships official SDKs for **Python** and **TypeScript** that wrap the Social Cangaroo REST API and the workflow builder. Use them to create or edit agents, place outbound calls, and inspect runs from your own code.
+AICall ships official SDKs for **Python** and **TypeScript** that wrap the AICall REST API and the workflow builder. Use them to create or edit agents, place outbound calls, and inspect runs from your own code.
 
-- **Python** — [`social-cangaroo-sdk`](https://pypi.org/project/social-cangaroo-sdk/) on PyPI
-- **TypeScript** — [`@social-cangaroo/sdk`](https://www.npmjs.com/package/@social-cangaroo/sdk) on npm
+- **Python** — [`rilt-sdk`](https://pypi.org/project/rilt-sdk/) on PyPI
+- **TypeScript** — [`@rilt/sdk`](https://www.npmjs.com/package/@rilt/sdk) on npm
 
 Both packages are generated from the same backend OpenAPI spec, so the method surface is equivalent — only the naming convention differs (`snake_case` in Python, `camelCase` in TypeScript).
 
@@ -14,33 +14,33 @@ Both packages are generated from the same backend OpenAPI spec, so the method su
 
 <CodeGroup>
 ```bash Python
-pip install social-cangaroo-sdk
+pip install rilt-sdk
 ```
 ```bash TypeScript
-npm install @social-cangaroo/sdk
+npm install @rilt/sdk
 ```
 </CodeGroup>
 
 ## Authenticate
 
-Generate an API key at [`/api-keys`](https://app.socialcangaroo.com/api-keys) (or `http://localhost:3010/api-keys` for self-hosted). See [API Keys](/configurations/api-keys) for details.
+Generate an API key at [`/api-keys`](https://aicall.rilt.ai/api-keys) (or `http://localhost:3010/api-keys` for self-hosted). See [API Keys](/configurations/api-keys) for details.
 
-Both SDKs read the API key from the `SOCIAL_CANGAROO_API_KEY` environment variable by default, and the base URL from `SOCIAL_CANGAROO_API_URL` (defaults to `http://localhost:8000`). You can also pass them explicitly.
+Both SDKs read the API key from the `RILT_API_KEY` environment variable by default, and the base URL from `RILT_API_URL` (defaults to `http://localhost:8000`). You can also pass them explicitly.
 
 <CodeGroup>
 ```python Python
-from social_cangaroo_sdk import SocialCangarooClient
+from rilt_sdk import RiltClient
 
-client = SocialCangarooClient(
-    base_url="https://app.socialcangaroo.com",
+client = RiltClient(
+    base_url="https://aicall.rilt.ai",
     api_key="YOUR_API_KEY",
 )
 ```
 ```typescript TypeScript
-import { SocialCangarooClient } from "@social-cangaroo/sdk";
+import { RiltClient } from "@rilt/sdk";
 
-const client = new SocialCangarooClient({
-    baseUrl: "https://app.socialcangaroo.com",
+const client = new RiltClient({
+    baseUrl: "https://aicall.rilt.ai",
     apiKey: "YOUR_API_KEY",
 });
 ```

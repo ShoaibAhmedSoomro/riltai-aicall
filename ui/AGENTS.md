@@ -1,6 +1,6 @@
 # UI - Frontend Application
 
-Next.js 15 frontend for the Social Cangaroo voice AI platform.
+Next.js 15 frontend for the AICall voice AI platform.
 
 ## Project Structure
 

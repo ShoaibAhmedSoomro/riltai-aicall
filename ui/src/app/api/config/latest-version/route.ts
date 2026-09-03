@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const GHCR_IMAGES = ["ShoaibAhmedSoomro/social-cangaroo-ui", "ShoaibAhmedSoomro/social-cangaroo-api"] as const;
+const GHCR_IMAGES = ["ShoaibAhmedSoomro/rilt-ui", "ShoaibAhmedSoomro/rilt-api"] as const;
 const SEMVER_RE = /^(\d+)\.(\d+)\.(\d+)$/;
 const REVALIDATE_SECONDS = 60 * 60;
 

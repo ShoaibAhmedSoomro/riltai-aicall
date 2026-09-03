@@ -51,6 +51,6 @@ async def test_hangup_missing_call_sid_is_operator_owned_system_error():
     assert failure.error_owner == ErrorOwner.OPERATOR
     assert failure.code == "twilio-missing-call-sid"
     assert failure.external_message == (
-        "Social Cangaroo could not identify the active Twilio call. Please retry or contact "
+        "AICall could not identify the active Twilio call. Please retry or contact "
         "support if the problem continues."
     )

@@ -75,9 +75,9 @@ ENABLE_SIGNUP = os.getenv("ENABLE_SIGNUP", "true").lower() == "true"
 # needs them baked into the bundle at build time.
 STACK_AUTH_PROJECT_ID = os.getenv("STACK_AUTH_PROJECT_ID")
 STACK_PUBLISHABLE_CLIENT_KEY = os.getenv("STACK_PUBLISHABLE_CLIENT_KEY")
-SOCIAL_CANGAROO_MPS_SECRET_KEY = os.getenv("SOCIAL_CANGAROO_MPS_SECRET_KEY", None)
+RILT_MPS_SECRET_KEY = os.getenv("RILT_MPS_SECRET_KEY", None)
 MPS_API_URL = os.getenv("MPS_API_URL", "https://services.dograh.com")
-SOCIAL_CANGAROO_DEVOPS_SECRET = os.getenv("SOCIAL_CANGAROO_DEVOPS_SECRET") or None
+RILT_DEVOPS_SECRET = os.getenv("RILT_DEVOPS_SECRET") or None
 
 # Storage Configuration
 ENABLE_AWS_S3 = os.getenv("ENABLE_AWS_S3", "false").lower() == "true"

@@ -248,7 +248,7 @@ def _create_realtime_user_turn_config(provider: str):
         return external_provider_turn_config()
     if provider == ServiceProviders.ULTRAVOX_REALTIME.value:
         # Ultravox does not emit user-turn frames, so local VAD supplies
-        # lifecycle signals for Social Cangaroo observers/controllers.
+        # lifecycle signals for AICall observers/controllers.
         return local_vad_turn_config(enable_interruptions=True)
 
     return local_vad_turn_config(enable_interruptions=True)
@@ -706,7 +706,7 @@ async def _run_pipeline_impl(
             usage_context="variable_extraction",
         )
         if uses_variable_extraction
-        and user_config.llm.provider == ServiceProviders.SOCIAL_CANGAROO.value
+        and user_config.llm.provider == ServiceProviders.RILT.value
         else inference_llm or llm
     )
 

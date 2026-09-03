@@ -80,7 +80,7 @@ class ProviderPhoneNumberLookupError(Exception):
     ``status_code`` carries the provider's HTTP status when the lookup reached
     the API. Failure classification reads it structurally — an auth rejection
     has to be attributable as the account holder's configuration rather than a
-    Social Cangaroo fault, and that must not depend on parsing the provider's wording.
+    AICall fault, and that must not depend on parsing the provider's wording.
     It is ``None`` when the call failed before a response (transport, DNS, or
     credentials missing locally).
     """

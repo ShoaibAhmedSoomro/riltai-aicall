@@ -10,7 +10,7 @@ from api.routes.public_embed import PublicEmbedCORSMiddleware, router
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://app.socialcangaroo.com"],
+    allow_origins=["https://aicall.rilt.ai"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

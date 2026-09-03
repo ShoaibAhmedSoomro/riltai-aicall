@@ -430,7 +430,7 @@ async def test_text_chat_pre_call_fetch_hydrates_initial_context_once(
                 json={
                     "initial_context": {
                         "customer_name": "Explicit",
-                        "page_url": "https://socialcangaroo.com/pricing",
+                        "page_url": "https://rilt.ai/pricing",
                     }
                 },
             )
@@ -462,7 +462,7 @@ async def test_text_chat_pre_call_fetch_hydrates_initial_context_once(
     assert fetch_kwargs["workflow_id"] == workflow.id
     assert fetch_kwargs["organization_id"] == user.selected_organization_id
     assert fetch_kwargs["call_context_vars"]["customer_name"] == "Explicit"
-    assert fetch_kwargs["call_context_vars"]["page_url"] == "https://socialcangaroo.com/pricing"
+    assert fetch_kwargs["call_context_vars"]["page_url"] == "https://rilt.ai/pricing"
     assert fetch_kwargs["call_context_vars"]["runtime_configuration"] == {
         "llm_provider": "openai",
         "llm_model": "gpt-4.1",
@@ -476,7 +476,7 @@ async def test_text_chat_pre_call_fetch_hydrates_initial_context_once(
     assert workflow_run.initial_context == {
         "customer_name": "Fetched",
         "account_tier": "gold",
-        "page_url": "https://socialcangaroo.com/pricing",
+        "page_url": "https://rilt.ai/pricing",
         "runtime_configuration": {
             "llm_provider": "openai",
             "llm_model": "gpt-4.1",

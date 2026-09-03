@@ -56,7 +56,7 @@ export function SetupChecklistCard({
         </div>
         <CardDescription>
           {connectivity === "sip"
-            ? "Social Cangaroo provides the SIP connection; you connect your own carrier and numbers to it."
+            ? "AICall provides the SIP connection; you connect your own carrier and numbers to it."
             : "Finish these steps to place and receive calls on this configuration."}
         </CardDescription>
       </CardHeader>

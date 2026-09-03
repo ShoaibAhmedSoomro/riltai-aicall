@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Contributor bootstrap. Run this once after cloning your fork.
-# Configures git remotes (origin = your fork, upstream = ShoaibAhmedSoomro/social-cangaroo),
+# Configures git remotes (origin = your fork, upstream = ShoaibAhmedSoomro/rilt),
 # initializes the pipecat submodule, creates the Python venv, and copies
 # the .env templates.
 
@@ -12,7 +12,7 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-UPSTREAM_URL="https://github.com/ShoaibAhmedSoomro/social-cangaroo.git"
+UPSTREAM_URL="https://github.com/ShoaibAhmedSoomro/riltai-aicall.git"
 
 BASE_DIR="$(cd "$(dirname "$(dirname "${BASH_SOURCE[0]}")")" && pwd)"
 cd "$BASE_DIR"
@@ -23,7 +23,7 @@ if ! git rev-parse --git-dir > /dev/null 2>&1; then
 fi
 
 echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║              Social Cangaroo Contributor Bootstrap                    ║${NC}"
+echo -e "${BLUE}║              AICall Contributor Bootstrap                    ║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -34,8 +34,8 @@ echo ""
 echo -e "${BLUE}[1/4] Configuring git remotes${NC}"
 
 current_origin=$(git remote get-url origin 2>/dev/null || echo "")
-canonical_https="https://github.com/ShoaibAhmedSoomro/social-cangaroo.git"
-canonical_ssh="git@github.com:ShoaibAhmedSoomro/social-cangaroo.git"
+canonical_https="https://github.com/ShoaibAhmedSoomro/riltai-aicall.git"
+canonical_ssh="git@github.com:ShoaibAhmedSoomro/rilt.git"
 
 # If origin is missing or points at the canonical repo (i.e. user cloned the
 # canonical repo directly without forking), prompt for the fork URL.
@@ -49,7 +49,7 @@ elif [[ "$current_origin" == "$canonical_https" || "$current_origin" == "$canoni
 fi
 
 if $needs_fork_prompt; then
-    echo -e "${YELLOW}Enter your fork URL (e.g. https://github.com/<YOUR_HANDLE>/social-cangaroo.git):${NC}"
+    echo -e "${YELLOW}Enter your fork URL (e.g. https://github.com/<YOUR_HANDLE>/rilt.git):${NC}"
     read -r -p "> " FORK_URL
     if [[ -z "$FORK_URL" ]]; then
         echo -e "${RED}Fork URL is required.${NC}"
@@ -70,7 +70,7 @@ if [[ -z "$existing_upstream" ]]; then
     echo -e "${GREEN}✓ upstream set to $UPSTREAM_URL${NC}"
 elif [[ "$existing_upstream" != "$UPSTREAM_URL" && "$existing_upstream" != "$canonical_ssh" ]]; then
     echo -e "${YELLOW}upstream currently points at $existing_upstream (expected $UPSTREAM_URL).${NC}"
-    echo -e "${YELLOW}Reset upstream to ShoaibAhmedSoomro/social-cangaroo? [y/N]:${NC}"
+    echo -e "${YELLOW}Reset upstream to ShoaibAhmedSoomro/rilt? [y/N]:${NC}"
     read -r -p "> " RESET_UPSTREAM
     if [[ "$RESET_UPSTREAM" =~ ^[Yy] ]]; then
         git remote set-url upstream "$UPSTREAM_URL"

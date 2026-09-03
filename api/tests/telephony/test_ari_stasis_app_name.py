@@ -1,7 +1,7 @@
 """Stasis application naming for ARI configurations.
 
 Asterisk hands a Stasis application to whichever ARI WebSocket registered for it
-last and silently stops delivering events to the previous holder. Two Social Cangaroo
+last and silently stops delivering events to the previous holder. Two AICall
 configurations naming the same application on one PBX therefore do not both
 work: one goes deaf with no error on either side, and the survivor receives the
 other's calls — stamping its own organization into the media-socket URL, which
@@ -45,7 +45,7 @@ def _legacy(**overrides):
 async def test_create_generates_a_stasis_app_name():
     created = await _preprocess_credentials_on_save(_legacy(), None)
 
-    assert created["stasis_app_name"].startswith("social_cangaroo_")
+    assert created["stasis_app_name"].startswith("rilt_")
     assert created["stasis_app_name"] != created["app_name"]
 
 
@@ -95,10 +95,10 @@ def test_generated_name_is_returned_to_the_customer():
     """Server-managed fields are hidden by default; this one has to be readable
     because the customer pastes it into their own extensions.conf."""
     displayed = _credentials_for_display(
-        "ari", _legacy(stasis_app_name="social_cangaroo_a1b2c3d4e5f6")
+        "ari", _legacy(stasis_app_name="rilt_a1b2c3d4e5f6")
     )
 
-    assert displayed["stasis_app_name"] == "social_cangaroo_a1b2c3d4e5f6"
+    assert displayed["stasis_app_name"] == "rilt_a1b2c3d4e5f6"
     assert displayed["app_password"] != "s3cr3t", "password must still be masked"
 
 
@@ -113,7 +113,7 @@ def test_stasis_app_name_is_not_accepted_from_the_client():
         ari_endpoint="http://pbx.example.com:8088",
         app_name="dograh",
         app_password="s3cr3t",
-        stasis_app_name="social_cangaroo_someone_elses_app",
+        stasis_app_name="rilt_someone_elses_app",
     )
     assert "stasis_app_name" not in submitted.model_dump()
 
@@ -121,10 +121,10 @@ def test_stasis_app_name_is_not_accepted_from_the_client():
 @pytest.mark.asyncio
 async def test_client_supplied_name_is_overwritten_on_create():
     created = await _preprocess_credentials_on_save(
-        _legacy(stasis_app_name="social_cangaroo_someone_elses_app"), None
+        _legacy(stasis_app_name="rilt_someone_elses_app"), None
     )
 
-    assert created["stasis_app_name"] != "social_cangaroo_someone_elses_app"
+    assert created["stasis_app_name"] != "rilt_someone_elses_app"
 
 
 # --------------------------------------------------------------------------
@@ -141,19 +141,17 @@ def test_websocket_authenticates_as_the_ari_user_and_subscribes_to_the_app():
         "s3cr3t",
         "dograh",
         None,
-        "social_cangaroo_a1b2c3d4e5f6",
+        "rilt_a1b2c3d4e5f6",
     )
 
     assert "api_key=dograh:s3cr3t" in connection.ws_url
-    assert "app=social_cangaroo_a1b2c3d4e5f6" in connection.ws_url
+    assert "app=rilt_a1b2c3d4e5f6" in connection.ws_url
 
 
 def test_origination_and_external_media_use_the_stasis_app():
-    provider = ARIProvider(
-        _config_loader(_legacy(stasis_app_name="social_cangaroo_a1b2c3d4e5f6"))
-    )
+    provider = ARIProvider(_config_loader(_legacy(stasis_app_name="rilt_a1b2c3d4e5f6")))
 
-    assert provider.stasis_app_name == "social_cangaroo_a1b2c3d4e5f6"
+    assert provider.stasis_app_name == "rilt_a1b2c3d4e5f6"
     # Authentication is unchanged — it is the ari.conf section name.
     assert provider._get_auth().login == "dograh"
 
@@ -171,4 +169,4 @@ def test_pre_split_configuration_still_uses_app_name_for_both():
 
     assert loaded["stasis_app_name"] == "dograh"
     assert ARIProvider(loaded).stasis_app_name == "dograh"
-    assert "app=social_cangaroo&" in connection.ws_url
+    assert "app=rilt&" in connection.ws_url

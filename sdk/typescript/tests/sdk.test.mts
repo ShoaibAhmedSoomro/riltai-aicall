@@ -1,6 +1,6 @@
-// Unit tests for @social-cangaroo/sdk. Uses Node's built-in `node:test` runner and
+// Unit tests for @rilt/sdk. Uses Node's built-in `node:test` runner and
 // an in-memory spec stub — no HTTP, no backend dependency. Mirrors the
-// Python SDK tests in api/tests/test_social_cangaroo_sdk.py.
+// Python SDK tests in api/tests/test_rilt_sdk.py.
 //
 // Run via `npm test` in sdk/typescript/.
 
@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 // `npm test` runs `tsc` first so dist/ is fresh.
 import {
     ApiError,
-    SocialCangarooClient,
+    RiltClient,
     SpecMismatchError,
     ValidationError,
     Workflow,
@@ -346,9 +346,9 @@ describe("round-trip", () => {
     });
 });
 
-// ─── SocialCangarooClient HTTP plumbing (stubbed fetch) ───────────────────────────
+// ─── RiltClient HTTP plumbing (stubbed fetch) ───────────────────────────
 
-describe("SocialCangarooClient", () => {
+describe("RiltClient", () => {
     it("sends the API key as X-API-Key", async () => {
         let capturedHeaders: Headers | undefined;
         const stubFetch: typeof fetch = async (_input, init) => {
@@ -358,7 +358,7 @@ describe("SocialCangarooClient", () => {
                 { status: 200, headers: { "content-type": "application/json" } },
             );
         };
-        const c = new SocialCangarooClient({
+        const c = new RiltClient({
             baseUrl: "http://api.example",
             apiKey: "sk-test",
             fetch: stubFetch,
@@ -373,7 +373,7 @@ describe("SocialCangarooClient", () => {
                 status: 404,
                 headers: { "content-type": "application/json" },
             });
-        const c = new SocialCangarooClient({
+        const c = new RiltClient({
             baseUrl: "http://api.example",
             apiKey: "k",
             fetch: stubFetch,
@@ -405,7 +405,7 @@ describe("SocialCangarooClient", () => {
                 headers: { "content-type": "application/json" },
             });
         };
-        const c = new SocialCangarooClient({
+        const c = new RiltClient({
             baseUrl: "http://api.example",
             apiKey: "k",
             fetch: stubFetch,

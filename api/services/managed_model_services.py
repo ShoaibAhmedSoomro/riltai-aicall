@@ -18,7 +18,7 @@ def uses_managed_model_services_v2(
         return False
 
     return any(
-        _is_social_cangaroo_service(getattr(ai_model_config, section_name, None))
+        _is_rilt_service(getattr(ai_model_config, section_name, None))
         for section_name in ("llm", "tts", "stt", "embeddings")
     )
 
@@ -51,19 +51,17 @@ async def ensure_mps_correlation_id(
     )
 
 
-def _is_social_cangaroo_service(service: Any) -> bool:
+def _is_rilt_service(service: Any) -> bool:
     provider = getattr(service, "provider", None)
-    return (
-        provider == ServiceProviders.SOCIAL_CANGAROO or provider == ServiceProviders.SOCIAL_CANGAROO.value
-    )
+    return provider == ServiceProviders.RILT or provider == ServiceProviders.RILT.value
 
 
-def get_social_cangaroo_service_api_key(
+def get_rilt_service_api_key(
     ai_model_config: EffectiveAIModelConfiguration,
 ) -> str | None:
     for section_name in ("llm", "tts", "stt", "embeddings"):
         service = getattr(ai_model_config, section_name, None)
-        if not _is_social_cangaroo_service(service):
+        if not _is_rilt_service(service):
             continue
 
         if hasattr(service, "get_all_api_keys"):

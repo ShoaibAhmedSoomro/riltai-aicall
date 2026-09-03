@@ -1,9 +1,9 @@
-"""Social Cangaroo subclass of pipecat's Ultravox realtime LLM service.
+"""AICall subclass of pipecat's Ultravox realtime LLM service.
 
 Ultravox is audio-native and realtime. Its native call stages allow a client
 tool result to atomically change the system prompt and tools while preserving
 the call's server-side conversation history. This wrapper adapts that model to
-the Social Cangaroo engine contract by:
+the AICall engine contract by:
 
 - deferring the first call creation until the engine queues the initial node
   opening via ``TTSSpeakFrame`` or ``LLMContextFrame``
@@ -12,7 +12,7 @@ the Social Cangaroo engine contract by:
 - updating the next stage's system prompt and selected tools without a
   disconnect/reconnect cycle
 - deferring workflow-control tools until any active Ultravox response ends
-- handling Social-Cangaroo-only frames such as user mute and idle append prompts
+- handling Rilt-only frames such as user mute and idle append prompts
 - tagging user transcripts with ``finalized=True`` for downstream parity
 """
 
@@ -44,8 +44,8 @@ from pipecat.services.ultravox.llm import (
 from pipecat.utils.time import time_now_iso8601
 
 
-class SocialCangarooUltravoxOneShotInputParams(OneShotInputParams):
-    """Social-Cangaroo-friendly OneShot params with string voice support."""
+class RiltUltravoxOneShotInputParams(OneShotInputParams):
+    """Rilt-friendly OneShot params with string voice support."""
 
     voice: str | None = Field(default=None)
 
@@ -53,8 +53,8 @@ class SocialCangarooUltravoxOneShotInputParams(OneShotInputParams):
 _ULTRAVOX_MAX_TOOL_TIMEOUT_SECS = 40.0
 
 
-class SocialCangarooUltravoxRealtimeLLMService(UltravoxRealtimeLLMService):
-    """Ultravox realtime with Social Cangaroo engine integration quirks."""
+class RiltUltravoxRealtimeLLMService(UltravoxRealtimeLLMService):
+    """Ultravox realtime with AICall engine integration quirks."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -77,7 +77,7 @@ class SocialCangarooUltravoxRealtimeLLMService(UltravoxRealtimeLLMService):
         self._pending_user_text_messages: list[str] = []
 
     async def start(self, frame):
-        # Social Cangaroo defers call creation until the engine queues the node opening.
+        # AICall defers call creation until the engine queues the node opening.
         await LLMService.start(self, frame)
 
     async def process_frame(self, frame: Frame, direction: FrameDirection):
@@ -204,7 +204,7 @@ class SocialCangarooUltravoxRealtimeLLMService(UltravoxRealtimeLLMService):
         """Commit any received final user transcript before changing stages.
 
         Ultravox preserves its own audio-native history across a stage change,
-        but Social Cangaroo's local context still needs the final transcript before the
+        but AICall's local context still needs the final transcript before the
         transition handler updates the workflow node.
         """
         return True
@@ -420,7 +420,7 @@ class SocialCangarooUltravoxRealtimeLLMService(UltravoxRealtimeLLMService):
         *,
         greeting_text: str | None,
         agent_speaks_first: bool,
-    ) -> SocialCangarooUltravoxOneShotInputParams:
+    ) -> RiltUltravoxOneShotInputParams:
         current_params = self._params
         extra = {
             key: value
@@ -438,7 +438,7 @@ class SocialCangarooUltravoxRealtimeLLMService(UltravoxRealtimeLLMService):
         if isinstance(output_medium, _NotGiven):
             output_medium = current_params.output_medium
 
-        return SocialCangarooUltravoxOneShotInputParams(
+        return RiltUltravoxOneShotInputParams(
             api_key=current_params.api_key,
             system_prompt=self._current_system_instruction(),
             temperature=current_params.temperature,

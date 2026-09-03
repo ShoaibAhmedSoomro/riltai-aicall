@@ -4,12 +4,12 @@ import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const widgetSource = readFileSync(
-    resolve(process.cwd(), 'public/embed/social-cangaroo-widget.js'),
+    resolve(process.cwd(), 'public/embed/rilt-widget.js'),
     'utf8',
 );
 
 type WidgetWindow = Window & {
-    SocialCangarooWidget?: {
+    RiltWidget?: {
         init: () => Promise<void>;
         start: () => Promise<void>;
         startChat: () => Promise<void>;
@@ -36,7 +36,7 @@ function createFetchMock(autoStart: boolean) {
                     settings: {
                         widgetType: 'chat',
                         embedMode: 'inline',
-                        containerId: 'social-cangaroo-inline-container',
+                        containerId: 'rilt-inline-container',
                     },
                     auto_start: autoStart,
                 }),
@@ -84,13 +84,13 @@ async function loadWidget(fetchMock: ReturnType<typeof createFetchMock>) {
     window.eval(widgetSource);
     await flushMicrotasks();
 
-    const widget = (window as WidgetWindow).SocialCangarooWidget;
+    const widget = (window as WidgetWindow).RiltWidget;
     expect(widget).toBeDefined();
     if (fetchMock.mock.calls.length === 0) {
         await widget?.init();
     }
     await flushMicrotasks();
-    return widget as NonNullable<WidgetWindow['SocialCangarooWidget']>;
+    return widget as NonNullable<WidgetWindow['RiltWidget']>;
 }
 
 describe('public embed widget chat lifecycle', () => {
@@ -98,13 +98,13 @@ describe('public embed widget chat lifecycle', () => {
         vi.useFakeTimers();
         document.head.innerHTML = '';
         document.body.innerHTML = `
-            <script src="http://widget.test/embed/social-cangaroo-widget.js?token=emb_TEST"></script>
-            <div id="social-cangaroo-inline-container"></div>
+            <script src="http://widget.test/embed/rilt-widget.js?token=emb_TEST"></script>
+            <div id="rilt-inline-container"></div>
         `;
     });
 
     afterEach(() => {
-        delete (window as WidgetWindow).SocialCangarooWidget;
+        delete (window as WidgetWindow).RiltWidget;
         vi.useRealTimers();
         vi.unstubAllGlobals();
         vi.restoreAllMocks();
@@ -119,23 +119,23 @@ describe('public embed widget chat lifecycle', () => {
         await flushMicrotasks();
 
         expect(countInitCalls(fetchMock)).toBe(1);
-        expect(document.querySelector('.social-cangaroo-chat-inline-cta')).toBeNull();
-        expect(document.querySelector('.social-cangaroo-chat-panel--inline')).not.toBeNull();
+        expect(document.querySelector('.rilt-chat-inline-cta')).toBeNull();
+        expect(document.querySelector('.rilt-chat-panel--inline')).not.toBeNull();
     });
 
     it('public startChat opens the inline panel and reuses its session', async () => {
         const fetchMock = createFetchMock(false);
         const widget = await loadWidget(fetchMock);
 
-        expect(document.querySelector('.social-cangaroo-chat-inline-cta')).not.toBeNull();
+        expect(document.querySelector('.rilt-chat-inline-cta')).not.toBeNull();
         expect(countInitCalls(fetchMock)).toBe(0);
 
         await widget.startChat();
         await flushMicrotasks();
 
         expect(countInitCalls(fetchMock)).toBe(1);
-        expect(document.querySelector('.social-cangaroo-chat-inline-cta')).toBeNull();
-        expect(document.querySelector('.social-cangaroo-chat-panel--inline')).not.toBeNull();
+        expect(document.querySelector('.rilt-chat-inline-cta')).toBeNull();
+        expect(document.querySelector('.rilt-chat-panel--inline')).not.toBeNull();
 
         await widget.startChat();
         await flushMicrotasks();
@@ -149,7 +149,7 @@ describe('public embed widget chat lifecycle', () => {
         await widget.startChat();
         await flushMicrotasks();
 
-        const endButton = document.querySelector<HTMLButtonElement>('.social-cangaroo-chat-end');
+        const endButton = document.querySelector<HTMLButtonElement>('.rilt-chat-end');
         expect(endButton).not.toBeNull();
         expect(endButton?.disabled).toBe(false);
 
@@ -161,7 +161,7 @@ describe('public embed widget chat lifecycle', () => {
         )).toBe(false);
 
         const confirmEndButton = document.querySelector<HTMLButtonElement>(
-            '.social-cangaroo-chat-end-confirm-submit',
+            '.rilt-chat-end-confirm-submit',
         );
         expect(confirmEndButton).not.toBeNull();
         confirmEndButton?.click();
@@ -172,8 +172,8 @@ describe('public embed widget chat lifecycle', () => {
         );
         expect(endCalls).toHaveLength(1);
         expect(widget.getState().chat.status).toBe('ended');
-        expect(document.querySelector('.social-cangaroo-chat-banner')?.textContent).toContain('Conversation ended.');
-        expect(document.querySelector<HTMLButtonElement>('.social-cangaroo-chat-send')?.disabled).toBe(true);
+        expect(document.querySelector('.rilt-chat-banner')?.textContent).toContain('Conversation ended.');
+        expect(document.querySelector<HTMLButtonElement>('.rilt-chat-send')?.disabled).toBe(true);
     });
 
     it('generic start waits for chat configuration before choosing a flow', async () => {
@@ -216,7 +216,7 @@ describe('public embed widget chat lifecycle', () => {
 
         window.eval(widgetSource);
         await flushMicrotasks();
-        const widget = (window as WidgetWindow).SocialCangarooWidget;
+        const widget = (window as WidgetWindow).RiltWidget;
         expect(widget).toBeDefined();
 
         const startPromise = widget?.start();
@@ -233,7 +233,7 @@ describe('public embed widget chat lifecycle', () => {
                 settings: {
                     widgetType: 'chat',
                     embedMode: 'inline',
-                    containerId: 'social-cangaroo-inline-container',
+                    containerId: 'rilt-inline-container',
                 },
                 auto_start: false,
             }),
@@ -247,6 +247,6 @@ describe('public embed widget chat lifecycle', () => {
         expect(configCalls).toHaveLength(1);
         expect(countInitCalls(fetchMock)).toBe(1);
         expect(getUserMedia).not.toHaveBeenCalled();
-        expect(document.querySelector('.social-cangaroo-chat-panel--inline')).not.toBeNull();
+        expect(document.querySelector('.rilt-chat-panel--inline')).not.toBeNull();
     });
 });

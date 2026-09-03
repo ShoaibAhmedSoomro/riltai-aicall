@@ -1,16 +1,16 @@
-# @social-cangaroo/sdk
+# @rilt/sdk
 
-Typed builder for Social Cangaroo voice-AI workflows. Fetches the node-spec catalog from
-the Social Cangaroo backend at session start, validates every call against it at the
+Typed builder for AICall voice-AI workflows. Fetches the node-spec catalog from
+the AICall backend at session start, validates every call against it at the
 call site, and produces wire-format JSON that round-trips through the Python
 `ReactFlowDTO`.
 
 ## Install
 
 ```bash
-npm install @social-cangaroo/sdk
+npm install @rilt/sdk
 # or
-pnpm add @social-cangaroo/sdk
+pnpm add @rilt/sdk
 ```
 
 For local development against a checked-out monorepo, add a tsconfig paths
@@ -19,7 +19,7 @@ entry:
 ```json
 {
   "paths": {
-    "@social-cangaroo/sdk": ["../sdk/typescript/src/index.ts"]
+    "@rilt/sdk": ["../sdk/typescript/src/index.ts"]
   }
 }
 ```
@@ -27,11 +27,11 @@ entry:
 ## Usage
 
 ```ts
-import { SocialCangarooClient, Workflow } from "@social-cangaroo/sdk";
+import { RiltClient, Workflow } from "@rilt/sdk";
 
-const client = new SocialCangarooClient({
+const client = new RiltClient({
   baseUrl: "http://localhost:8000",
-  apiKey: process.env.SOCIAL_CANGAROO_API_KEY,
+  apiKey: process.env.RILT_API_KEY,
 });
 
 const wf = new Workflow({ client, name: "loan_qualification" });
@@ -82,8 +82,8 @@ lets through.
 ## Environment
 
 ```bash
-SOCIAL_CANGAROO_API_URL=http://localhost:8000   # default
-SOCIAL_CANGAROO_API_KEY=sk-...                  # sent as X-API-Key
+RILT_API_URL=http://localhost:8000   # default
+RILT_API_KEY=sk-...                  # sent as X-API-Key
 ```
 
 ## License

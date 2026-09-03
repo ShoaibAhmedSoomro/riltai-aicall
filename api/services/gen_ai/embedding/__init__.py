@@ -5,15 +5,15 @@ from .azure_openai_service import (
     AzureOpenAIEmbeddingService,
 )
 from .base import BaseEmbeddingService
-from .social_cangaroo_service import SocialCangarooEmbeddingService
 from .factory import build_embedding_service, resolve_embedding_correlation_id
 from .openai_service import EmbeddingAPIKeyNotConfiguredError, OpenAIEmbeddingService
+from .rilt_service import RiltEmbeddingService
 
 __all__ = [
     "AzureEmbeddingAPIKeyNotConfiguredError",
     "AzureOpenAIEmbeddingService",
     "BaseEmbeddingService",
-    "SocialCangarooEmbeddingService",
+    "RiltEmbeddingService",
     "EmbeddingAPIKeyNotConfiguredError",
     "OpenAIEmbeddingService",
     "build_embedding_service",

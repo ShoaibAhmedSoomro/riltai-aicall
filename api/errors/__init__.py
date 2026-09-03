@@ -1,4 +1,4 @@
 """
-Errors package for the Social Cangaroo API.
+Errors package for the AICall API.
 Contains centralized error definitions and messages for various domains.
 """

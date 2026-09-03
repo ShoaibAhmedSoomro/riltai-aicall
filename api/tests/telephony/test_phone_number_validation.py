@@ -325,7 +325,7 @@ async def test_cloudonix_provisions_missing_dnid_on_configured_application():
         {
             "bearer_token": "secret-bearer-token",
             "domain_id": "example.cloudonix.net",
-            "application_name": "social-cangaroo-app",
+            "application_name": "rilt-app",
             "from_numbers": [],
         }
     )
@@ -337,7 +337,7 @@ async def test_cloudonix_provisions_missing_dnid_on_configured_application():
                 data={
                     "id": 321,
                     "uuid": "04de7985-ebeb-41d8-9c51-c91e48c0c96d",
-                    "name": "social-cangaroo-app",
+                    "name": "rilt-app",
                 },
             ),
             _StubResponse(204),
@@ -358,7 +358,7 @@ async def test_cloudonix_provisions_missing_dnid_on_configured_application():
     assert result is not None and result.ok
     assert session.requests[0][0].endswith("/domains/example.cloudonix.net/dnids")
     assert session.requests[1][0].endswith(
-        "/domains/example.cloudonix.net/applications/social-cangaroo-app"
+        "/domains/example.cloudonix.net/applications/rilt-app"
     )
     expected_dnids_endpoint = (
         "https://api.cloudonix.io/domains/example.cloudonix.net/applications/"
@@ -402,7 +402,7 @@ async def test_cloudonix_dnid_provisioning_is_idempotent():
         {
             "bearer_token": "token",
             "domain_id": "example.cloudonix.net",
-            "application_name": "social-cangaroo-app",
+            "application_name": "rilt-app",
             "from_numbers": [],
         }
     )

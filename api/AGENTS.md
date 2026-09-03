@@ -1,6 +1,6 @@
 # API - Backend Service
 
-FastAPI backend for the Social Cangaroo voice AI platform.
+FastAPI backend for the AICall voice AI platform.
 
 ## Project Structure
 

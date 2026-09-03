@@ -1,4 +1,4 @@
-# Social Cangaroo — Hostinger VPS Docker Manager deployment
+# AICall — Hostinger VPS Docker Manager deployment
 # =================================================================
 # This variant is for environments where a SHARED, MANAGED Traefik
 # (with Let's Encrypt) already terminates TLS and routes ingress —
@@ -14,7 +14,7 @@
 #     an HTTP reverse proxy.
 #   - `api` runs ENVIRONMENT=production (correct public ICE-candidate
 #     filtering + UDP-first TURN).
-#   - coturn is configured entirely from CLI flags (no `social-cangaroo-init`
+#   - coturn is configured entirely from CLI flags (no `rilt-init`
 #     renderer, no host bind-mounts). The whole stack is therefore a single
 #     self-contained file — nothing outside it needs to exist on the host,
 #     which is what a catalog compose-import requires.
@@ -89,12 +89,12 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik-proxy}"
       # Audio file downloads. Highest priority so it wins over the UI catch-all.
-      - "traefik.http.routers.social-cangaroo-audio.rule=Host(`${PUBLIC_HOST}`) && PathPrefix(`/voice-audio`)"
-      - "traefik.http.routers.social-cangaroo-audio.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
-      - "traefik.http.routers.social-cangaroo-audio.tls=true"
-      - "traefik.http.routers.social-cangaroo-audio.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
-      - "traefik.http.routers.social-cangaroo-audio.priority=20"
-      - "traefik.http.services.social-cangaroo-audio.loadbalancer.server.port=9000"
+      - "traefik.http.routers.rilt-audio.rule=Host(`${PUBLIC_HOST}`) && PathPrefix(`/voice-audio`)"
+      - "traefik.http.routers.rilt-audio.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
+      - "traefik.http.routers.rilt-audio.tls=true"
+      - "traefik.http.routers.rilt-audio.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
+      - "traefik.http.routers.rilt-audio.priority=20"
+      - "traefik.http.services.rilt-audio.loadbalancer.server.port=9000"
     networks:
       - app-network
       - traefik
@@ -119,7 +119,7 @@ services:
       - "--min-port=49152"
       - "--max-port=49200"
       - "--external-ip=${TURN_HOST}"
-      - "--realm=socialcangaroo.com"
+      - "--realm=rilt.ai"
       - --use-auth-secret
       - "--static-auth-secret=${TURN_SECRET}"
       - --fingerprint
@@ -136,7 +136,7 @@ services:
       - app-network
 
   api:
-    image: ${REGISTRY:-socialcangaroo}/social-cangaroo-api:${SOCIAL_CANGAROO_VERSION:-latest}
+    image: ${REGISTRY:-riltai}/rilt-api:${RILT_VERSION:-latest}
     restart: unless-stopped
     environment:
       # production => drop private-IP host ICE candidates on a public VPS and
@@ -213,18 +213,18 @@ services:
       # REST API + the signaling WebSocket (/api/v1/ws/signaling/...).
       # Traefik upgrades WebSockets automatically — no extra labels needed.
       # Higher priority than the UI so /api/v1 is matched first.
-      - "traefik.http.routers.social-cangaroo-api.rule=Host(`${PUBLIC_HOST}`) && PathPrefix(`/api/v1`)"
-      - "traefik.http.routers.social-cangaroo-api.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
-      - "traefik.http.routers.social-cangaroo-api.tls=true"
-      - "traefik.http.routers.social-cangaroo-api.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
-      - "traefik.http.routers.social-cangaroo-api.priority=10"
-      - "traefik.http.services.social-cangaroo-api.loadbalancer.server.port=8000"
+      - "traefik.http.routers.rilt-api.rule=Host(`${PUBLIC_HOST}`) && PathPrefix(`/api/v1`)"
+      - "traefik.http.routers.rilt-api.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
+      - "traefik.http.routers.rilt-api.tls=true"
+      - "traefik.http.routers.rilt-api.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
+      - "traefik.http.routers.rilt-api.priority=10"
+      - "traefik.http.services.rilt-api.loadbalancer.server.port=8000"
     networks:
       - app-network
       - traefik
 
   ui:
-    image: ${REGISTRY:-socialcangaroo}/social-cangaroo-ui:${SOCIAL_CANGAROO_VERSION:-latest}
+    image: ${REGISTRY:-riltai}/rilt-ui:${RILT_VERSION:-latest}
     restart: unless-stopped
     environment:
       HOSTNAME: "0.0.0.0"
@@ -251,12 +251,12 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik-proxy}"
       # Catch-all for everything that is not /api/v1 or /voice-audio.
-      - "traefik.http.routers.social-cangaroo-ui.rule=Host(`${PUBLIC_HOST}`)"
-      - "traefik.http.routers.social-cangaroo-ui.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
-      - "traefik.http.routers.social-cangaroo-ui.tls=true"
-      - "traefik.http.routers.social-cangaroo-ui.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
-      - "traefik.http.routers.social-cangaroo-ui.priority=1"
-      - "traefik.http.services.social-cangaroo-ui.loadbalancer.server.port=3010"
+      - "traefik.http.routers.rilt-ui.rule=Host(`${PUBLIC_HOST}`)"
+      - "traefik.http.routers.rilt-ui.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
+      - "traefik.http.routers.rilt-ui.tls=true"
+      - "traefik.http.routers.rilt-ui.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
+      - "traefik.http.routers.rilt-ui.priority=1"
+      - "traefik.http.services.rilt-ui.loadbalancer.server.port=3010"
     networks:
       - app-network
       - traefik

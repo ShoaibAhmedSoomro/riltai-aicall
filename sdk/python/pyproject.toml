@@ -1,14 +1,14 @@
 [project]
-name = "social-cangaroo-sdk"
+name = "rilt-sdk"
 version = "0.1.8"
-description = "Typed builder for Social Cangaroo voice-AI workflows"
+description = "Typed builder for AICall voice-AI workflows"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "BSD-2-Clause" }
 authors = [
-    { name = "Social Cangaroo", email = "contact@socialcangaroo.com" },
+    { name = "AICall", email = "contact@rilt.ai" },
 ]
-keywords = ["social-cangaroo", "voice-ai", "workflow", "sdk", "llm", "agent"]
+keywords = ["rilt", "voice-ai", "workflow", "sdk", "llm", "agent"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -31,19 +31,19 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://socialcangaroo.com"
-Documentation = "https://docs.socialcangaroo.com"
-Repository = "https://github.com/ShoaibAhmedSoomro/social-cangaroo"
+Homepage = "https://rilt.ai"
+Documentation = "https://docs.rilt.ai"
+Repository = "https://github.com/ShoaibAhmedSoomro/riltai-aicall"
 
 [project.scripts]
-social-cangaroo-sdk-codegen = "social_cangaroo_sdk.codegen:main"
+rilt-sdk-codegen = "rilt_sdk.codegen:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/social_cangaroo_sdk"]
+packages = ["src/rilt_sdk"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

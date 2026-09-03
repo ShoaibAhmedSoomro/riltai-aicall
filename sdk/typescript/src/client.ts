@@ -1,4 +1,4 @@
-// HTTP client for the Social Cangaroo REST API.
+// HTTP client for the AICall REST API.
 //
 // Most endpoint methods come from `_GeneratedClient` (auto-generated from
 // the FastAPI OpenAPI spec — see `scripts/generate_sdk.sh`). This class
@@ -20,14 +20,14 @@ type RuntimeProcess = {
     env?: Record<string, string | undefined>;
 };
 
-export interface SocialCangarooFetchInit {
+export interface RiltFetchInit {
     method?: string;
     headers?: Record<string, string>;
     body?: string;
     signal?: unknown;
 }
 
-export interface SocialCangarooFetchResponse {
+export interface RiltFetchResponse {
     ok: boolean;
     status: number;
     statusText: string;
@@ -35,43 +35,43 @@ export interface SocialCangarooFetchResponse {
     text(): Promise<string>;
 }
 
-export type SocialCangarooFetch = (
+export type RiltFetch = (
     url: string,
-    init?: SocialCangarooFetchInit,
-) => Promise<SocialCangarooFetchResponse>;
+    init?: RiltFetchInit,
+) => Promise<RiltFetchResponse>;
 
 function getRuntimeEnv(name: string): string | undefined {
     const runtime = globalThis as typeof globalThis & { process?: RuntimeProcess };
     return runtime.process?.env?.[name];
 }
 
-export interface SocialCangarooClientOptions {
+export interface RiltClientOptions {
     baseUrl?: string;
     apiKey?: string;
     /** Request timeout in ms. */
     timeoutMs?: number;
     /** Optional fetch override for tests / custom transports. */
-    fetch?: SocialCangarooFetch;
+    fetch?: RiltFetch;
 }
 
-export class SocialCangarooClient extends _GeneratedClient implements SpecProvider {
+export class RiltClient extends _GeneratedClient implements SpecProvider {
     readonly baseUrl: string;
     readonly apiKey: string | undefined;
-    private readonly fetchImpl: SocialCangarooFetch;
+    private readonly fetchImpl: RiltFetch;
     private readonly timeoutMs: number;
     private readonly headers: Record<string, string>;
     private readonly specCache = new Map<string, NodeSpec>();
     private specVersionCache: string | null = null;
 
-    constructor(opts: SocialCangarooClientOptions = {}) {
+    constructor(opts: RiltClientOptions = {}) {
         super();
         const rawBase =
             opts.baseUrl ??
-            getRuntimeEnv("SOCIAL_CANGAROO_API_URL") ??
+            getRuntimeEnv("RILT_API_URL") ??
             "http://localhost:8000";
         this.baseUrl = rawBase.replace(/\/+$/, "");
-        this.apiKey = opts.apiKey ?? getRuntimeEnv("SOCIAL_CANGAROO_API_KEY");
-        this.fetchImpl = opts.fetch ?? (globalThis.fetch as unknown as SocialCangarooFetch);
+        this.apiKey = opts.apiKey ?? getRuntimeEnv("RILT_API_KEY");
+        this.fetchImpl = opts.fetch ?? (globalThis.fetch as unknown as RiltFetch);
         this.timeoutMs = opts.timeoutMs ?? 30_000;
         this.headers = { Accept: "application/json" };
         if (this.apiKey) this.headers["X-API-Key"] = this.apiKey;
@@ -153,7 +153,7 @@ export class SocialCangarooClient extends _GeneratedClient implements SpecProvid
         }
 
         const hasBody = opts?.json !== undefined;
-        const init: SocialCangarooFetchInit = {
+        const init: RiltFetchInit = {
             method,
             headers: {
                 ...this.headers,
@@ -166,7 +166,7 @@ export class SocialCangarooClient extends _GeneratedClient implements SpecProvid
         const timer = setTimeout(() => controller.abort(), this.timeoutMs);
         init.signal = controller.signal;
 
-        let resp: SocialCangarooFetchResponse;
+        let resp: RiltFetchResponse;
         try {
             resp = await this.fetchImpl(url, init);
         } finally {

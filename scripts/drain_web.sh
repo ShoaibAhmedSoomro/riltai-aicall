@@ -24,8 +24,8 @@ sleep "$INITIAL_DELAY"
 
 # Without the devops secret we cannot read the count — fall back to the old
 # fixed-sleep behavior rather than block the full grace window on every stop.
-if [ -z "${SOCIAL_CANGAROO_DEVOPS_SECRET:-}" ]; then
-  echo "drain: SOCIAL_CANGAROO_DEVOPS_SECRET unset — skipping active-call drain (sleep-only)"
+if [ -z "${RILT_DEVOPS_SECRET:-}" ]; then
+  echo "drain: RILT_DEVOPS_SECRET unset — skipping active-call drain (sleep-only)"
   exit 0
 fi
 
@@ -36,7 +36,7 @@ import json, os, urllib.request
 port = os.environ.get("WEB_PORT", "8000")
 req = urllib.request.Request(
     f"http://127.0.0.1:{port}/api/v1/health/active-calls",
-    headers={"X-Social-Cangaroo-Devops-Secret": os.environ.get("SOCIAL_CANGAROO_DEVOPS_SECRET", "")},
+    headers={"X-Rilt-Devops-Secret": os.environ.get("RILT_DEVOPS_SECRET", "")},
 )
 with urllib.request.urlopen(req, timeout=3) as r:
     print(json.load(r)["active_calls"])

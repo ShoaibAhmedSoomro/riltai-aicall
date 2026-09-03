@@ -26,13 +26,13 @@ services:
       - app-network
     volumes:
       - .:/workspaces/dograh:cached
-      - social-cangaroo-venv:/workspaces/social-cangaroo/venv
-      - social-cangaroo-ui-node_modules:/workspaces/social-cangaroo/ui/node_modules
-      - social-cangaroo-ts-validator-node_modules:/workspaces/social-cangaroo/api/mcp_server/ts_validator/node_modules
+      - rilt-venv:/workspaces/rilt/venv
+      - rilt-ui-node_modules:/workspaces/rilt/ui/node_modules
+      - rilt-ts-validator-node_modules:/workspaces/rilt/api/mcp_server/ts_validator/node_modules
     ports:
       - "0.0.0.0:3000:3000"
       - "0.0.0.0:8000:8000"
 volumes:
-  social-cangaroo-venv:
-  social-cangaroo-ui-node_modules:
-  social-cangaroo-ts-validator-node_modules:
+  rilt-venv:
+  rilt-ui-node_modules:
+  rilt-ts-validator-node_modules:

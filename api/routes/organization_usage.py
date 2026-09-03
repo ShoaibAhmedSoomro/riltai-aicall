@@ -89,7 +89,7 @@ class WorkflowRunUsageResponse(BaseModel):
     workflow_name: Optional[str]
     name: str
     created_at: str
-    social_cangaroo_token_usage: float
+    rilt_token_usage: float
     call_duration_seconds: int
     recording_url: Optional[str] = None
     transcript_url: Optional[str] = None
@@ -118,7 +118,7 @@ class WorkflowRunUsageResponse(BaseModel):
 
 class UsageHistoryResponse(BaseModel):
     runs: List[WorkflowRunUsageResponse]
-    total_social_cangaroo_tokens: float
+    total_rilt_tokens: float
     total_duration_seconds: int
     total_count: int
     page: int
@@ -130,7 +130,7 @@ class DailyUsageItem(BaseModel):
     date: str
     minutes: float
     cost_usd: Optional[float] = None
-    social_cangaroo_tokens: float
+    rilt_tokens: float
     call_count: int
 
 
@@ -138,7 +138,7 @@ class DailyUsageBreakdownResponse(BaseModel):
     breakdown: List[DailyUsageItem]
     total_minutes: float
     total_cost_usd: Optional[float] = None
-    total_social_cangaroo_tokens: float
+    total_rilt_tokens: float
     currency: Optional[str] = None
 
 
@@ -301,9 +301,9 @@ async def create_mps_credit_purchase_url(
             created_by=str(user.provider_id),
             return_url=f"{UI_APP_URL.rstrip('/')}/billing",
             billing_details={
-                "source": "social_cangaroo_billing",
-                "social_cangaroo_user_id": str(user.id),
-                "social_cangaroo_provider_id": str(user.provider_id),
+                "source": "rilt_billing",
+                "rilt_user_id": str(user.id),
+                "rilt_provider_id": str(user.provider_id),
             },
         )
     except Exception as exc:
@@ -442,7 +442,7 @@ async def get_usage_history(
 
         return {
             "runs": runs,
-            "total_social_cangaroo_tokens": total_tokens,
+            "total_rilt_tokens": total_tokens,
             "total_duration_seconds": total_duration,
             "total_count": total_count,
             "page": page,

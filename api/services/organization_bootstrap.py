@@ -1,4 +1,4 @@
-"""Once-per-organization provisioning of Social-Cangaroo-managed services.
+"""Once-per-organization provisioning of RiltAI-managed services.
 
 Bootstrapping independently mints an MPS service key, writes the organization's
 v2 model configuration, and provisions owner-scoped managed SIP connectivity.
@@ -22,8 +22,8 @@ from api.db.organization_configuration_client import LEASE_COMPLETED
 from api.enums import OrganizationConfigurationKey
 from api.errors.mps import MPSUnavailableError
 from api.schemas.ai_model_configuration import (
-    SocialCangarooManagedAIModelConfiguration,
     OrganizationAIModelConfigurationV2,
+    RiltManagedAIModelConfiguration,
 )
 from api.services.configuration.ai_model_configuration import (
     get_organization_ai_model_configuration_v2,
@@ -32,7 +32,7 @@ from api.services.configuration.ai_model_configuration import (
 from api.services.mps_billing import ensure_hosted_mps_billing_account_v2
 from api.services.mps_service_key_client import mps_service_key_client
 
-MANAGED_SERVICE_KEY_NAME = "Default Social Cangaroo Model Service Key"
+MANAGED_SERVICE_KEY_NAME = "Default AICall Model Service Key"
 
 # A holder that dies mid-provisioning leaves its lease pending. This bounds how
 # long the organization waits before another request is allowed to take over.
@@ -46,7 +46,7 @@ async def ensure_organization_bootstrapped(
     *,
     created_by: str,
 ) -> bool:
-    """Ensure an organization has its Social-Cangaroo-managed model services and SIP.
+    """Ensure an organization has its RiltAI-managed model services and SIP.
 
     Cheap enough to call on every authenticated request: an organization that
     has completed bootstrap costs a single indexed read. Returns True when the
@@ -155,7 +155,7 @@ async def _bootstrap_organization(
                 exc_info=True,
             )
 
-        configuration = await provision_social_cangaroo_managed_model_configuration(
+        configuration = await provision_rilt_managed_model_configuration(
             organization_id,
             created_by=created_by,
         )
@@ -175,7 +175,7 @@ async def _bootstrap_organization(
     )
 
 
-async def provision_social_cangaroo_managed_model_configuration(
+async def provision_rilt_managed_model_configuration(
     organization_id: int,
     *,
     created_by: str,
@@ -203,7 +203,7 @@ async def provision_social_cangaroo_managed_model_configuration(
 
     return OrganizationAIModelConfigurationV2(
         mode="dograh",
-        social_cangaroo=SocialCangarooManagedAIModelConfiguration(api_key=service_key),
+        rilt=RiltManagedAIModelConfiguration(api_key=service_key),
     )
 
 
@@ -212,7 +212,7 @@ async def provision_managed_sip_connectivity(
     *,
     created_by: str,
 ) -> bool:
-    """Provision the organization's Social-Cangaroo-managed SIP connectivity.
+    """Provision the organization's RiltAI-managed SIP connectivity.
 
     MPS owns the Cloudonix domain. OSS allocations are owned by ``created_by``;
     hosted allocations are owned by ``organization_id``. Model configuration

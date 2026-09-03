@@ -49,10 +49,10 @@ export function generateCode(
     const usedNames = new Set<string>();
 
     const lines: string[] = [];
-    lines.push(`import { Workflow } from "@socialCangaroo/sdk";`);
+    lines.push(`import { Workflow } from "@rilt/sdk";`);
     if (factoryNames.length > 0) {
         lines.push(
-            `import { ${factoryNames.join(", ")} } from "@socialCangaroo/sdk/typed";`,
+            `import { ${factoryNames.join(", ")} } from "@rilt/sdk/typed";`,
         );
     }
     lines.push("");

@@ -306,9 +306,9 @@ async def test_vobiz_configure_inbound_does_not_update_application_when_attach_f
     assert not result.ok
     assert result.message == (
         "Vobiz indicates that this phone number is already attached to an "
-        "application. To enable inbound calls in Social Cangaroo, review the phone number "
+        "application. To enable inbound calls in AICall, review the phone number "
         "configuration in Vobiz and ensure that the number is attached to the "
-        "Application ID configured in Social Cangaroo (12345678901234567)."
+        "Application ID configured in AICall (12345678901234567)."
     )
     assert session.requests == [
         (

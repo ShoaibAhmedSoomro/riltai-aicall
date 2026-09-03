@@ -234,7 +234,7 @@ async def test_managed_preprocess_creates_app_and_sets_domain_default():
             201,
             {
                 "id": 5278,
-                "name": "social-cangaroo-111111111111411181111111",
+                "name": "rilt-111111111111411181111111",
                 "uuid": app_uuid,
             },
         ),
@@ -242,9 +242,9 @@ async def test_managed_preprocess_creates_app_and_sets_domain_default():
     )
     credentials = {
         "bearer_token": "domain-bearer",
-        "domain_id": "oss-social-cangaroo-123.cloudonix.net",
+        "domain_id": "oss-rilt-123.cloudonix.net",
         "domain_uuid": DOMAIN_UUID,
-        "managed_by": "social-cangaroo-mps",
+        "managed_by": "rilt-mps",
         "provisioning_id": "11111111-1111-4111-8111-111111111111",
     }
 
@@ -264,18 +264,18 @@ async def test_managed_preprocess_creates_app_and_sets_domain_default():
 
     collection = (
         f"{CLOUDONIX_API_BASE_URL}/customers/self/domains/"
-        "oss-social-cangaroo-123.cloudonix.net/applications"
+        "oss-rilt-123.cloudonix.net/applications"
     )
     assert session.get_calls[0][0] == collection
     assert session.post_calls[0][0] == collection
     assert session.post_calls[0][1]["json"] == {
-        "name": "social-cangaroo-111111111111411181111111",
+        "name": "rilt-111111111111411181111111",
         "type": "cxml",
         "url": "https://api.example.com/api/v1/telephony/inbound/run",
         "method": "POST",
     }
     assert session.put_calls[0][0] == (
-        f"{CLOUDONIX_API_BASE_URL}/customers/self/domains/oss-social-cangaroo-123.cloudonix.net"
+        f"{CLOUDONIX_API_BASE_URL}/customers/self/domains/oss-rilt-123.cloudonix.net"
     )
     assert session.put_calls[0][1]["json"] == {"defaultApplication": 5278}
     assert result["application_id"] == 5278
@@ -286,7 +286,7 @@ async def test_managed_preprocess_creates_app_and_sets_domain_default():
 async def test_managed_preprocess_recovers_existing_app_without_duplicate_create():
     app = {
         "id": 5278,
-        "name": "social-cangaroo-111111111111411181111111",
+        "name": "rilt-111111111111411181111111",
         "uuid": "33333333-3333-4333-8333-333333333333",
     }
     session = _TrunkSession(
@@ -295,9 +295,9 @@ async def test_managed_preprocess_recovers_existing_app_without_duplicate_create
     )
     credentials = {
         "bearer_token": "domain-bearer",
-        "domain_id": "oss-social-cangaroo-123.cloudonix.net",
+        "domain_id": "oss-rilt-123.cloudonix.net",
         "domain_uuid": DOMAIN_UUID,
-        "managed_by": "social-cangaroo-mps",
+        "managed_by": "rilt-mps",
         "provisioning_id": "11111111-1111-4111-8111-111111111111",
     }
 
@@ -369,7 +369,7 @@ async def test_update_refetches_server_managed_fields_when_domain_changes():
         "domain_uuid": DOMAIN_UUID,
         "application_id": 5278,
         "application_uuid": "stored-app-uuid",
-        "managed_by": "social-cangaroo-mps",
+        "managed_by": "rilt-mps",
         "provisioning_id": "22222222-2222-4222-8222-222222222222",
     }
 
@@ -388,7 +388,7 @@ async def test_update_refetches_server_managed_fields_when_domain_changes():
         "domain_id": "new-domain.cloudonix.net",
         "domain_uuid": new_domain_uuid,
         "application_name": "existing-app",
-        "managed_by": "social-cangaroo-mps",
+        "managed_by": "rilt-mps",
         "provisioning_id": "22222222-2222-4222-8222-222222222222",
     }
     assert session.get_calls[0][0].endswith(
@@ -539,9 +539,9 @@ def test_trunk_settings_region_must_be_known_and_normalizes_case():
 
 def test_trunk_name_rejects_spaces_and_keeps_hyphens():
     with pytest.raises(ValueError, match="letters, digits and hyphens"):
-        validate_cloudonix_trunk_name("social_cangaroo carrier")
+        validate_cloudonix_trunk_name("rilt carrier")
 
-    assert validate_cloudonix_trunk_name(" social-cangaroo-carrier-01 ") == "social-cangaroo-carrier-01"
+    assert validate_cloudonix_trunk_name(" rilt-carrier-01 ") == "rilt-carrier-01"
 
 
 def test_trunks_are_not_part_of_the_configuration_payload():
@@ -580,16 +580,16 @@ def test_cloudonix_domain_normalization_qualifies_short_names():
 def test_cloudonix_webhook_accepts_a_managed_cloudonix_domain():
     webhook = {
         "SessionData": {"token": "session-token"},
-        "Domain": "oss-social-cangaroo-11111111.cloudonix.net",
+        "Domain": "oss-rilt-11111111.cloudonix.net",
         "From": "+15551230001",
         "To": "+15551230002",
     }
 
     assert CloudonixProvider.can_handle_webhook(webhook, {})
     normalized = CloudonixProvider.parse_inbound_webhook(webhook)
-    assert normalized.account_id == "oss-social-cangaroo-11111111.cloudonix.net"
+    assert normalized.account_id == "oss-rilt-11111111.cloudonix.net"
     assert CloudonixProvider.validate_account_id(
-        {"domain_id": "oss-social-cangaroo-11111111.cloudonix.net"},
+        {"domain_id": "oss-rilt-11111111.cloudonix.net"},
         normalized.account_id,
     )
 
@@ -597,7 +597,7 @@ def test_cloudonix_webhook_accepts_a_managed_cloudonix_domain():
 def test_cloudonix_metadata_leaves_outbound_trunks_to_the_dedicated_form():
     fields = {field.name: field for field in SPEC.ui_metadata.fields}
 
-    # Trunks are a list keyed by Social Cangaroo id, which the generic dotted-path form
+    # Trunks are a list keyed by AICall id, which the generic dotted-path form
     # cannot address; SipConnectivityCard owns that UI because it also supplies
     # the region the trunk's remote peer is derived from.
     assert not [name for name in fields if name.startswith("outbound_trunk")]
@@ -629,7 +629,7 @@ def test_display_credentials_drop_server_managed_fields_and_mask_the_token():
         "domain_uuid": DOMAIN_UUID,
         "application_id": "5278",
         "application_uuid": "app-uuid",
-        "managed_by": "social-cangaroo-mps",
+        "managed_by": "rilt-mps",
         "provisioning_id": "11111111-1111-4111-8111-111111111111",
     }
 
@@ -652,7 +652,7 @@ async def test_outbound_trunk_create_uses_cloudonix_voice_trunk_schema():
         "domain_id": "friendly-name.cloudonix.net",
     }
     trunk = TrunkDesiredState(
-        name="social-cangaroo-carrier",
+        name="rilt-carrier",
         enabled=True,
         settings={"region": "India", "sip_domain": "sip.example.com"},
     )
@@ -674,7 +674,7 @@ async def test_outbound_trunk_create_uses_cloudonix_voice_trunk_schema():
     }
     # ip/port/transport come from the India region, not from the operator.
     expected_payload = {
-        "name": "social-cangaroo-carrier",
+        "name": "rilt-carrier",
         "ip": "128.199.27.19",
         "port": 9060,
         "transport": "udp",
@@ -700,7 +700,7 @@ async def test_outbound_trunk_create_uses_cloudonix_voice_trunk_schema():
 async def test_outbound_trunk_reuses_matching_name_without_an_update():
     existing = {
         "uuid": TRUNK_UUID,
-        "name": "social-cangaroo-carrier",
+        "name": "rilt-carrier",
         "ip": "18.219.128.166",
         "port": "5060",
         "transport": "udp",
@@ -719,7 +719,7 @@ async def test_outbound_trunk_reuses_matching_name_without_an_update():
         "domain_id": "friendly-name.cloudonix.net",
     }
     trunk = TrunkDesiredState(
-        name="social-cangaroo-carrier",
+        name="rilt-carrier",
         enabled=True,
         settings={"region": "Global", "sip_domain": "sip.example.com"},
     )
@@ -791,7 +791,7 @@ async def test_outbound_trunk_updates_by_uuid_and_preserves_unknown_profile_fiel
                     "transport": "udp",
                     "prefix": "",
                     "direction": "public-outbound",
-                    # Cockpit-managed keys survive; the auth block Social Cangaroo no
+                    # Cockpit-managed keys survive; the auth block AICall no
                     # longer manages is dropped.
                     "profile": {
                         "customer-note": "preserve me",
@@ -815,7 +815,7 @@ async def test_outbound_trunk_updates_by_uuid_and_preserves_unknown_profile_fiel
 async def test_disabling_outbound_trunk_deactivates_managed_resource():
     existing = {
         "uuid": TRUNK_UUID,
-        "name": "social-cangaroo-carrier",
+        "name": "rilt-carrier",
         "direction": "public-outbound",
         "active": True,
     }
@@ -828,7 +828,7 @@ async def test_disabling_outbound_trunk_deactivates_managed_resource():
         "domain_id": "friendly-name.cloudonix.net",
     }
     trunk = TrunkDesiredState(
-        name="social-cangaroo-carrier",
+        name="rilt-carrier",
         enabled=False,
         settings={"region": "India", "sip_domain": "sip.example.com"},
         external_id=TRUNK_UUID,
@@ -850,7 +850,7 @@ async def test_disabling_outbound_trunk_deactivates_managed_resource():
 async def test_disabling_unprovisioned_trunk_does_not_deactivate_name_match():
     existing = {
         "uuid": TRUNK_UUID,
-        "name": "social-cangaroo-carrier",
+        "name": "rilt-carrier",
         "direction": "public-outbound",
         "active": True,
     }
@@ -860,7 +860,7 @@ async def test_disabling_unprovisioned_trunk_does_not_deactivate_name_match():
         "domain_id": "friendly-name.cloudonix.net",
     }
     trunk = TrunkDesiredState(
-        name="social-cangaroo-carrier",
+        name="rilt-carrier",
         enabled=False,
         settings={"region": "India", "sip_domain": "sip.example.com"},
     )
@@ -959,7 +959,7 @@ async def test_a_second_trunk_is_created_without_touching_the_first():
 async def test_deleting_a_trunk_deactivates_it_remotely():
     existing = {
         "uuid": TRUNK_UUID,
-        "name": "social-cangaroo-carrier",
+        "name": "rilt-carrier",
         "direction": "public-outbound",
         "active": True,
     }
@@ -972,7 +972,7 @@ async def test_deleting_a_trunk_deactivates_it_remotely():
         "domain_id": "friendly-name.cloudonix.net",
     }
     trunk = TrunkDesiredState(
-        name="social-cangaroo-carrier",
+        name="rilt-carrier",
         enabled=True,
         settings={"region": "India", "sip_domain": "sip.example.com"},
         external_id=TRUNK_UUID,
@@ -992,7 +992,7 @@ async def test_deleting_a_trunk_deactivates_it_remotely():
 async def test_deleting_unprovisioned_trunk_does_not_deactivate_name_match():
     existing = {
         "uuid": TRUNK_UUID,
-        "name": "social-cangaroo-carrier",
+        "name": "rilt-carrier",
         "direction": "public-outbound",
         "active": True,
     }
@@ -1002,7 +1002,7 @@ async def test_deleting_unprovisioned_trunk_does_not_deactivate_name_match():
         "domain_id": "friendly-name.cloudonix.net",
     }
     trunk = TrunkDesiredState(
-        name="social-cangaroo-carrier",
+        name="rilt-carrier",
         enabled=False,
         settings={"region": "India", "sip_domain": "sip.example.com"},
     )
@@ -1019,7 +1019,7 @@ async def test_deleting_unprovisioned_trunk_does_not_deactivate_name_match():
 @pytest.mark.asyncio
 async def test_trunk_hooks_are_a_no_op_before_credentials_exist():
     trunk = TrunkDesiredState(
-        name="social-cangaroo-carrier",
+        name="rilt-carrier",
         enabled=True,
         settings={"region": "India", "sip_domain": "sip.example.com"},
         external_id=TRUNK_UUID,
@@ -1051,7 +1051,7 @@ async def test_outbound_calls_are_pinned_to_the_managed_trunk_name():
         {
             "bearer_token": "secret-token",
             "domain_id": "friendly-name.cloudonix.net",
-            "trunks": [{"id": 1, "enabled": True, "name": "  social-cangaroo-carrier  "}],
+            "trunks": [{"id": 1, "enabled": True, "name": "  rilt-carrier  "}],
             "trunk_id_by_number": {"+15551230001": 1},
             "from_numbers": ["+15551230001"],
         }
@@ -1086,7 +1086,7 @@ async def test_outbound_calls_are_pinned_to_the_managed_trunk_name():
         )
 
     assert result.call_id == "session-token"
-    assert session.post_calls[0][1]["json"]["trunk"] == "social-cangaroo-carrier"
+    assert session.post_calls[0][1]["json"]["trunk"] == "rilt-carrier"
 
 
 @pytest.mark.asyncio
@@ -1095,7 +1095,7 @@ async def test_transfer_calls_are_pinned_to_the_managed_trunk_name():
         {
             "bearer_token": "secret-token",
             "domain_id": "friendly-name.cloudonix.net",
-            "trunks": [{"id": 1, "enabled": True, "name": "social-cangaroo-carrier"}],
+            "trunks": [{"id": 1, "enabled": True, "name": "rilt-carrier"}],
             "trunk_id_by_number": {"+15551230001": 1},
             "from_numbers": ["+15551230001"],
         }
@@ -1125,7 +1125,7 @@ async def test_transfer_calls_are_pinned_to_the_managed_trunk_name():
         )
 
     assert result["call_sid"] == "transfer-session-token"
-    assert session.post_calls[0][1]["json"]["trunk"] == "social-cangaroo-carrier"
+    assert session.post_calls[0][1]["json"]["trunk"] == "rilt-carrier"
 
 
 @pytest.mark.asyncio
@@ -1134,7 +1134,7 @@ async def test_disabled_outbound_trunk_is_not_sent_with_outbound_calls():
         {
             "bearer_token": "secret-token",
             "domain_id": "friendly-name.cloudonix.net",
-            "trunks": [{"id": 1, "enabled": False, "name": "social-cangaroo-carrier"}],
+            "trunks": [{"id": 1, "enabled": False, "name": "rilt-carrier"}],
             "trunk_id_by_number": {"+15551230001": 1},
             "from_numbers": ["+15551230001"],
         }

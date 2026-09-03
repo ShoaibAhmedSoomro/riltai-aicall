@@ -1,11 +1,11 @@
 ---
 title: "Webhooks and Callbacks"
-description: "How Social Cangaroo AI handles telephony webhooks and audio streaming"
+description: "How AICall handles telephony webhooks and audio streaming"
 ---
 
 ## Overview
 
-Social Cangaroo AI uses webhooks to communicate with telephony providers for call events and audio streaming. For outbound calls, Social Cangaroo builds these URLs and hands them to the provider when it dials — you never configure them by hand. For inbound calls, you point your provider at a single dispatcher URL; see [Inbound Calls](/integrations/telephony/inbound).
+AICall uses webhooks to communicate with telephony providers for call events and audio streaming. For outbound calls, AICall builds these URLs and hands them to the provider when it dials — you never configure them by hand. For inbound calls, you point your provider at a single dispatcher URL; see [Inbound Calls](/integrations/telephony/inbound).
 
 Every webhook path lives under `/api/v1/telephony`.
 
@@ -13,7 +13,7 @@ Every webhook path lives under `/api/v1/telephony`.
 
 ### 1. Answer Webhook
 
-When an outbound call connects, the provider requests instructions. The path is provider-specific, and Social Cangaroo appends the routing parameters as a query string:
+When an outbound call connects, the provider requests instructions. The path is provider-specific, and AICall appends the routing parameters as a query string:
 
 ```
 ?workflow_id={workflow_id}&workflow_run_id={workflow_run_id}&organization_id={organization_id}
@@ -26,7 +26,7 @@ When an outbound call connects, the provider requests instructions. The path is 
 | Vobiz | `POST` | `/vobiz-xml` |
 | Vonage | `GET` | `/ncco` |
 
-Telnyx and Asterisk ARI have no answer webhook. Telnyx is call-control style — Social Cangaroo POSTs the stream and event URLs to Telnyx's API instead of returning markup. ARI streams over a WebSocket only.
+Telnyx and Asterisk ARI have no answer webhook. Telnyx is call-control style — AICall POSTs the stream and event URLs to Telnyx's API instead of returning markup. ARI streams over a WebSocket only.
 
 <Tabs>
   <Tab title="Twilio (TwiML)">
@@ -70,7 +70,7 @@ Receive call lifecycle events. Each is keyed on the workflow run:
 | Telnyx | `/telnyx/events/{workflow_run_id}` |
 | Cloudonix | `/cloudonix/status-callback/{workflow_run_id}`, `/cloudonix/cdr` |
 
-Providers report their own vocabulary; Social Cangaroo normalizes it into a common set of states:
+Providers report their own vocabulary; AICall normalizes it into a common set of states:
 
 - `initiated` - Call request received
 - `ringing` - Call is ringing
@@ -83,7 +83,7 @@ Providers report their own vocabulary; Social Cangaroo normalizes it into a comm
 - `failed` - Call failed
 - `error` - Provider reported an error
 
-A status Social Cangaroo does not recognize is passed through unchanged rather than dropped.
+A status AICall does not recognize is passed through unchanged rather than dropped.
 
 ### 3. WebSocket Audio Stream
 
@@ -91,11 +91,11 @@ Real-time audio streaming for voice interaction.
 
 **Endpoint**: `/api/v1/telephony/ws/{workflow_id}/{organization_id}/{workflow_run_id}`
 
-When [`TELEPHONY_WS_TOKEN_SECRET`](/developer/environment-variables#telephony) is set, the URL Social Cangaroo hands the carrier gains a fourth segment holding the HMAC signature: `/api/v1/telephony/ws/{workflow_id}/{organization_id}/{workflow_run_id}/{token}`. It is a path segment rather than a query parameter because carriers do not reliably forward query strings — Twilio strips them from `<Stream url>` entirely.
+When [`TELEPHONY_WS_TOKEN_SECRET`](/developer/environment-variables#telephony) is set, the URL AICall hands the carrier gains a fourth segment holding the HMAC signature: `/api/v1/telephony/ws/{workflow_id}/{organization_id}/{workflow_run_id}/{token}`. It is a path segment rather than a query parameter because carriers do not reliably forward query strings — Twilio strips them from `<Stream url>` entirely.
 
 Asterisk ARI instead connects to `/api/v1/telephony/ws/ari` and passes the same three values as query parameters, plus `token` when a secret is configured — see [Asterisk ARI](/integrations/telephony/asterisk-ari).
 
-The `organization_id` segment is the tenant that owns the workflow. Social Cangaroo scopes every workflow and workflow-run lookup by it, so a run belonging to one organization can never be served under another's id.
+The `organization_id` segment is the tenant that owns the workflow. AICall scopes every workflow and workflow-run lookup by it, so a run belonging to one organization can never be served under another's id.
 
 **Audio Formats**:
 - **Twilio / Plivo / Vobiz**: 8kHz μ-law (MULAW), Base64-encoded in JSON messages
@@ -104,7 +104,7 @@ The `organization_id` segment is the tenant that owns the workflow. Social Canga
 
 ## How It Works
 
-Social Cangaroo AI automatically:
+AICall automatically:
 1. Constructs webhook URLs based on your deployment
 2. Passes them to the telephony provider when initiating calls
 3. Verifies webhook signatures for security:

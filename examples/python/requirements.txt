@@ -1,2 +1,2 @@
-social-cangaroo-sdk
+rilt-sdk
 python-dotenv

@@ -117,8 +117,8 @@ function Download-File([string]$Url, [string]$Destination) {
 }
 
 function Download-BundleFileForRef([string]$Destination, [string]$RemotePath, [string]$Ref) {
-    $rawBase = "https://raw.githubusercontent.com/ShoaibAhmedSoomro/social-cangaroo/$Ref"
-    $fallbackBase = 'https://raw.githubusercontent.com/ShoaibAhmedSoomro/social-cangaroo/main'
+    $rawBase = "https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/$Ref"
+    $fallbackBase = 'https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main'
 
     try {
         Download-File "$rawBase/$RemotePath" $Destination
@@ -134,7 +134,7 @@ function Download-BundleFileForRef([string]$Destination, [string]$RemotePath, [s
 
 function Download-InitSupportBundle([string]$ProjectDir, [string]$Ref) {
     Download-BundleFileForRef (Join-Path $ProjectDir 'scripts/lib/setup_common.sh') 'scripts/lib/setup_common.sh' $Ref
-    Download-BundleFileForRef (Join-Path $ProjectDir 'scripts/run_social_cangaroo_init.sh') 'scripts/run_social_cangaroo_init.sh' $Ref
+    Download-BundleFileForRef (Join-Path $ProjectDir 'scripts/run_rilt_init.sh') 'scripts/run_rilt_init.sh' $Ref
     Download-BundleFileForRef (Join-Path $ProjectDir 'deploy/templates/nginx.remote.conf.template') 'deploy/templates/nginx.remote.conf.template' $Ref
     Download-BundleFileForRef (Join-Path $ProjectDir 'deploy/templates/turnserver.remote.conf.template') 'deploy/templates/turnserver.remote.conf.template' $Ref
 }
@@ -147,7 +147,7 @@ function Assert-PathExists([string]$Path, [string]$Message) {
 
 Write-Info ''
 Write-Info '╔══════════════════════════════════════════════════════════════╗'
-Write-Info '║                    Social Cangaroo Local Setup                        ║'
+Write-Info '║                    AICall Local Setup                        ║'
 Write-Info '║       Local docker deployment, optional TURN server          ║'
 Write-Info '╚══════════════════════════════════════════════════════════════╝'
 Write-Info ''
@@ -218,14 +218,14 @@ Write-Host ''
 $TotalSteps = 2
 $CurrentDir = (Get-Location).Path
 
-if ($env:SOCIAL_CANGAROO_SKIP_DOWNLOAD -ne '1') {
+if ($env:RILT_SKIP_DOWNLOAD -ne '1') {
     if ($UseCoturn) {
         Write-Info "[1/$TotalSteps] Downloading docker-compose.yaml and TURN helper bundle..."
     } else {
         Write-Info "[1/$TotalSteps] Downloading docker-compose.yaml..."
     }
 
-    Download-File 'https://raw.githubusercontent.com/ShoaibAhmedSoomro/social-cangaroo/main/docker-compose.yaml' (Join-Path $CurrentDir 'docker-compose.yaml')
+    Download-File 'https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/docker-compose.yaml' (Join-Path $CurrentDir 'docker-compose.yaml')
     if ($UseCoturn) {
         Download-InitSupportBundle $CurrentDir 'main'
     }
@@ -236,20 +236,20 @@ if ($env:SOCIAL_CANGAROO_SKIP_DOWNLOAD -ne '1') {
 }
 
 if ($UseCoturn) {
-    Assert-PathExists 'scripts/run_social_cangaroo_init.sh' 'scripts/run_social_cangaroo_init.sh not found. Re-run setup_local.ps1 without SOCIAL_CANGAROO_SKIP_DOWNLOAD=1, or use a full repo checkout.'
-    Assert-PathExists 'scripts/lib/setup_common.sh' 'scripts/lib/setup_common.sh not found. Re-run setup_local.ps1 without SOCIAL_CANGAROO_SKIP_DOWNLOAD=1, or use a full repo checkout.'
-    Assert-PathExists 'deploy/templates/turnserver.remote.conf.template' 'deploy/templates/turnserver.remote.conf.template not found. Re-run setup_local.ps1 without SOCIAL_CANGAROO_SKIP_DOWNLOAD=1, or use a full repo checkout.'
+    Assert-PathExists 'scripts/run_rilt_init.sh' 'scripts/run_rilt_init.sh not found. Re-run setup_local.ps1 without RILT_SKIP_DOWNLOAD=1, or use a full repo checkout.'
+    Assert-PathExists 'scripts/lib/setup_common.sh' 'scripts/lib/setup_common.sh not found. Re-run setup_local.ps1 without RILT_SKIP_DOWNLOAD=1, or use a full repo checkout.'
+    Assert-PathExists 'deploy/templates/turnserver.remote.conf.template' 'deploy/templates/turnserver.remote.conf.template not found. Re-run setup_local.ps1 without RILT_SKIP_DOWNLOAD=1, or use a full repo checkout.'
 }
 
 Write-Info "[2/$TotalSteps] Creating environment file..."
 $ossJwtSecret = New-HexSecret 32
 $postgresPassword = New-HexSecret 32
 $redisPassword = New-HexSecret 32
-$minioRootUser = "social-cangaroo$((New-HexSecret 6).Substring(0, 12))"
+$minioRootUser = "rilt$((New-HexSecret 6).Substring(0, 12))"
 $minioRootPassword = New-HexSecret 32
 
 $envLines = @(
-    '# Container registry for Social Cangaroo images'
+    '# Container registry for AICall images'
     "REGISTRY=$Registry"
     ''
     '# JWT secret for OSS authentication'
@@ -300,17 +300,17 @@ Write-Host "Files created in $CurrentDir:" -ForegroundColor Blue
 Write-Host '  - docker-compose.yaml'
 Write-Host '  - .env'
 if ($UseCoturn) {
-    Write-Host '  - scripts/run_social_cangaroo_init.sh'
+    Write-Host '  - scripts/run_rilt_init.sh'
     Write-Host '  - scripts/lib/setup_common.sh'
     Write-Host '  - deploy/templates/'
 }
 Write-Host ''
 if ($UseCoturn) {
-    Write-Warn 'To start Social Cangaroo with TURN, run:'
+    Write-Warn 'To start AICall with TURN, run:'
     Write-Host ''
     Write-Host '  docker compose --profile local-turn --profile tunnel up --pull always' -ForegroundColor Blue
 } else {
-    Write-Warn 'To start Social Cangaroo, run:'
+    Write-Warn 'To start AICall, run:'
     Write-Host ''
     Write-Host '  docker compose --profile tunnel up --pull always' -ForegroundColor Blue
 }

@@ -1,17 +1,17 @@
 {
-  "name": "@social-cangaroo/sdk",
+  "name": "@rilt/sdk",
   "version": "0.1.8",
-  "description": "Typed builder for Social Cangaroo voice-AI workflows",
+  "description": "Typed builder for AICall voice-AI workflows",
   "license": "BSD-2-Clause",
-  "author": "Social Cangaroo",
-  "homepage": "https://socialcangaroo.com",
+  "author": "RiltAI",
+  "homepage": "https://rilt.ai",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ShoaibAhmedSoomro/social-cangaroo.git",
+    "url": "https://github.com/ShoaibAhmedSoomro/riltai-aicall.git",
     "directory": "sdk/typescript"
   },
   "keywords": [
-    "social-cangaroo",
+    "rilt",
     "voice-ai",
     "workflow",
     "sdk",

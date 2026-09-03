@@ -10,7 +10,7 @@ from typing import List, Optional
 import httpx
 from loguru import logger
 
-from api.constants import DEPLOYMENT_MODE, SOCIAL_CANGAROO_MPS_SECRET_KEY, MPS_API_URL
+from api.constants import DEPLOYMENT_MODE, MPS_API_URL, RILT_MPS_SECRET_KEY
 from api.errors.failure import ErrorSource, classify_exception, log_failure
 from api.errors.mps import MPSUnavailableError
 
@@ -65,8 +65,8 @@ class MPSServiceKeyClient:
 
         # Add authentication for non-OSS mode
         if DEPLOYMENT_MODE != "oss":
-            if SOCIAL_CANGAROO_MPS_SECRET_KEY:
-                headers["X-Secret-Key"] = SOCIAL_CANGAROO_MPS_SECRET_KEY
+            if RILT_MPS_SECRET_KEY:
+                headers["X-Secret-Key"] = RILT_MPS_SECRET_KEY
             if organization_id:
                 headers["X-Organization-Id"] = str(organization_id)
         else:
@@ -142,7 +142,7 @@ class MPSServiceKeyClient:
         """Create or return the Cloudonix domain for the deployment owner.
 
         OSS allocations are scoped by ``created_by``. Hosted allocations are
-        scoped by ``organization_id`` and authenticated with the Social Cangaroo/MPS
+        scoped by ``organization_id`` and authenticated with the AICall/MPS
         control-plane secret. No model-service key participates in ownership.
         """
         async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -444,7 +444,7 @@ class MPSServiceKeyClient:
             )
 
     async def get_billing_pricing(self, organization_id: int) -> dict:
-        """Return MPS-owned effective platform and Social Cangaroo model prices for an org."""
+        """Return MPS-owned effective platform and AICall model prices for an org."""
         if DEPLOYMENT_MODE == "oss":
             raise ValueError("OSS deployments do not fetch hosted billing prices")
 
@@ -635,7 +635,7 @@ class MPSServiceKeyClient:
         metadata: Optional[dict] = None,
         max_attempts: int = 3,
     ) -> dict:
-        """Report hosted Social Cangaroo platform usage for a completed workflow run."""
+        """Report hosted AICall platform usage for a completed workflow run."""
         if DEPLOYMENT_MODE == "oss":
             raise ValueError("OSS deployments must not report platform usage to MPS")
         if not correlation_id and duration_seconds is None:
@@ -766,11 +766,11 @@ class MPSServiceKeyClient:
         created_by: Optional[str] = None,
     ) -> bool:
         """
-        Synchronously validate a Social Cangaroo service key by checking usage via MPS.
+        Synchronously validate a AICall service key by checking usage via MPS.
 
         Returns True if the key is valid and False only when MPS authoritatively
         rejects the credential. Dependency failures raise ``MPSUnavailableError``
-        so callers never misreport a Social Cangaroo outage as a customer configuration error.
+        so callers never misreport a AICall outage as a customer configuration error.
         """
         operation = "validate_service_key"
         try:

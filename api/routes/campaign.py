@@ -560,7 +560,7 @@ async def start_campaign(
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
 
-    # Check Social Cangaroo quota before starting campaign (apply per-workflow
+    # Check RiltAI quota before starting campaign (apply per-workflow
     # model_overrides so we evaluate the keys this campaign will use).
     quota_result = await authorize_workflow_run_start(
         workflow_id=campaign.workflow_id,
@@ -896,7 +896,7 @@ async def resume_campaign(
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
 
-    # Check Social Cangaroo quota before resuming campaign (apply per-workflow
+    # Check RiltAI quota before resuming campaign (apply per-workflow
     # model_overrides so we evaluate the keys this campaign will use).
     quota_result = await authorize_workflow_run_start(
         workflow_id=campaign.workflow_id,

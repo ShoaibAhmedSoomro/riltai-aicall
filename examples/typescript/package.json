@@ -1,5 +1,5 @@
 {
-  "name": "social-cangaroo-examples-typescript",
+  "name": "rilt-examples-typescript",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,7 +10,7 @@
     "edit": "tsx --env-file=.env load_and_edit_workflow.ts"
   },
   "dependencies": {
-    "@social-cangaroo/sdk": "latest"
+    "@rilt/sdk": "latest"
   },
   "devDependencies": {
     "tsx": "^4.7.0",

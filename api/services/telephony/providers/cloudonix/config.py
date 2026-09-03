@@ -7,11 +7,11 @@ from pydantic import BaseModel, Field, field_validator
 
 from .regions import CLOUDONIX_REGION_NAMES, get_cloudonix_region
 
-# Identity of the configuration Social Cangaroo provisions for every organization at
+# Identity of the configuration AICall provisions for every organization at
 # signup. Lives here rather than in ``provisioning`` so the leaf modules that
 # only need to recognize a managed row don't pull in the provisioning path.
-MANAGED_CONFIGURATION_NAME = "Social Cangaroo Cloudonix SIP"
-MANAGED_BY = "social-cangaroo-mps"
+MANAGED_CONFIGURATION_NAME = "AICall Cloudonix SIP"
+MANAGED_BY = "rilt-mps"
 
 
 def normalize_cloudonix_domain(value: str | None) -> str | None:

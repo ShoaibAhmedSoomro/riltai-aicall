@@ -13,16 +13,16 @@ from api.db import db_client
 from api.db.models import OrganizationConfigurationModel
 from api.enums import OrganizationConfigurationKey
 from api.schemas.ai_model_configuration import (
-    SOCIAL_CANGAROO_DEFAULT_LANGUAGE,
-    SOCIAL_CANGAROO_DEFAULT_VOICE,
-    SOCIAL_CANGAROO_SPEED_MAX,
-    SOCIAL_CANGAROO_SPEED_MIN,
+    RILT_DEFAULT_LANGUAGE,
+    RILT_DEFAULT_VOICE,
+    RILT_SPEED_MAX,
+    RILT_SPEED_MIN,
     BYOKAIModelConfiguration,
     BYOKPipelineAIModelConfiguration,
     BYOKRealtimeAIModelConfiguration,
-    SocialCangarooManagedAIModelConfiguration,
     EffectiveAIModelConfiguration,
     OrganizationAIModelConfigurationV2,
+    RiltManagedAIModelConfiguration,
     compile_ai_model_configuration_v2,
 )
 from api.services.configuration.masking import (
@@ -248,12 +248,12 @@ def merge_ai_model_configuration_v2_secrets(
     existing_dict = existing.model_dump(mode="json", exclude_none=True)
 
     if incoming_dict.get("mode") == "dograh" and existing_dict.get("mode") == "dograh":
-        incoming_social_cangaroo = incoming_dict.get("dograh") or {}
-        existing_social_cangaroo = existing_dict.get("dograh") or {}
-        incoming_key = incoming_social_cangaroo.get("api_key")
-        existing_key = existing_social_cangaroo.get("api_key")
+        incoming_rilt = incoming_dict.get("dograh") or {}
+        existing_rilt = existing_dict.get("dograh") or {}
+        incoming_key = incoming_rilt.get("api_key")
+        existing_key = existing_rilt.get("api_key")
         if incoming_key and existing_key and contains_masked_key(incoming_key):
-            incoming_social_cangaroo["api_key"] = resolve_masked_api_keys(
+            incoming_rilt["api_key"] = resolve_masked_api_keys(
                 incoming_key,
                 existing_key,
             )
@@ -284,9 +284,9 @@ def mask_ai_model_configuration_v2(
 def convert_legacy_ai_model_configuration_to_v2(
     configuration: EffectiveAIModelConfiguration,
 ) -> OrganizationAIModelConfigurationV2:
-    social_cangaroo_key = _first_social_cangaroo_api_key(configuration)
-    if social_cangaroo_key:
-        return _convert_any_social_cangaroo_legacy_configuration(configuration, social_cangaroo_key)
+    rilt_key = _first_rilt_api_key(configuration)
+    if rilt_key:
+        return _convert_any_rilt_legacy_configuration(configuration, rilt_key)
 
     if configuration.is_realtime:
         if configuration.realtime is None or configuration.llm is None:
@@ -323,7 +323,7 @@ def convert_legacy_ai_model_configuration_to_v2(
     )
 
 
-def social_cangaroo_embeddings_base_url() -> str:
+def rilt_embeddings_base_url() -> str:
     # AsyncOpenAI appends "/embeddings"; MPS exposes that under /api/v1/llm.
     return f"{MPS_API_URL}/api/v1/llm"
 
@@ -333,8 +333,8 @@ def apply_managed_embeddings_base_url(
     provider: str | None,
     base_url: str | None,
 ) -> str | None:
-    if provider == ServiceProviders.SOCIAL_CANGAROO.value or provider == ServiceProviders.SOCIAL_CANGAROO:
-        return social_cangaroo_embeddings_base_url()
+    if provider == ServiceProviders.RILT.value or provider == ServiceProviders.RILT:
+        return rilt_embeddings_base_url()
     return base_url
 
 
@@ -416,31 +416,31 @@ def _mask_secret_value(value):
     return mask_key(value)
 
 
-def _convert_any_social_cangaroo_legacy_configuration(
+def _convert_any_rilt_legacy_configuration(
     configuration: EffectiveAIModelConfiguration,
-    social_cangaroo_key: str,
+    rilt_key: str,
 ) -> OrganizationAIModelConfigurationV2:
     speed = getattr(configuration.tts, "speed", 1.0)
     try:
         speed = float(speed)
     except (TypeError, ValueError):
         speed = 1.0
-    if not SOCIAL_CANGAROO_SPEED_MIN <= speed <= SOCIAL_CANGAROO_SPEED_MAX:
+    if not RILT_SPEED_MIN <= speed <= RILT_SPEED_MAX:
         speed = 1.0
     return OrganizationAIModelConfigurationV2(
         mode="dograh",
-        social_cangaroo=SocialCangarooManagedAIModelConfiguration(
-            api_key=social_cangaroo_key,
-            voice=getattr(configuration.tts, "voice", SOCIAL_CANGAROO_DEFAULT_VOICE)
-            or SOCIAL_CANGAROO_DEFAULT_VOICE,
+        rilt=RiltManagedAIModelConfiguration(
+            api_key=rilt_key,
+            voice=getattr(configuration.tts, "voice", RILT_DEFAULT_VOICE)
+            or RILT_DEFAULT_VOICE,
             speed=speed,
-            language=getattr(configuration.stt, "language", SOCIAL_CANGAROO_DEFAULT_LANGUAGE)
-            or SOCIAL_CANGAROO_DEFAULT_LANGUAGE,
+            language=getattr(configuration.stt, "language", RILT_DEFAULT_LANGUAGE)
+            or RILT_DEFAULT_LANGUAGE,
         ),
     )
 
 
-def _first_social_cangaroo_api_key(configuration: EffectiveAIModelConfiguration) -> str | None:
+def _first_rilt_api_key(configuration: EffectiveAIModelConfiguration) -> str | None:
     for service in (
         configuration.llm,
         configuration.tts,
@@ -448,7 +448,7 @@ def _first_social_cangaroo_api_key(configuration: EffectiveAIModelConfiguration)
         configuration.embeddings,
         configuration.realtime,
     ):
-        if service is None or _provider(service) != ServiceProviders.SOCIAL_CANGAROO:
+        if service is None or _provider(service) != ServiceProviders.RILT:
             continue
         try:
             return _single_api_key(service)

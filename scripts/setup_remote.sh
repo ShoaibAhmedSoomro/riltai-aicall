@@ -14,7 +14,7 @@ BOOTSTRAP_LIB=""
 
 if [[ ! -f "$LIB_PATH" ]]; then
     BOOTSTRAP_LIB="$(mktemp)"
-    curl -fsSL -o "$BOOTSTRAP_LIB" "https://raw.githubusercontent.com/ShoaibAhmedSoomro/social-cangaroo/main/scripts/lib/setup_common.sh"
+    curl -fsSL -o "$BOOTSTRAP_LIB" "https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/scripts/lib/setup_common.sh"
     LIB_PATH="$BOOTSTRAP_LIB"
 fi
 
@@ -28,9 +28,9 @@ cleanup() {
     # sudo. SUDO_UID is unset when running as real root (e.g. cloud-init) —
     # root already owns its files, nothing to restore. Runs from the EXIT trap
     # so a mid-setup failure also leaves ownership fixed.
-    if [[ -n "${SUDO_UID:-}" && -n "${SUDO_GID:-}" && -n "${SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR:-}" && -d "$SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR" ]]; then
-        echo -e "${BLUE}Restoring ownership of $SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR to ${SUDO_USER:-uid $SUDO_UID}...${NC}"
-        chown -R "$SUDO_UID:$SUDO_GID" "$SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR" || true
+    if [[ -n "${SUDO_UID:-}" && -n "${SUDO_GID:-}" && -n "${RILT_DEPLOY_PROJECT_DIR:-}" && -d "$RILT_DEPLOY_PROJECT_DIR" ]]; then
+        echo -e "${BLUE}Restoring ownership of $RILT_DEPLOY_PROJECT_DIR to ${SUDO_USER:-uid $SUDO_UID}...${NC}"
+        chown -R "$SUDO_UID:$SUDO_GID" "$RILT_DEPLOY_PROJECT_DIR" || true
     fi
 }
 trap cleanup EXIT
@@ -40,7 +40,7 @@ trap cleanup EXIT
 
 echo -e "${BLUE}"
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║                   Social Cangaroo Remote Setup                        ║"
+echo "║                   AICall Remote Setup                        ║"
 echo "║      Automated HTTPS deployment with TURN server             ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
@@ -50,7 +50,7 @@ echo -e "${NC}"
 # system renewal hook under /etc/letsencrypt — all of which require root. Stop
 # early with clear guidance rather than getting halfway and degrading the install.
 if [[ $EUID -ne 0 ]]; then
-    social_cangaroo_fail "setup_remote.sh must be run as root.\nRe-run with sudo:\n  sudo ./setup_remote.sh"
+    rilt_fail "setup_remote.sh must be run as root.\nRe-run with sudo:\n  sudo ./setup_remote.sh"
 fi
 
 # Get the server IP address (skip prompt if SERVER_IP is already set)
@@ -60,11 +60,11 @@ if [[ -z "${SERVER_IP:-}" ]]; then
 fi
 
 if [[ -z "$SERVER_IP" ]]; then
-    social_cangaroo_fail "IP address cannot be empty"
+    rilt_fail "IP address cannot be empty"
 fi
 
-if ! social_cangaroo_is_ipv4 "$SERVER_IP"; then
-    social_cangaroo_fail "Invalid IP address format"
+if ! rilt_is_ipv4 "$SERVER_IP"; then
+    rilt_fail "Invalid IP address format"
 fi
 
 # Certificate strategy. CERT_MODE selects how HTTPS is secured:
@@ -78,14 +78,14 @@ ACME_DOMAIN_SUFFIX="${ACME_DOMAIN_SUFFIX:-sslip.io}"
 LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-}"
 
 if [[ "$CERT_MODE" == "auto" ]]; then
-    if social_cangaroo_is_local_ipv4 "$SERVER_IP"; then
+    if rilt_is_local_ipv4 "$SERVER_IP"; then
         CERT_MODE="self-signed"
-        social_cangaroo_warn "$SERVER_IP is a private IP — using a self-signed certificate."
-        social_cangaroo_warn "For a trusted cert, deploy on a public IP or a domain you own"
-        social_cangaroo_warn "(https://docs.socialcangaroo.com/deployment/custom-domain)."
+        rilt_warn "$SERVER_IP is a private IP — using a self-signed certificate."
+        rilt_warn "For a trusted cert, deploy on a public IP or a domain you own"
+        rilt_warn "(https://docs.rilt.ai/deployment/custom-domain)."
     elif ! command -v docker >/dev/null 2>&1; then
         CERT_MODE="self-signed"
-        social_cangaroo_warn "Docker not found — skipping automatic Let's Encrypt setup and using a self-signed cert."
+        rilt_warn "Docker not found — skipping automatic Let's Encrypt setup and using a self-signed cert."
     else
         CERT_MODE="sslip"
     fi
@@ -94,21 +94,21 @@ fi
 case "$CERT_MODE" in
     self-signed) ;;
     sslip)
-        if social_cangaroo_is_local_ipv4 "$SERVER_IP"; then
-            social_cangaroo_fail "CERT_MODE=sslip needs a public IP; $SERVER_IP is private/reserved."
+        if rilt_is_local_ipv4 "$SERVER_IP"; then
+            rilt_fail "CERT_MODE=sslip needs a public IP; $SERVER_IP is private/reserved."
         fi
-        command -v docker >/dev/null 2>&1 || social_cangaroo_fail "CERT_MODE=sslip needs Docker to serve the ACME challenge."
+        command -v docker >/dev/null 2>&1 || rilt_fail "CERT_MODE=sslip needs Docker to serve the ACME challenge."
         ;;
     letsencrypt-dns|cloudflare-tunnel|external)
-        social_cangaroo_fail "CERT_MODE=$CERT_MODE is reserved but not implemented yet. Use 'sslip' (public IP) or 'self-signed'."
+        rilt_fail "CERT_MODE=$CERT_MODE is reserved but not implemented yet. Use 'sslip' (public IP) or 'self-signed'."
         ;;
     *)
-        social_cangaroo_fail "Unknown CERT_MODE '$CERT_MODE' (expected: auto, sslip, self-signed)."
+        rilt_fail "Unknown CERT_MODE '$CERT_MODE' (expected: auto, sslip, self-signed)."
         ;;
 esac
 
 if [[ "$CERT_MODE" == "sslip" ]]; then
-    PUBLIC_HOST_VALUE="$(social_cangaroo_sslip_host_from_ip "$SERVER_IP" "$ACME_DOMAIN_SUFFIX")"
+    PUBLIC_HOST_VALUE="$(rilt_sslip_host_from_ip "$SERVER_IP" "$ACME_DOMAIN_SUFFIX")"
     CERT_DESC="Let's Encrypt via $ACME_DOMAIN_SUFFIX (trusted)"
 else
     PUBLIC_HOST_VALUE="$SERVER_IP"
@@ -142,14 +142,14 @@ if [[ -z "${DEPLOY_MODE:-}" ]]; then
     if [[ -t 0 ]]; then
         echo ""
         echo -e "${YELLOW}Deployment mode:${NC}"
-        echo "  1) prebuilt - pull official social-cangaroo images (recommended, fastest)"
+        echo "  1) prebuilt - pull official rilt images (recommended, fastest)"
         echo "  2) build    - build images from source (for forks or local customizations)"
         read -p "Choose [1]: " mode_choice
         mode_choice="${mode_choice:-1}"
         case "$mode_choice" in
             1|prebuilt) DEPLOY_MODE="prebuilt" ;;
             2|build) DEPLOY_MODE="build" ;;
-            *) social_cangaroo_fail "invalid choice '$mode_choice'" ;;
+            *) rilt_fail "invalid choice '$mode_choice'" ;;
         esac
     else
         DEPLOY_MODE="prebuilt"
@@ -182,10 +182,10 @@ if [[ "$DEPLOY_MODE" == "build" ]]; then
             if [[ -t 0 ]]; then
                 echo ""
                 echo -e "${YELLOW}GitHub repo to clone (format: owner/name):${NC}"
-                read -p "[ShoaibAhmedSoomro/social-cangaroo]: " FORK_REPO
-                FORK_REPO="${FORK_REPO:-ShoaibAhmedSoomro/social-cangaroo}"
+                read -p "[ShoaibAhmedSoomro/rilt]: " FORK_REPO
+                FORK_REPO="${FORK_REPO:-ShoaibAhmedSoomro/rilt}"
             else
-                FORK_REPO="ShoaibAhmedSoomro/social-cangaroo"
+                FORK_REPO="ShoaibAhmedSoomro/rilt"
             fi
         fi
 
@@ -215,15 +215,15 @@ if [[ -z "$FASTAPI_WORKERS" ]]; then
     fi
 fi
 
-[[ "$FASTAPI_WORKERS" =~ ^[1-9][0-9]*$ ]] || social_cangaroo_fail "FASTAPI_WORKERS must be a positive integer (got: $FASTAPI_WORKERS)"
+[[ "$FASTAPI_WORKERS" =~ ^[1-9][0-9]*$ ]] || rilt_fail "FASTAPI_WORKERS must be a positive integer (got: $FASTAPI_WORKERS)"
 
 if [[ "$DEPLOY_MODE" == "build" && "${REPO_SOURCE:-}" == "existing" ]]; then
     TARGET_DIR="."
 else
-    TARGET_DIR="social-cangaroo"
+    TARGET_DIR="rilt"
 fi
 
-if [[ "${SOCIAL_CANGAROO_FORCE_OVERWRITE:-}" != "1" && "${SOCIAL_CANGAROO_SKIP_DOWNLOAD:-}" != "1" ]]; then
+if [[ "${RILT_FORCE_OVERWRITE:-}" != "1" && "${RILT_SKIP_DOWNLOAD:-}" != "1" ]]; then
     if [[ -f "$TARGET_DIR/.env" ]]; then
         if [[ "$TARGET_DIR" == "." ]]; then
             existing_path="$(pwd)/.env"
@@ -231,7 +231,7 @@ if [[ "${SOCIAL_CANGAROO_FORCE_OVERWRITE:-}" != "1" && "${SOCIAL_CANGAROO_SKIP_D
             existing_path="$(pwd)/$TARGET_DIR/.env"
         fi
         echo ""
-        echo -e "${YELLOW}Detected an existing Social Cangaroo install:${NC}"
+        echo -e "${YELLOW}Detected an existing AICall install:${NC}"
         echo -e "  ${YELLOW}$existing_path${NC}"
         echo ""
         echo -e "${RED}Refusing to continue - re-running setup would:${NC}"
@@ -240,10 +240,10 @@ if [[ "${SOCIAL_CANGAROO_FORCE_OVERWRITE:-}" != "1" && "${SOCIAL_CANGAROO_SKIP_D
         echo -e "${RED}  - replace the validated remote deployment bundle${NC}"
         echo ""
         echo -e "${BLUE}To upgrade an existing install, follow:${NC}"
-        echo -e "  ${BLUE}https://docs.socialcangaroo.com/deployment/update${NC}"
+        echo -e "  ${BLUE}https://docs.rilt.ai/deployment/update${NC}"
         echo ""
         echo -e "${BLUE}To wipe state and reinstall from scratch, re-run with:${NC}"
-        echo -e "  ${BLUE}SOCIAL_CANGAROO_FORCE_OVERWRITE=1 <same command>${NC}"
+        echo -e "  ${BLUE}RILT_FORCE_OVERWRITE=1 <same command>${NC}"
         echo ""
         exit 1
     fi
@@ -274,34 +274,34 @@ fi
 echo ""
 
 if [[ "$DEPLOY_MODE" == "build" ]]; then
-    if [[ "${SOCIAL_CANGAROO_SKIP_DOWNLOAD:-}" == "1" ]]; then
+    if [[ "${RILT_SKIP_DOWNLOAD:-}" == "1" ]]; then
         echo -e "${BLUE}[1/$TOTAL] Using existing repo in current directory${NC}"
     elif [[ "${REPO_SOURCE:-}" == "clone" ]]; then
-        if [[ -e "social-cangaroo" ]]; then
-            social_cangaroo_fail "'social-cangaroo' directory already exists. Remove it or re-run with REPO_SOURCE=existing from inside it."
+        if [[ -e "rilt" ]]; then
+            rilt_fail "'rilt' directory already exists. Remove it or re-run with REPO_SOURCE=existing from inside it."
         fi
         echo -e "${BLUE}[1/$TOTAL] Cloning $FORK_REPO (branch: $BRANCH)...${NC}"
-        git clone --branch "$BRANCH" --recurse-submodules "https://github.com/$FORK_REPO.git" social-cangaroo
-        cd social-cangaroo
+        git clone --branch "$BRANCH" --recurse-submodules "https://github.com/$FORK_REPO.git" rilt
+        cd rilt
         echo -e "${GREEN}✓ Repo cloned${NC}"
     else
         echo -e "${BLUE}[1/$TOTAL] Using existing repo at $(pwd)${NC}"
     fi
 else
-    if [[ "${SOCIAL_CANGAROO_SKIP_DOWNLOAD:-}" != "1" ]]; then
-        mkdir -p social-cangaroo 2>/dev/null || true
-        cd social-cangaroo
+    if [[ "${RILT_SKIP_DOWNLOAD:-}" != "1" ]]; then
+        mkdir -p rilt 2>/dev/null || true
+        cd rilt
 
         echo -e "${BLUE}[1/$TOTAL] Downloading deployment bundle...${NC}"
-        curl -fsSL -o docker-compose.yaml "https://raw.githubusercontent.com/ShoaibAhmedSoomro/social-cangaroo/main/docker-compose.yaml"
-        social_cangaroo_download_remote_support_bundle "$(pwd)" "main"
+        curl -fsSL -o docker-compose.yaml "https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/docker-compose.yaml"
+        rilt_download_remote_support_bundle "$(pwd)" "main"
         echo -e "${GREEN}✓ Deployment bundle downloaded${NC}"
     else
         echo -e "${BLUE}[1/$TOTAL] Using deployment files in current directory${NC}"
     fi
 fi
 
-SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR="$(pwd)"
+RILT_DEPLOY_PROJECT_DIR="$(pwd)"
 
 if [[ "$DEPLOY_MODE" != "prebuilt" ]]; then
     chmod +x remote_up.sh
@@ -328,7 +328,7 @@ echo -e "${BLUE}[4/$TOTAL] Creating environment file...${NC}"
 OSS_JWT_SECRET=$(openssl rand -hex 32)
 POSTGRES_PASSWORD=$(openssl rand -hex 32)
 REDIS_PASSWORD=$(openssl rand -hex 32)
-MINIO_ROOT_USER="social-cangaroo$(openssl rand -hex 6)"
+MINIO_ROOT_USER="rilt$(openssl rand -hex 6)"
 MINIO_ROOT_PASSWORD=$(openssl rand -hex 32)
 
 cat > .env << ENV_EOF
@@ -377,7 +377,7 @@ ENV_EOF
 echo -e "${GREEN}✓ .env file created${NC}"
 
 echo -e "${BLUE}[5/$TOTAL] Validating remote init configuration...${NC}"
-social_cangaroo_prepare_remote_install "$(pwd)"
+rilt_prepare_remote_install "$(pwd)"
 echo -e "${GREEN}✓ Remote init configuration validated${NC}"
 
 if [[ "$DEPLOY_MODE" == "build" ]]; then
@@ -392,14 +392,14 @@ services:
     build:
       context: .
       dockerfile: api/Dockerfile
-    image: social-cangaroo-local/social-cangaroo-api:local
+    image: rilt-local/rilt-api:local
     pull_policy: never
 
   ui:
     build:
       context: .
       dockerfile: ui/Dockerfile
-    image: social-cangaroo-local/social-cangaroo-ui:local
+    image: rilt-local/rilt-ui:local
     pull_policy: never
 OVERRIDE_EOF
     echo -e "${GREEN}✓ docker-compose.override.yaml created${NC}"
@@ -407,7 +407,7 @@ fi
 
 if [[ "$CERT_MODE" == "sslip" ]]; then
     echo ""
-    echo -e "${BLUE}Starting Social Cangaroo and requesting a trusted certificate for ${PUBLIC_HOST_VALUE}...${NC}"
+    echo -e "${BLUE}Starting AICall and requesting a trusted certificate for ${PUBLIC_HOST_VALUE}...${NC}"
 
     if [[ "$DEPLOY_MODE" == "build" ]]; then
         ./remote_up.sh --build
@@ -427,21 +427,21 @@ if [[ "$CERT_MODE" == "sslip" ]]; then
 
     if [[ "$nginx_ready" != "1" ]]; then
         CERT_RESULT="self-signed"
-        social_cangaroo_warn "nginx did not become reachable on port 80 — skipping Let's Encrypt for now."
-        social_cangaroo_warn "The stack is running with the bootstrap self-signed certificate."
-    elif social_cangaroo_install_certbot && social_cangaroo_issue_letsencrypt_webroot "$(pwd)" "$PUBLIC_HOST_VALUE" "$LETSENCRYPT_EMAIL"; then
+        rilt_warn "nginx did not become reachable on port 80 — skipping Let's Encrypt for now."
+        rilt_warn "The stack is running with the bootstrap self-signed certificate."
+    elif rilt_install_certbot && rilt_issue_letsencrypt_webroot "$(pwd)" "$PUBLIC_HOST_VALUE" "$LETSENCRYPT_EMAIL"; then
         docker compose --profile remote restart nginx >/dev/null 2>&1 || true
-        social_cangaroo_install_cert_renewal_hook "$(pwd)" "$PUBLIC_HOST_VALUE"
+        rilt_install_cert_renewal_hook "$(pwd)" "$PUBLIC_HOST_VALUE"
         CERT_RESULT="sslip"
-        social_cangaroo_success "✓ Trusted Let's Encrypt certificate installed; auto-renewal configured"
+        rilt_success "✓ Trusted Let's Encrypt certificate installed; auto-renewal configured"
     else
         CERT_RESULT="self-signed"
         echo ""
-        social_cangaroo_warn "Let's Encrypt issuance failed — the stack is running with the self-signed certificate."
-        social_cangaroo_warn "Common causes and fixes:"
-        social_cangaroo_warn "  - Port 80 not reachable from the internet: open it in your firewall/security group"
-        social_cangaroo_warn "  - Rate limited on ${ACME_DOMAIN_SUFFIX}: re-run with ACME_DOMAIN_SUFFIX=nip.io"
-        social_cangaroo_warn "  - Then retry: sudo certbot certonly --webroot -w \"$(pwd)/certs\" -d ${PUBLIC_HOST_VALUE}"
+        rilt_warn "Let's Encrypt issuance failed — the stack is running with the self-signed certificate."
+        rilt_warn "Common causes and fixes:"
+        rilt_warn "  - Port 80 not reachable from the internet: open it in your firewall/security group"
+        rilt_warn "  - Rate limited on ${ACME_DOMAIN_SUFFIX}: re-run with ACME_DOMAIN_SUFFIX=nip.io"
+        rilt_warn "  - Then retry: sudo certbot certonly --webroot -w \"$(pwd)/certs\" -d ${PUBLIC_HOST_VALUE}"
     fi
 fi
 
@@ -456,7 +456,7 @@ if [[ "$DEPLOY_MODE" == "build" ]]; then
     echo "  - docker-compose.override.yaml  (build directives)"
 fi
 echo "  - remote_up.sh"
-echo "  - scripts/run_social_cangaroo_init.sh"
+echo "  - scripts/run_rilt_init.sh"
 echo "  - deploy/templates/"
 echo "  - generate_certificate.sh"
 echo "  - certs/local.crt"
@@ -465,13 +465,13 @@ echo "  - .env"
 echo ""
 if [[ "$CERT_MODE" == "sslip" ]]; then
     if [[ "$CERT_RESULT" == "sslip" ]]; then
-        echo -e "${GREEN}Social Cangaroo is running with a trusted certificate at:${NC}"
+        echo -e "${GREEN}AICall is running with a trusted certificate at:${NC}"
         echo ""
         echo -e "  ${BLUE}https://$PUBLIC_HOST_VALUE${NC}"
         echo ""
         echo -e "${GREEN}No browser warning — the certificate renews automatically before expiry.${NC}"
     else
-        echo -e "${YELLOW}Social Cangaroo is running (with a temporary self-signed certificate) at:${NC}"
+        echo -e "${YELLOW}AICall is running (with a temporary self-signed certificate) at:${NC}"
         echo ""
         echo -e "  ${BLUE}https://$PUBLIC_HOST_VALUE${NC}"
         echo ""
@@ -479,7 +479,7 @@ if [[ "$CERT_MODE" == "sslip" ]]; then
         echo -e "${YELLOW}browser will warn until a trusted certificate is issued.${NC}"
     fi
 else
-    echo -e "${YELLOW}To start Social Cangaroo, run:${NC}"
+    echo -e "${YELLOW}To start AICall, run:${NC}"
     echo ""
     if [[ "$DEPLOY_MODE" != "build" || "${REPO_SOURCE:-}" != "existing" ]]; then
         echo -e "  ${BLUE}cd $(pwd)${NC}"

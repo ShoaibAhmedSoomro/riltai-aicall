@@ -17,11 +17,11 @@ from pipecat.processors.aggregators.llm_response_universal import (
 from pipecat.processors.frame_processor import FrameDirection
 from pipecat.services.llm_service import FunctionCallFromLLM
 
-from api.services.pipecat.realtime.gemini_live import SocialCangarooGeminiLiveLLMService
+from api.services.pipecat.realtime.gemini_live import RiltGeminiLiveLLMService
 
 
-class _TestSocialCangarooGeminiLiveLLMService(SocialCangarooGeminiLiveLLMService):
-    """Social Cangaroo Gemini service with client creation stubbed for unit tests."""
+class _TestRiltGeminiLiveLLMService(RiltGeminiLiveLLMService):
+    """AICall Gemini service with client creation stubbed for unit tests."""
 
     def create_client(self):
         self._client = SimpleNamespace(
@@ -37,8 +37,8 @@ class _FakeSession:
         self.close = AsyncMock()
 
 
-def _make_service() -> _TestSocialCangarooGeminiLiveLLMService:
-    service = _TestSocialCangarooGeminiLiveLLMService(api_key="test-key")
+def _make_service() -> _TestRiltGeminiLiveLLMService:
+    service = _TestRiltGeminiLiveLLMService(api_key="test-key")
     service.stop_all_metrics = AsyncMock()
     service.start_ttfb_metrics = AsyncMock()
     service.cancel_task = AsyncMock()
@@ -157,20 +157,20 @@ async def test_tts_greeting_waits_for_gemini_session_before_sending_prompt():
     service._context = LLMContext()
 
     await service.process_frame(
-        TTSSpeakFrame("Hello from Social Cangaroo.", append_to_context=True),
+        TTSSpeakFrame("Hello from AICall.", append_to_context=True),
         FrameDirection.DOWNSTREAM,
     )
 
     assert service._handled_initial_context is True
     assert service._run_llm_when_session_ready is True
-    assert service._pending_initial_greeting_text == "Hello from Social Cangaroo."
+    assert service._pending_initial_greeting_text == "Hello from AICall."
 
     session = _FakeSession()
     await service._handle_session_ready(session)
 
     session.send_client_content.assert_awaited_once()
     prompt = session.send_client_content.await_args.kwargs["turns"][0].parts[0].text
-    assert prompt.endswith('"Hello from Social Cangaroo."')
+    assert prompt.endswith('"Hello from AICall."')
     assert service._run_llm_when_session_ready is False
     assert service._pending_initial_greeting_text is None
 

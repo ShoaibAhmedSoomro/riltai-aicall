@@ -32,7 +32,7 @@ def _parse_and_compile(value: dict) -> None:
     )
 
 
-def test_social_cangaroo_legacy_converts_to_managed_mode():
+def test_rilt_legacy_converts_to_managed_mode():
     value = migration.convert_legacy_configuration_to_v2(
         {
             "llm": {"provider": "dograh", "api_key": "mps-key", "model": "default"},
@@ -55,7 +55,7 @@ def test_social_cangaroo_legacy_converts_to_managed_mode():
     _parse_and_compile(value)
 
 
-def test_social_cangaroo_mode_wins_over_byok_sections_and_sanitizes_speed():
+def test_rilt_mode_wins_over_byok_sections_and_sanitizes_speed():
     value = migration.convert_legacy_configuration_to_v2(
         {
             "llm": {"provider": "dograh", "api_key": ["mps-key"]},
@@ -133,9 +133,9 @@ def test_incomplete_pipeline_legacy_is_skipped():
     assert migration.convert_legacy_configuration_to_v2({}) is None
 
 
-def test_social_cangaroo_provider_without_single_key_cannot_become_byok():
-    # Multiple social_cangaroo keys can't map to managed mode, and BYOK rejects the
-    # social_cangaroo provider — the org must be skipped rather than written broken.
+def test_rilt_provider_without_single_key_cannot_become_byok():
+    # Multiple rilt keys can't map to managed mode, and BYOK rejects the
+    # rilt provider — the org must be skipped rather than written broken.
     assert (
         migration.convert_legacy_configuration_to_v2(
             {

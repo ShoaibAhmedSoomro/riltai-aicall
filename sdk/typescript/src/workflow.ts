@@ -1,4 +1,4 @@
-// Workflow builder mirroring `sdk/python/src/social_cangaroo_sdk/workflow.py`.
+// Workflow builder mirroring `sdk/python/src/rilt_sdk/workflow.py`.
 //
 // Users compose workflows via `workflow.add({ type: "agentNode", ... })`
 // and `workflow.edge(source, target, ...)`. Each `add()` call is
@@ -80,7 +80,7 @@ export class Workflow {
 
     /**
      * Typed variant of `add()` — takes a typed node object from
-     * `@socialCangaroo/sdk/typed` (or its discriminated-union form) instead of
+     * `@rilt/sdk/typed` (or its discriminated-union form) instead of
      * raw kwargs.
      *
      * Equivalent to:

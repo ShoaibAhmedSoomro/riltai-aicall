@@ -46,7 +46,7 @@ def test_service_factory_tags_success_with_authoritative_ownership():
     assert metadata.error_owner.value == "user"
 
 
-def test_managed_service_constructor_failure_is_attributed_to_social_cangaroo(monkeypatch):
+def test_managed_service_constructor_failure_is_attributed_to_rilt(monkeypatch):
     captured = []
     monkeypatch.setattr(
         "api.services.pipecat.service_factory.log_failure",
@@ -54,7 +54,7 @@ def test_managed_service_constructor_failure_is_attributed_to_social_cangaroo(mo
     )
     with (
         patch(
-            "api.services.pipecat.service_factory.SocialCangarooLLMService",
+            "api.services.pipecat.service_factory.RiltLLMService",
             side_effect=ValueError("bad managed response"),
         ),
         pytest.raises(ValueError),

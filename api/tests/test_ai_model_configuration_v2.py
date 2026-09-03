@@ -5,10 +5,10 @@ import pytest
 from pydantic import ValidationError
 
 from api.schemas.ai_model_configuration import (
-    SocialCangarooManagedAIModelConfiguration,
     EffectiveAIModelConfiguration,
     OrganizationAIModelConfigurationResponse,
     OrganizationAIModelConfigurationV2,
+    RiltManagedAIModelConfiguration,
     compile_ai_model_configuration_v2,
 )
 from api.services.configuration.ai_model_configuration import (
@@ -26,21 +26,21 @@ from api.services.configuration.check_validity import UserConfigurationValidator
 from api.services.configuration.masking import mask_key
 from api.services.configuration.registry import (
     DeepgramSTTConfiguration,
-    SocialCangarooLLMService,
-    SocialCangarooSTTService,
-    SocialCangarooTTSService,
     ElevenlabsTTSConfiguration,
     GoogleLLMService,
     GoogleRealtimeLLMConfiguration,
     OpenAIEmbeddingsConfiguration,
     OpenAILLMService,
+    RiltLLMService,
+    RiltSTTService,
+    RiltTTSService,
 )
 
 
-def test_social_cangaroo_v2_compiles_to_effective_managed_pipeline_with_embeddings():
+def test_rilt_v2_compiles_to_effective_managed_pipeline_with_embeddings():
     config = OrganizationAIModelConfigurationV2(
         mode="dograh",
-        social_cangaroo=SocialCangarooManagedAIModelConfiguration(
+        rilt=RiltManagedAIModelConfiguration(
             api_key="mps-secret",
             voice="default",
             speed=1.2,
@@ -58,14 +58,14 @@ def test_social_cangaroo_v2_compiles_to_effective_managed_pipeline_with_embeddin
     assert effective.stt.provider == "dograh"
     assert effective.stt.language == "multi"
     assert effective.embeddings.provider == "dograh"
-    assert effective.embeddings.model == "social_cangaroo_embedding_v1"
+    assert effective.embeddings.model == "dograh_embedding_v1"
     assert effective.managed_service_version == 2
 
 
-def test_social_cangaroo_v2_accepts_numeric_speed_in_registry_range():
+def test_rilt_v2_accepts_numeric_speed_in_registry_range():
     config = OrganizationAIModelConfigurationV2(
         mode="dograh",
-        social_cangaroo=SocialCangarooManagedAIModelConfiguration(
+        rilt=RiltManagedAIModelConfiguration(
             api_key="mps-secret",
             speed=1.5,
         ),
@@ -76,18 +76,18 @@ def test_social_cangaroo_v2_accepts_numeric_speed_in_registry_range():
     assert effective.tts.speed == 1.5
 
 
-def test_social_cangaroo_v2_rejects_out_of_range_speed():
+def test_rilt_v2_rejects_out_of_range_speed():
     with pytest.raises(ValidationError):
         OrganizationAIModelConfigurationV2(
             mode="dograh",
-            social_cangaroo=SocialCangarooManagedAIModelConfiguration(
+            rilt=RiltManagedAIModelConfiguration(
                 api_key="mps-secret",
                 speed=2.5,
             ),
         )
 
 
-def test_byok_v2_rejects_social_cangaroo_provider():
+def test_byok_v2_rejects_rilt_provider():
     with pytest.raises(ValidationError):
         OrganizationAIModelConfigurationV2.model_validate(
             {
@@ -162,7 +162,7 @@ async def test_resolved_org_v2_uses_last_validated_at_as_validation_cache(
     last_validated_at = datetime.now(UTC)
     config = OrganizationAIModelConfigurationV2(
         mode="dograh",
-        social_cangaroo=SocialCangarooManagedAIModelConfiguration(api_key="mps-secret"),
+        rilt=RiltManagedAIModelConfiguration(api_key="mps-secret"),
     )
     row = SimpleNamespace(
         value=config.model_dump(mode="json", exclude_none=True),
@@ -186,7 +186,7 @@ async def test_upsert_org_v2_marks_configuration_validated(monkeypatch):
 
     config = OrganizationAIModelConfigurationV2(
         mode="dograh",
-        social_cangaroo=SocialCangarooManagedAIModelConfiguration(api_key="mps-secret"),
+        rilt=RiltManagedAIModelConfiguration(api_key="mps-secret"),
     )
     upsert = AsyncMock()
     monkeypatch.setattr(
@@ -255,14 +255,14 @@ async def test_pipeline_validator_requires_stt_and_tts_when_not_realtime():
     ]
 
 
-def test_masked_social_cangaroo_key_is_preserved_when_saving_same_mode():
+def test_masked_rilt_key_is_preserved_when_saving_same_mode():
     existing = OrganizationAIModelConfigurationV2(
         mode="dograh",
-        social_cangaroo=SocialCangarooManagedAIModelConfiguration(api_key="mps-real-secret"),
+        rilt=RiltManagedAIModelConfiguration(api_key="mps-real-secret"),
     )
     incoming = OrganizationAIModelConfigurationV2(
         mode="dograh",
-        social_cangaroo=SocialCangarooManagedAIModelConfiguration(api_key=mask_key("mps-real-secret")),
+        rilt=RiltManagedAIModelConfiguration(api_key=mask_key("mps-real-secret")),
     )
 
     merged = merge_ai_model_configuration_v2_secrets(incoming, existing)
@@ -304,21 +304,21 @@ def test_masked_v2_configuration_masks_nested_service_keys():
     assert masked["byok"]["pipeline"]["stt"]["api_key"] == mask_key("dg-real-secret")
 
 
-def test_legacy_all_social_cangaroo_pipeline_converts_to_social_cangaroo_v2():
+def test_legacy_all_rilt_pipeline_converts_to_rilt_v2():
     legacy = EffectiveAIModelConfiguration(
-        llm=SocialCangarooLLMService(
+        llm=RiltLLMService(
             provider="dograh",
             api_key=["mps-secret"],
             model="default",
         ),
-        tts=SocialCangarooTTSService(
+        tts=RiltTTSService(
             provider="dograh",
             api_key=["mps-secret"],
             model="default",
             voice="default",
             speed=1.0,
         ),
-        stt=SocialCangarooSTTService(
+        stt=RiltSTTService(
             provider="dograh",
             api_key=["mps-secret"],
             model="default",
@@ -332,21 +332,21 @@ def test_legacy_all_social_cangaroo_pipeline_converts_to_social_cangaroo_v2():
     assert config.dograh.api_key == "mps-secret"
 
 
-def test_legacy_social_cangaroo_pipeline_conversion_preserves_numeric_speed():
+def test_legacy_rilt_pipeline_conversion_preserves_numeric_speed():
     legacy = EffectiveAIModelConfiguration(
-        llm=SocialCangarooLLMService(
+        llm=RiltLLMService(
             provider="dograh",
             api_key=["mps-secret"],
             model="default",
         ),
-        tts=SocialCangarooTTSService(
+        tts=RiltTTSService(
             provider="dograh",
             api_key=["mps-secret"],
             model="default",
             voice="default",
             speed=1.5,
         ),
-        stt=SocialCangarooSTTService(
+        stt=RiltSTTService(
             provider="dograh",
             api_key=["mps-secret"],
             model="default",
@@ -359,20 +359,20 @@ def test_legacy_social_cangaroo_pipeline_conversion_preserves_numeric_speed():
     assert config.dograh.speed == 1.5
 
 
-def test_legacy_mixed_social_cangaroo_pipeline_converts_to_social_cangaroo_v2():
+def test_legacy_mixed_rilt_pipeline_converts_to_rilt_v2():
     legacy = EffectiveAIModelConfiguration(
         llm=OpenAILLMService(
             provider="openai",
             api_key="sk-llm",
             model="gpt-4.1",
         ),
-        tts=SocialCangarooTTSService(
+        tts=RiltTTSService(
             provider="dograh",
             api_key="mps-tts",
             model="default",
             voice="default",
         ),
-        stt=SocialCangarooSTTService(
+        stt=RiltSTTService(
             provider="dograh",
             api_key="mps-stt",
             model="default",
@@ -544,18 +544,18 @@ async def test_migrate_model_configuration_v2_initializes_hosted_mps_billing(
     from api.routes import organization as organization_routes
 
     legacy = EffectiveAIModelConfiguration(
-        llm=SocialCangarooLLMService(
+        llm=RiltLLMService(
             provider="dograh",
             api_key=["mps-secret"],
             model="default",
         ),
-        tts=SocialCangarooTTSService(
+        tts=RiltTTSService(
             provider="dograh",
             api_key=["mps-secret"],
             model="default",
             voice="default",
         ),
-        stt=SocialCangarooSTTService(
+        stt=RiltSTTService(
             provider="dograh",
             api_key=["mps-secret"],
             model="default",

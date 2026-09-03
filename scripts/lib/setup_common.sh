@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-SOCIAL_CANGAROO_DEPLOY_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SOCIAL_CANGAROO_DEPLOY_REPO_ROOT="$(cd "$SOCIAL_CANGAROO_DEPLOY_LIB_DIR/../.." 2>/dev/null && pwd || true)"
+RILT_DEPLOY_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RILT_DEPLOY_REPO_ROOT="$(cd "$RILT_DEPLOY_LIB_DIR/../.." 2>/dev/null && pwd || true)"
 
 : "${RED:=\033[0;31m}"
 : "${GREEN:=\033[0;32m}"
@@ -9,41 +9,41 @@ SOCIAL_CANGAROO_DEPLOY_REPO_ROOT="$(cd "$SOCIAL_CANGAROO_DEPLOY_LIB_DIR/../.." 2
 : "${BLUE:=\033[0;34m}"
 : "${NC:=\033[0m}"
 
-social_cangaroo_info() {
+rilt_info() {
     echo -e "${BLUE}$*${NC}"
 }
 
-social_cangaroo_success() {
+rilt_success() {
     echo -e "${GREEN}$*${NC}"
 }
 
-social_cangaroo_warn() {
+rilt_warn() {
     echo -e "${YELLOW}$*${NC}"
 }
 
-social_cangaroo_fail() {
+rilt_fail() {
     echo -e "${RED}Error: $*${NC}" >&2
     exit 1
 }
 
-social_cangaroo_project_dir() {
-    if [[ -n "${SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR:-}" ]]; then
-        printf '%s\n' "$SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR"
+rilt_project_dir() {
+    if [[ -n "${RILT_DEPLOY_PROJECT_DIR:-}" ]]; then
+        printf '%s\n' "$RILT_DEPLOY_PROJECT_DIR"
     else
         pwd
     fi
 }
 
-social_cangaroo_template_path() {
+rilt_template_path() {
     local template_name=$1
     local candidate=""
     local project_dir
 
-    project_dir="$(social_cangaroo_project_dir)"
+    project_dir="$(rilt_project_dir)"
 
     for candidate in \
         "$project_dir/deploy/templates/$template_name" \
-        "$SOCIAL_CANGAROO_DEPLOY_REPO_ROOT/deploy/templates/$template_name"
+        "$RILT_DEPLOY_REPO_ROOT/deploy/templates/$template_name"
     do
         if [[ -f "$candidate" ]]; then
             printf '%s\n' "$candidate"
@@ -51,18 +51,18 @@ social_cangaroo_template_path() {
         fi
     done
 
-    social_cangaroo_fail "Template '$template_name' not found"
+    rilt_fail "Template '$template_name' not found"
 }
 
-social_cangaroo_init_script_path() {
+rilt_init_script_path() {
     local candidate=""
     local project_dir
 
-    project_dir="$(social_cangaroo_project_dir)"
+    project_dir="$(rilt_project_dir)"
 
     for candidate in \
-        "$project_dir/scripts/run_social_cangaroo_init.sh" \
-        "$SOCIAL_CANGAROO_DEPLOY_REPO_ROOT/scripts/run_social_cangaroo_init.sh"
+        "$project_dir/scripts/run_rilt_init.sh" \
+        "$RILT_DEPLOY_REPO_ROOT/scripts/run_rilt_init.sh"
     do
         if [[ -f "$candidate" ]]; then
             printf '%s\n' "$candidate"
@@ -70,13 +70,13 @@ social_cangaroo_init_script_path() {
         fi
     done
 
-    social_cangaroo_fail "run_social_cangaroo_init.sh not found"
+    rilt_fail "run_rilt_init.sh not found"
 }
 
-social_cangaroo_load_env_file() {
+rilt_load_env_file() {
     local env_file=${1:-.env}
 
-    [[ -f "$env_file" ]] || social_cangaroo_fail "$env_file not found"
+    [[ -f "$env_file" ]] || rilt_fail "$env_file not found"
 
     set -a
     # shellcheck disable=SC1090
@@ -84,7 +84,7 @@ social_cangaroo_load_env_file() {
     set +a
 }
 
-social_cangaroo_host_from_url() {
+rilt_host_from_url() {
     local url=$1
 
     url="${url#https://}"
@@ -94,15 +94,15 @@ social_cangaroo_host_from_url() {
     printf '%s\n' "$url"
 }
 
-social_cangaroo_is_ipv4() {
+rilt_is_ipv4() {
     [[ "$1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]
 }
 
-social_cangaroo_is_local_ipv4() {
+rilt_is_local_ipv4() {
     local ip=$1
     local o1 o2 o3 o4 octet
 
-    social_cangaroo_is_ipv4 "$ip" || return 1
+    rilt_is_ipv4 "$ip" || return 1
     IFS=. read -r o1 o2 o3 o4 <<< "$ip"
 
     for octet in "$o1" "$o2" "$o3" "$o4"; do
@@ -120,8 +120,8 @@ social_cangaroo_is_local_ipv4() {
     return 1
 }
 
-social_cangaroo_infer_server_ip() {
-    local project_dir=${1:-$(social_cangaroo_project_dir)}
+rilt_infer_server_ip() {
+    local project_dir=${1:-$(rilt_project_dir)}
     local turn_conf="$project_dir/turnserver.conf"
     local ip=""
 
@@ -138,12 +138,12 @@ social_cangaroo_infer_server_ip() {
         fi
     fi
 
-    if [[ -n "${TURN_HOST:-}" ]] && social_cangaroo_is_ipv4 "$TURN_HOST"; then
+    if [[ -n "${TURN_HOST:-}" ]] && rilt_is_ipv4 "$TURN_HOST"; then
         printf '%s\n' "$TURN_HOST"
         return 0
     fi
 
-    if [[ -n "${PUBLIC_HOST:-}" ]] && social_cangaroo_is_ipv4 "$PUBLIC_HOST"; then
+    if [[ -n "${PUBLIC_HOST:-}" ]] && rilt_is_ipv4 "$PUBLIC_HOST"; then
         printf '%s\n' "$PUBLIC_HOST"
         return 0
     fi
@@ -151,7 +151,7 @@ social_cangaroo_infer_server_ip() {
     return 1
 }
 
-social_cangaroo_infer_public_base_url() {
+rilt_infer_public_base_url() {
     if [[ -n "${PUBLIC_BASE_URL:-}" ]]; then
         printf '%s\n' "${PUBLIC_BASE_URL%/}"
         return 0
@@ -175,7 +175,7 @@ social_cangaroo_infer_public_base_url() {
     return 1
 }
 
-social_cangaroo_infer_public_host() {
+rilt_infer_public_host() {
     local public_base_url=""
 
     if [[ -n "${PUBLIC_HOST:-}" ]]; then
@@ -183,9 +183,9 @@ social_cangaroo_infer_public_host() {
         return 0
     fi
 
-    public_base_url="$(social_cangaroo_infer_public_base_url 2>/dev/null || true)"
+    public_base_url="$(rilt_infer_public_base_url 2>/dev/null || true)"
     if [[ -n "$public_base_url" ]]; then
-        social_cangaroo_host_from_url "$public_base_url"
+        rilt_host_from_url "$public_base_url"
         return 0
     fi
 
@@ -197,7 +197,7 @@ social_cangaroo_infer_public_host() {
     return 1
 }
 
-social_cangaroo_set_env_key() {
+rilt_set_env_key() {
     local env_file=$1
     local key=$2
     local value=$3
@@ -221,7 +221,7 @@ social_cangaroo_set_env_key() {
     mv "$tmp_file" "$env_file"
 }
 
-social_cangaroo_delete_env_key() {
+rilt_delete_env_key() {
     local env_file=$1
     local key=$2
     local tmp_file="${env_file}.tmp.$$"
@@ -230,7 +230,7 @@ social_cangaroo_delete_env_key() {
     mv "$tmp_file" "$env_file"
 }
 
-social_cangaroo_sync_remote_env_file() {
+rilt_sync_remote_env_file() {
     local env_file=${1:-.env}
     local project_dir
     local public_base_url=""
@@ -238,25 +238,25 @@ social_cangaroo_sync_remote_env_file() {
     local server_ip=""
 
     project_dir="$(cd "$(dirname "$env_file")" && pwd)"
-    social_cangaroo_load_env_file "$env_file"
+    rilt_load_env_file "$env_file"
 
-    public_base_url="$(social_cangaroo_infer_public_base_url)" || social_cangaroo_fail "Could not determine PUBLIC_BASE_URL"
+    public_base_url="$(rilt_infer_public_base_url)" || rilt_fail "Could not determine PUBLIC_BASE_URL"
     public_base_url="${public_base_url%/}"
-    public_host="$(social_cangaroo_infer_public_host)" || social_cangaroo_fail "Could not determine PUBLIC_HOST"
-    server_ip="$(social_cangaroo_infer_server_ip "$project_dir")" || social_cangaroo_fail "Could not determine SERVER_IP"
+    public_host="$(rilt_infer_public_host)" || rilt_fail "Could not determine PUBLIC_HOST"
+    server_ip="$(rilt_infer_server_ip "$project_dir")" || rilt_fail "Could not determine SERVER_IP"
 
-    [[ "$public_base_url" =~ ^https?:// ]] || social_cangaroo_fail "PUBLIC_BASE_URL must include http:// or https://"
-    social_cangaroo_is_ipv4 "$server_ip" || social_cangaroo_fail "SERVER_IP must be an IPv4 address (got: $server_ip)"
+    [[ "$public_base_url" =~ ^https?:// ]] || rilt_fail "PUBLIC_BASE_URL must include http:// or https://"
+    rilt_is_ipv4 "$server_ip" || rilt_fail "SERVER_IP must be an IPv4 address (got: $server_ip)"
 
-    social_cangaroo_set_env_key "$env_file" ENVIRONMENT "${ENVIRONMENT:-production}"
-    social_cangaroo_set_env_key "$env_file" SERVER_IP "$server_ip"
-    social_cangaroo_set_env_key "$env_file" PUBLIC_HOST "$public_host"
-    social_cangaroo_set_env_key "$env_file" PUBLIC_BASE_URL "$public_base_url"
+    rilt_set_env_key "$env_file" ENVIRONMENT "${ENVIRONMENT:-production}"
+    rilt_set_env_key "$env_file" SERVER_IP "$server_ip"
+    rilt_set_env_key "$env_file" PUBLIC_HOST "$public_host"
+    rilt_set_env_key "$env_file" PUBLIC_BASE_URL "$public_base_url"
 
     # Remote installs always run coturn (the "remote" compose profile). The API
     # reports this flag to browsers, which skip TURN entirely when it is false,
     # so sync it here for installs whose .env predates the key.
-    social_cangaroo_set_env_key "$env_file" ENABLE_COTURN true
+    rilt_set_env_key "$env_file" ENABLE_COTURN true
 
     # BACKEND_API_ENDPOINT / MINIO_PUBLIC_ENDPOINT / TURN_HOST are derived in-app
     # from PUBLIC_BASE_URL / PUBLIC_HOST (see api/constants.py), so sync neither
@@ -264,50 +264,50 @@ social_cangaroo_sync_remote_env_file() {
     # operator set by hand is left untouched as an explicit override.
 }
 
-social_cangaroo_validate_remote_runtime_env() {
-    [[ "${FASTAPI_WORKERS:-}" =~ ^[1-9][0-9]*$ ]] || social_cangaroo_fail "FASTAPI_WORKERS must be a positive integer"
-    [[ -n "${TURN_SECRET:-}" ]] || social_cangaroo_fail "TURN_SECRET is missing"
-    [[ -n "${PUBLIC_HOST:-}" ]] || social_cangaroo_fail "PUBLIC_HOST is missing"
-    [[ -n "${PUBLIC_BASE_URL:-}" ]] || social_cangaroo_fail "PUBLIC_BASE_URL is missing"
-    social_cangaroo_is_ipv4 "${SERVER_IP:-}" || social_cangaroo_fail "SERVER_IP must be a valid IPv4 address"
-    [[ "${PUBLIC_BASE_URL}" =~ ^https?:// ]] || social_cangaroo_fail "PUBLIC_BASE_URL must include http:// or https://"
+rilt_validate_remote_runtime_env() {
+    [[ "${FASTAPI_WORKERS:-}" =~ ^[1-9][0-9]*$ ]] || rilt_fail "FASTAPI_WORKERS must be a positive integer"
+    [[ -n "${TURN_SECRET:-}" ]] || rilt_fail "TURN_SECRET is missing"
+    [[ -n "${PUBLIC_HOST:-}" ]] || rilt_fail "PUBLIC_HOST is missing"
+    [[ -n "${PUBLIC_BASE_URL:-}" ]] || rilt_fail "PUBLIC_BASE_URL is missing"
+    rilt_is_ipv4 "${SERVER_IP:-}" || rilt_fail "SERVER_IP must be a valid IPv4 address"
+    [[ "${PUBLIC_BASE_URL}" =~ ^https?:// ]] || rilt_fail "PUBLIC_BASE_URL must include http:// or https://"
     # BACKEND_API_ENDPOINT / MINIO_PUBLIC_ENDPOINT / TURN_HOST are derived in-app
     # from PUBLIC_BASE_URL / PUBLIC_HOST (see api/constants.py), so they are not
     # required here. When an operator sets them explicitly (split deployment),
     # their value is honored as-is — no equality check.
 }
 
-social_cangaroo_uses_init_compose_layout() {
-    local project_dir=${1:-$(social_cangaroo_project_dir)}
+rilt_uses_init_compose_layout() {
+    local project_dir=${1:-$(rilt_project_dir)}
     local compose_file="$project_dir/docker-compose.yaml"
 
     [[ -f "$compose_file" ]] || return 1
-    grep -q "social-cangaroo-init:" "$compose_file" \
+    grep -q "rilt-init:" "$compose_file" \
         && grep -q "nginx-generated:/etc/nginx/conf.d:ro" "$compose_file" \
         && grep -q "coturn-generated:/etc/coturn:ro" "$compose_file"
 }
 
-social_cangaroo_require_init_compose_layout() {
-    local project_dir=${1:-$(social_cangaroo_project_dir)}
+rilt_require_init_compose_layout() {
+    local project_dir=${1:-$(rilt_project_dir)}
 
-    if ! social_cangaroo_uses_init_compose_layout "$project_dir"; then
-        social_cangaroo_fail "This install uses the legacy remote compose layout. Run ./update_remote.sh first so Docker uses social-cangaroo-init generated config."
+    if ! rilt_uses_init_compose_layout "$project_dir"; then
+        rilt_fail "This install uses the legacy remote compose layout. Run ./update_remote.sh first so Docker uses rilt-init generated config."
     fi
 }
 
-social_cangaroo_render_remote_nginx_conf() {
-    local project_dir=${1:-$(social_cangaroo_project_dir)}
+rilt_render_remote_nginx_conf() {
+    local project_dir=${1:-$(rilt_project_dir)}
     local destination=${2:-"$project_dir/nginx.conf"}
     local template=""
     local tmp_upstream=""
 
-    template="$(social_cangaroo_template_path "nginx.remote.conf.template")"
+    template="$(rilt_template_path "nginx.remote.conf.template")"
     tmp_upstream="$(mktemp)"
 
     {
         echo "# Backend API workers - one uvicorn process per port, balanced by least_conn."
-        echo "# Auto-generated by Social Cangaroo remote config renderer. Do not edit manually."
-        echo "upstream social_cangaroo_api {"
+        echo "# Auto-generated by AICall remote config renderer. Do not edit manually."
+        echo "upstream rilt_api {"
         echo "    least_conn;"
         for ((i=0; i<FASTAPI_WORKERS; i++)); do
             printf '    server api:%d max_fails=3 fail_timeout=10s;\n' "$((8000 + i))"
@@ -324,8 +324,8 @@ social_cangaroo_render_remote_nginx_conf() {
             close(upstream_file)
         }
         {
-            gsub(/__SOCIAL_CANGAROO_PUBLIC_HOST__/, public_host)
-            if ($0 == "__SOCIAL_CANGAROO_UPSTREAM_BLOCK__") {
+            gsub(/__RILT_PUBLIC_HOST__/, public_host)
+            if ($0 == "__RILT_UPSTREAM_BLOCK__") {
                 printf "%s", upstream
             } else {
                 print
@@ -336,29 +336,29 @@ social_cangaroo_render_remote_nginx_conf() {
     rm -f "$tmp_upstream"
 }
 
-social_cangaroo_render_remote_turn_conf() {
-    local project_dir=${1:-$(social_cangaroo_project_dir)}
+rilt_render_remote_turn_conf() {
+    local project_dir=${1:-$(rilt_project_dir)}
     local destination=${2:-"$project_dir/turnserver.conf"}
     local template=""
     local external_ip="${TURN_EXTERNAL_IP:-${SERVER_IP:-}}"
 
-    template="$(social_cangaroo_template_path "turnserver.remote.conf.template")"
-    [[ -n "$external_ip" ]] || social_cangaroo_fail "TURN external IP/host is missing"
+    template="$(rilt_template_path "turnserver.remote.conf.template")"
+    [[ -n "$external_ip" ]] || rilt_fail "TURN external IP/host is missing"
 
     awk \
         -v external_ip="$external_ip" \
         -v turn_secret="$TURN_SECRET" \
         '
         {
-            gsub(/__SOCIAL_CANGAROO_TURN_EXTERNAL_IP__/, external_ip)
-            gsub(/__SOCIAL_CANGAROO_TURN_SECRET__/, turn_secret)
+            gsub(/__RILT_TURN_EXTERNAL_IP__/, external_ip)
+            gsub(/__RILT_TURN_SECRET__/, turn_secret)
             print
         }
     ' "$template" > "$destination"
 }
 
-social_cangaroo_preflight_remote_init_render() {
-    local project_dir=${1:-$(social_cangaroo_project_dir)}
+rilt_preflight_remote_init_render() {
+    local project_dir=${1:-$(rilt_project_dir)}
     local env_file="$project_dir/.env"
     local cert_dir="$project_dir/certs"
     local init_script=""
@@ -370,38 +370,38 @@ social_cangaroo_preflight_remote_init_render() {
     local rendered_ip=""
     local rendered_server_name=""
 
-    social_cangaroo_load_env_file "$env_file"
-    social_cangaroo_validate_remote_runtime_env
-    [[ -f "$cert_dir/local.crt" ]] || social_cangaroo_fail "certs/local.crt not found"
-    [[ -f "$cert_dir/local.key" ]] || social_cangaroo_fail "certs/local.key not found"
+    rilt_load_env_file "$env_file"
+    rilt_validate_remote_runtime_env
+    [[ -f "$cert_dir/local.crt" ]] || rilt_fail "certs/local.crt not found"
+    [[ -f "$cert_dir/local.key" ]] || rilt_fail "certs/local.key not found"
 
-    init_script="$(social_cangaroo_init_script_path)"
+    init_script="$(rilt_init_script_path)"
     tmp_root="$(mktemp -d)"
     nginx_conf="$tmp_root/nginx/default.conf"
     turn_conf="$tmp_root/coturn/turnserver.conf"
 
     (
         export ENVIRONMENT SERVER_IP PUBLIC_HOST PUBLIC_BASE_URL BACKEND_API_ENDPOINT MINIO_PUBLIC_ENDPOINT TURN_HOST TURN_SECRET FASTAPI_WORKERS
-        export SOCIAL_CANGAROO_INIT_WORKSPACE_DIR="$project_dir"
-        export SOCIAL_CANGAROO_INIT_OUTPUT_ROOT="$tmp_root"
-        export SOCIAL_CANGAROO_INIT_CERTS_DIR="$cert_dir"
+        export RILT_INIT_WORKSPACE_DIR="$project_dir"
+        export RILT_INIT_OUTPUT_ROOT="$tmp_root"
+        export RILT_INIT_CERTS_DIR="$cert_dir"
         bash "$init_script" >/dev/null
     )
 
-    [[ -f "$nginx_conf" ]] || social_cangaroo_fail "social-cangaroo-init did not render nginx config"
-    [[ -f "$turn_conf" ]] || social_cangaroo_fail "social-cangaroo-init did not render coturn config"
+    [[ -f "$nginx_conf" ]] || rilt_fail "rilt-init did not render nginx config"
+    [[ -f "$turn_conf" ]] || rilt_fail "rilt-init did not render coturn config"
 
     nginx_workers=$(awk '/^[[:space:]]*server api:[0-9]+/ { count += 1 } END { print count + 0 }' "$nginx_conf")
-    [[ "$nginx_workers" -eq "$FASTAPI_WORKERS" ]] || social_cangaroo_fail "FASTAPI_WORKERS=$FASTAPI_WORKERS but nginx.conf has $nginx_workers upstream servers"
+    [[ "$nginx_workers" -eq "$FASTAPI_WORKERS" ]] || rilt_fail "FASTAPI_WORKERS=$FASTAPI_WORKERS but nginx.conf has $nginx_workers upstream servers"
 
     rendered_server_name="$(awk '/^[[:space:]]*server_name / { print $2; exit }' "$nginx_conf" | sed 's/;$//')"
-    [[ "$rendered_server_name" == "$PUBLIC_HOST" ]] || social_cangaroo_fail "nginx.conf server_name ($rendered_server_name) does not match PUBLIC_HOST ($PUBLIC_HOST)"
+    [[ "$rendered_server_name" == "$PUBLIC_HOST" ]] || rilt_fail "nginx.conf server_name ($rendered_server_name) does not match PUBLIC_HOST ($PUBLIC_HOST)"
 
     rendered_secret="$(sed -n 's/^static-auth-secret=//p' "$turn_conf" | head -1)"
-    [[ "$rendered_secret" == "$TURN_SECRET" ]] || social_cangaroo_fail "TURN_SECRET in .env does not match turnserver.conf"
+    [[ "$rendered_secret" == "$TURN_SECRET" ]] || rilt_fail "TURN_SECRET in .env does not match turnserver.conf"
 
     rendered_ip="$(sed -n 's/^external-ip=//p' "$turn_conf" | head -1)"
-    [[ "$rendered_ip" == "$SERVER_IP" ]] || social_cangaroo_fail "SERVER_IP in .env does not match turnserver.conf"
+    [[ "$rendered_ip" == "$SERVER_IP" ]] || rilt_fail "SERVER_IP in .env does not match turnserver.conf"
 
     rm -rf "$tmp_root"
 }
@@ -421,7 +421,7 @@ social_cangaroo_preflight_remote_init_render() {
 # currently mismatched). Idempotent: on a fresh volume it just re-sets the same
 # value. Survives the later `--force-recreate` because the password lives in the
 # data volume, not the container.
-social_cangaroo_sync_postgres_password() {
+rilt_sync_postgres_password() {
     local project_dir=$1
     shift
     local compose=("$@")
@@ -440,7 +440,7 @@ social_cangaroo_sync_postgres_password() {
     # DB init and the API's DATABASE_URL, so the two already agree — nothing to do.
     [[ -n "$password" ]] || return 0
 
-    social_cangaroo_info "Syncing Postgres password from .env..."
+    rilt_info "Syncing Postgres password from .env..."
     ( cd "$project_dir" && "${compose[@]}" up -d postgres ) >/dev/null
 
     for ((i = 0; i < 30; i++)); do
@@ -450,22 +450,22 @@ social_cangaroo_sync_postgres_password() {
         fi
         sleep 1
     done
-    [[ -n "$ready" ]] || social_cangaroo_fail "Postgres did not become ready while syncing POSTGRES_PASSWORD."
+    [[ -n "$ready" ]] || rilt_fail "Postgres did not become ready while syncing POSTGRES_PASSWORD."
 
     printf '%s\n' "ALTER USER postgres WITH PASSWORD :'pw';" \
         | ( cd "$project_dir" && "${compose[@]}" exec -T postgres \
               psql -U postgres -d postgres -v ON_ERROR_STOP=1 -v "pw=$password" ) >/dev/null \
-        || social_cangaroo_fail "Failed to sync Postgres password from .env."
-    social_cangaroo_success "✓ Postgres password synced with .env"
+        || rilt_fail "Failed to sync Postgres password from .env."
+    rilt_success "✓ Postgres password synced with .env"
 }
 
-social_cangaroo_prepare_remote_install() {
-    local project_dir=${1:-$(social_cangaroo_project_dir)}
+rilt_prepare_remote_install() {
+    local project_dir=${1:-$(rilt_project_dir)}
     local env_file="$project_dir/.env"
 
-    social_cangaroo_sync_remote_env_file "$env_file"
-    social_cangaroo_require_init_compose_layout "$project_dir"
-    social_cangaroo_preflight_remote_init_render "$project_dir"
+    rilt_sync_remote_env_file "$env_file"
+    rilt_require_init_compose_layout "$project_dir"
+    rilt_preflight_remote_init_render "$project_dir"
 }
 
 # ---------------------------------------------------------------------------
@@ -477,23 +477,23 @@ social_cangaroo_prepare_remote_install() {
 # embedded IP from any public resolver, so Let's Encrypt can validate it over
 # the HTTP-01 challenge without the operator owning a domain. Public IPs only:
 # Let's Encrypt refuses to validate private/reserved addresses.
-social_cangaroo_sslip_host_from_ip() {
+rilt_sslip_host_from_ip() {
     local ip=$1
     local suffix=${2:-sslip.io}
 
-    social_cangaroo_is_ipv4 "$ip" || social_cangaroo_fail "social_cangaroo_sslip_host_from_ip: '$ip' is not an IPv4 address"
+    rilt_is_ipv4 "$ip" || rilt_fail "rilt_sslip_host_from_ip: '$ip' is not an IPv4 address"
     printf '%s.%s\n' "${ip//./-}" "$suffix"
 }
 
 # Install certbot via the host package manager if it is not already present.
 # Returns non-zero (instead of exiting) when no supported package manager is
 # found or the install fails, so callers can fall back to a self-signed cert.
-social_cangaroo_install_certbot() {
+rilt_install_certbot() {
     if command -v certbot >/dev/null 2>&1; then
         return 0
     fi
 
-    social_cangaroo_info "Installing Certbot..."
+    rilt_info "Installing Certbot..."
     if command -v apt-get >/dev/null 2>&1; then
         apt-get update -qq && apt-get install -y -qq certbot
     elif command -v dnf >/dev/null 2>&1; then
@@ -501,7 +501,7 @@ social_cangaroo_install_certbot() {
     elif command -v yum >/dev/null 2>&1; then
         yum install -y -q certbot
     else
-        social_cangaroo_warn "Could not detect a package manager (apt/dnf/yum) to install certbot."
+        rilt_warn "Could not detect a package manager (apt/dnf/yum) to install certbot."
         return 1
     fi
 }
@@ -511,7 +511,7 @@ social_cangaroo_install_certbot() {
 # copy the issued cert to certs/local.{crt,key} (the files nginx reads). This
 # needs nginx already running and serving /.well-known/acme-challenge/ on :80.
 # Returns non-zero on failure so callers can keep the self-signed cert.
-social_cangaroo_issue_letsencrypt_webroot() {
+rilt_issue_letsencrypt_webroot() {
     local project_dir=$1
     local host=$2
     local email=${3:-}
@@ -543,11 +543,11 @@ social_cangaroo_issue_letsencrypt_webroot() {
 # <project>/certs and nginx is restarted to load them. Renewal itself is driven
 # by certbot's packaged systemd timer / cron; webroot renewals need no downtime
 # because the running nginx serves the challenge.
-social_cangaroo_install_cert_renewal_hook() {
+rilt_install_cert_renewal_hook() {
     local project_dir=$1
     local host=$2
     local hook_dir="/etc/letsencrypt/renewal-hooks/deploy"
-    local hook_path="$hook_dir/social-cangaroo-reload.sh"
+    local hook_path="$hook_dir/rilt-reload.sh"
 
     mkdir -p "$hook_dir"
 
@@ -563,38 +563,38 @@ HOOK_EOF
     chmod +x "$hook_path"
 }
 
-social_cangaroo_download_bundle_file_for_ref() {
+rilt_download_bundle_file_for_ref() {
     local destination=$1
     local remote_path=$2
     local ref=${3:-main}
-    local raw_base="https://raw.githubusercontent.com/ShoaibAhmedSoomro/social-cangaroo/$ref"
-    local fallback_base="https://raw.githubusercontent.com/ShoaibAhmedSoomro/social-cangaroo/main"
+    local raw_base="https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/$ref"
+    local fallback_base="https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main"
 
     if ! curl -fsSL -o "$destination" "$raw_base/$remote_path"; then
-        social_cangaroo_warn "Warning: '$remote_path' not found at '$ref' - falling back to main"
+        rilt_warn "Warning: '$remote_path' not found at '$ref' - falling back to main"
         curl -fsSL -o "$destination" "$fallback_base/$remote_path"
     fi
 }
 
-social_cangaroo_download_init_support_bundle() {
+rilt_download_init_support_bundle() {
     local project_dir=$1
     local ref=${2:-main}
 
     mkdir -p "$project_dir/scripts/lib" "$project_dir/deploy/templates"
 
     mkdir -p "$project_dir/scripts"
-    social_cangaroo_download_bundle_file_for_ref "$project_dir/scripts/lib/setup_common.sh" "scripts/lib/setup_common.sh" "$ref"
-    social_cangaroo_download_bundle_file_for_ref "$project_dir/scripts/run_social_cangaroo_init.sh" "scripts/run_social_cangaroo_init.sh" "$ref"
-    chmod +x "$project_dir/scripts/run_social_cangaroo_init.sh"
-    social_cangaroo_download_bundle_file_for_ref "$project_dir/deploy/templates/nginx.remote.conf.template" "deploy/templates/nginx.remote.conf.template" "$ref"
-    social_cangaroo_download_bundle_file_for_ref "$project_dir/deploy/templates/turnserver.remote.conf.template" "deploy/templates/turnserver.remote.conf.template" "$ref"
+    rilt_download_bundle_file_for_ref "$project_dir/scripts/lib/setup_common.sh" "scripts/lib/setup_common.sh" "$ref"
+    rilt_download_bundle_file_for_ref "$project_dir/scripts/run_rilt_init.sh" "scripts/run_rilt_init.sh" "$ref"
+    chmod +x "$project_dir/scripts/run_rilt_init.sh"
+    rilt_download_bundle_file_for_ref "$project_dir/deploy/templates/nginx.remote.conf.template" "deploy/templates/nginx.remote.conf.template" "$ref"
+    rilt_download_bundle_file_for_ref "$project_dir/deploy/templates/turnserver.remote.conf.template" "deploy/templates/turnserver.remote.conf.template" "$ref"
 }
 
-social_cangaroo_download_remote_support_bundle() {
+rilt_download_remote_support_bundle() {
     local project_dir=$1
     local ref=${2:-main}
 
-    social_cangaroo_download_bundle_file_for_ref "$project_dir/remote_up.sh" "remote_up.sh" "$ref"
+    rilt_download_bundle_file_for_ref "$project_dir/remote_up.sh" "remote_up.sh" "$ref"
     chmod +x "$project_dir/remote_up.sh"
-    social_cangaroo_download_init_support_bundle "$project_dir" "$ref"
+    rilt_download_init_support_bundle "$project_dir" "$ref"
 }

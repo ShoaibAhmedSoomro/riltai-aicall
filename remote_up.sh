@@ -8,17 +8,17 @@ BOOTSTRAP_LIB=""
 
 if [[ ! -f "$LIB_PATH" ]]; then
     BOOTSTRAP_LIB="$(mktemp)"
-    curl -fsSL -o "$BOOTSTRAP_LIB" "https://raw.githubusercontent.com/ShoaibAhmedSoomro/social-cangaroo/main/scripts/lib/setup_common.sh"
+    curl -fsSL -o "$BOOTSTRAP_LIB" "https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/scripts/lib/setup_common.sh"
     LIB_PATH="$BOOTSTRAP_LIB"
 fi
 
-# The preflight rewrites .env (awk + mv in social_cangaroo_set_env_key), so running this
+# The preflight rewrites .env (awk + mv in rilt_set_env_key), so running this
 # script via sudo leaves .env root-owned and later sudo-less edits fail. Hand
 # the deploy dir back to the user who invoked sudo; a no-op for unprivileged
 # runs and real root, where SUDO_UID is unset.
 restore_ownership() {
-    if [[ -n "${SUDO_UID:-}" && -n "${SUDO_GID:-}" && -n "${SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR:-}" && -d "$SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR" ]]; then
-        chown -R "$SUDO_UID:$SUDO_GID" "$SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR" || true
+    if [[ -n "${SUDO_UID:-}" && -n "${SUDO_GID:-}" && -n "${RILT_DEPLOY_PROJECT_DIR:-}" && -d "$RILT_DEPLOY_PROJECT_DIR" ]]; then
+        chown -R "$SUDO_UID:$SUDO_GID" "$RILT_DEPLOY_PROJECT_DIR" || true
     fi
 }
 
@@ -33,7 +33,7 @@ trap cleanup EXIT
 # shellcheck disable=SC1090
 . "$LIB_PATH"
 
-SOCIAL_CANGAROO_DEPLOY_PROJECT_DIR="$SCRIPT_DIR"
+RILT_DEPLOY_PROJECT_DIR="$SCRIPT_DIR"
 
 VALIDATE_ONLY=0
 MODE="pull"
@@ -61,10 +61,10 @@ done
 
 cd "$SCRIPT_DIR"
 
-social_cangaroo_info "Running Social Cangaroo remote preflight..."
-social_cangaroo_prepare_remote_install "$SCRIPT_DIR"
+rilt_info "Running AICall remote preflight..."
+rilt_prepare_remote_install "$SCRIPT_DIR"
 docker compose config -q
-social_cangaroo_success "✓ social-cangaroo-init preflight validated"
+rilt_success "✓ rilt-init preflight validated"
 
 if [[ "$VALIDATE_ONLY" == "1" ]]; then
     exit 0
@@ -79,7 +79,7 @@ fi
 # Reconcile the Postgres role password with .env before starting the API.
 # POSTGRES_PASSWORD only applies on first volume init, so an existing volume can
 # hold a stale password the API would fail to authenticate against. Idempotent.
-social_cangaroo_sync_postgres_password "$SCRIPT_DIR" "${COMPOSE_CMD[@]}"
+rilt_sync_postgres_password "$SCRIPT_DIR" "${COMPOSE_CMD[@]}"
 
 # When SERVER_IP (sourced from .env above) is a private/reserved address the host
 # has no public IP, so start the cloudflared service (tunnel profile) to make
@@ -87,7 +87,7 @@ social_cangaroo_sync_postgres_password "$SCRIPT_DIR" "${COMPOSE_CMD[@]}"
 # the same private-IP classification (api/utils/common.py:is_local_or_private_url),
 # so the two stay in sync. A public-IP install runs nginx only.
 PROFILE_ARGS=(--profile remote)
-if social_cangaroo_is_local_ipv4 "${SERVER_IP:-}"; then
+if rilt_is_local_ipv4 "${SERVER_IP:-}"; then
     PROFILE_ARGS+=(--profile tunnel)
 fi
 

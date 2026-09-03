@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# Stop Social Cangaroo services started by start_services_dev.ps1 (Windows)
+# Stop AICall services started by start_services_dev.ps1 (Windows)
 
 $ErrorActionPreference = 'Stop'
 
@@ -12,7 +12,7 @@ $BaseDir   = Split-Path -Parent $ScriptDir
 $RunDir    = Join-Path $BaseDir 'run'
 
 Set-Location $BaseDir
-Write-Host "Stopping Social Cangaroo Services in BASE_DIR: $BaseDir"
+Write-Host "Stopping AICall Services in BASE_DIR: $BaseDir"
 
 ###############################################################################
 ### HELPER

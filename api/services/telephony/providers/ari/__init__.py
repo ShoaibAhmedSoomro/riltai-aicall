@@ -18,7 +18,7 @@ from .transport import create_transport
 
 # Prefix keeps the generated name recognisable in a customer's dialplan; the
 # random half is what makes it unique.
-_STASIS_APP_NAME_PREFIX = "social_cangaroo_"
+_STASIS_APP_NAME_PREFIX = "rilt_"
 
 
 def _generate_stasis_app_name() -> str:
@@ -50,7 +50,7 @@ async def _preprocess_credentials_on_save(
 
     An update never mints one. A configuration saved before the Stasis name was
     split off ``app_name`` keeps running on ``app_name`` (see
-    ``_config_loader``); generating one here would point Social Cangaroo at an
+    ``_config_loader``); generating one here would point AICall at an
     application the customer's dialplan never routes calls into, silently
     breaking a working setup on an unrelated edit.
     """
@@ -80,7 +80,7 @@ def _config_loader(value: Dict[str, Any]) -> Dict[str, Any]:
 
 _UI_METADATA = ProviderUIMetadata(
     display_name="Asterisk ARI",
-    docs_url="https://docs.socialcangaroo.com/integrations/telephony/asterisk-ari",
+    docs_url="https://docs.rilt.ai/integrations/telephony/asterisk-ari",
     fields=[
         ProviderUIField(
             name="ari_endpoint",
@@ -128,7 +128,7 @@ _UI_METADATA = ProviderUIMetadata(
             type="select",
             required=False,
             description=(
-                "Enable PBX-specific call control for calls patched into Social Cangaroo "
+                "Enable PBX-specific call control for calls patched into AICall "
                 "through this Asterisk configuration."
             ),
             options=[ProviderUIOption(value="vicidial", label="VICIdial")],
@@ -220,7 +220,7 @@ SPEC = ProviderSpec(
     transport_sample_rate=8000,
     config_request_cls=ARIConfigurationRequest,
     ui_metadata=_UI_METADATA,
-    # The customer's own Asterisk carries the calls; Social Cangaroo only rides it.
+    # The customer's own Asterisk carries the calls; AICall only rides it.
     connectivity="sip",
     # Origination sets ``callerId`` only when one is configured — a PBX
     # dialling an internal extension needs no number at all.

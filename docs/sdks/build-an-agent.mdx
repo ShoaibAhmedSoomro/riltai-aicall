@@ -1,14 +1,14 @@
 ---
 title: "Build an agent"
-description: "Assemble a Social Cangaroo voice agent programmatically with the SDK and save it as a draft"
+description: "Assemble a AICall voice agent programmatically with the SDK and save it as a draft"
 ---
 
 The SDK mirrors the node-and-edge model of the [Voice Agent Builder](/voice-agent/introduction). You create a `Workflow`, add nodes (`startCall`, `agentNode`, `endCall`, …) with `add()`, connect them with `edge()`, and persist the result via `save_workflow`.
 
 ## Prerequisites
 
-- A Social Cangaroo [API key](/configurations/api-keys) exported as `SOCIAL_CANGAROO_API_KEY`
-- An existing agent ID to save drafts against (create one in the Social Cangaroo UI or via [`POST /api/v1/workflow/create`](/api-reference/agents/create-from-template))
+- A AICall [API key](/configurations/api-keys) exported as `RILT_API_KEY`
+- An existing agent ID to save drafts against (create one in the AICall UI or via [`POST /api/v1/workflow/create`](/api-reference/agents/create-from-template))
 
 ## Build and save
 
@@ -16,9 +16,9 @@ The example below builds a three-node loan-qualification agent and saves it as a
 
 <CodeGroup>
 ```python Python
-from social_cangaroo_sdk import SocialCangarooClient, Workflow
+from rilt_sdk import RiltClient, Workflow
 
-with SocialCangarooClient(api_key="YOUR_API_KEY") as client:
+with RiltClient(api_key="YOUR_API_KEY") as client:
     wf = Workflow(client=client, name="loan_qualification")
 
     greeting = wf.add(
@@ -43,9 +43,9 @@ with SocialCangarooClient(api_key="YOUR_API_KEY") as client:
     client.save_workflow(workflow_id=123, workflow=wf)
 ```
 ```typescript TypeScript
-import { SocialCangarooClient, Workflow } from "@social-cangaroo/sdk";
+import { RiltClient, Workflow } from "@rilt/sdk";
 
-const client = new SocialCangarooClient({ apiKey: "YOUR_API_KEY" });
+const client = new RiltClient({ apiKey: "YOUR_API_KEY" });
 const wf = new Workflow({ client, name: "loan_qualification" });
 
 const greeting = await wf.add({

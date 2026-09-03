@@ -25,9 +25,9 @@ def setup_function():
 
 def _make_active_calls_client(
     monkeypatch,
-    configured_secret: str | None = "test-social-cangaroo-devops-secret",
+    configured_secret: str | None = "test-rilt-devops-secret",
 ) -> TestClient:
-    monkeypatch.setattr("api.constants.SOCIAL_CANGAROO_DEVOPS_SECRET", configured_secret)
+    monkeypatch.setattr("api.constants.RILT_DEVOPS_SECRET", configured_secret)
     app = FastAPI()
     app.add_api_route(
         "/api/v1/health/active-calls",
@@ -204,7 +204,7 @@ def test_active_calls_route_requires_configured_secret(monkeypatch):
 
     response = client.get(
         "/api/v1/health/active-calls",
-        headers={"X-Social-Cangaroo-Devops-Secret": "test-social-cangaroo-devops-secret"},
+        headers={"X-Rilt-Devops-Secret": "test-rilt-devops-secret"},
     )
 
     assert response.status_code == 503
@@ -223,7 +223,7 @@ def test_active_calls_route_rejects_wrong_secret(monkeypatch):
 
     response = client.get(
         "/api/v1/health/active-calls",
-        headers={"X-Social-Cangaroo-Devops-Secret": "wrong"},
+        headers={"X-Rilt-Devops-Secret": "wrong"},
     )
 
     assert response.status_code == 403
@@ -235,7 +235,7 @@ def test_active_calls_route_returns_count_with_secret(monkeypatch):
 
     response = client.get(
         "/api/v1/health/active-calls",
-        headers={"X-Social-Cangaroo-Devops-Secret": "test-social-cangaroo-devops-secret"},
+        headers={"X-Rilt-Devops-Secret": "test-rilt-devops-secret"},
     )
 
     assert response.status_code == 200

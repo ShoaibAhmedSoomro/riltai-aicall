@@ -96,7 +96,7 @@ class CloudonixProvider(TelephonyProvider):
                 - domain_uuid: UUID returned by Cloudonix's domainGet API
                 - application_name: Cloudonix Voice Application name whose
                     url is updated by ``configure_inbound``
-                - trunks: Social-Cangaroo-managed outbound voice trunks on this domain
+                - trunks: RiltAI-managed outbound voice trunks on this domain
                 - trunk_id_by_number: which trunk each active number dials out
                     on, so a call is pinned to the carrier that authorised its
                     caller ID

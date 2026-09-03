@@ -1,9 +1,9 @@
-"""Social Cangaroo subclass of pipecat's Azure OpenAI Realtime LLM service.
+"""AICall subclass of pipecat's Azure OpenAI Realtime LLM service.
 
-Layers Social Cangaroo engine integration quirks (mute gating, TTSSpeakFrame greeting
+Layers AICall engine integration quirks (mute gating, TTSSpeakFrame greeting
 trigger, LLMMessagesAppendFrame handling, workflow-control deferral) onto
 pipecat's AzureRealtimeLLMService, mirroring what
-SocialCangarooOpenAIRealtimeLLMService does for the standard OpenAI Realtime endpoint.
+RiltOpenAIRealtimeLLMService does for the standard OpenAI Realtime endpoint.
 """
 
 import json
@@ -32,11 +32,11 @@ from pipecat.transcriptions.language import Language
 from pipecat.utils.time import time_now_iso8601
 
 
-class SocialCangarooAzureRealtimeLLMService(AzureRealtimeLLMService):
-    """Azure OpenAI Realtime with Social Cangaroo engine integration quirks.
+class RiltAzureRealtimeLLMService(AzureRealtimeLLMService):
+    """Azure OpenAI Realtime with AICall engine integration quirks.
 
-    Extends AzureRealtimeLLMService with the same Social-Cangaroo-specific behaviours
-    added to SocialCangarooOpenAIRealtimeLLMService:
+    Extends AzureRealtimeLLMService with the same Rilt-specific behaviours
+    added to RiltOpenAIRealtimeLLMService:
     - User-mute audio gating
     - TTSSpeakFrame as initial-response trigger
     - One-off LLMMessagesAppendFrame handling

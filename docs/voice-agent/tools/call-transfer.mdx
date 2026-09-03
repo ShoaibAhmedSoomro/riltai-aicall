@@ -17,18 +17,18 @@ Web calls do not support call transfer.
 
 ## How call transfer works
 
-When the LLM decides a transfer is needed, it calls the Call Transfer tool. Social Cangaroo resolves the destination, validates the transfer setup, and then starts the provider transfer.
+When the LLM decides a transfer is needed, it calls the Call Transfer tool. AICall resolves the destination, validates the transfer setup, and then starts the provider transfer.
 
 For a successful transfer:
 
 1. The agent calls the Call Transfer tool.
-2. Social Cangaroo resolves the destination from static configuration, ordered context mappings, or a dynamic HTTP resolver.
-3. Social Cangaroo optionally plays a pre-transfer message.
-4. Social Cangaroo starts dialing the destination through the telephony provider.
+2. AICall resolves the destination from static configuration, ordered context mappings, or a dynamic HTTP resolver.
+3. AICall optionally plays a pre-transfer message.
+4. AICall starts dialing the destination through the telephony provider.
 5. The caller hears hold music while the destination leg is connecting.
-6. When the destination answers, Social Cangaroo connects the caller and ends the AI agent's involvement.
+6. When the destination answers, AICall connects the caller and ends the AI agent's involvement.
 
-The transfer is a blind transfer. Social Cangaroo does not currently pass conversation context to the receiving human as part of the transfer.
+The transfer is a blind transfer. AICall does not currently pass conversation context to the receiving human as part of the transfer.
 
 ## Destination source
 
@@ -48,7 +48,7 @@ This is the simplest option for fixed support lines, fixed departments, or cases
 
 ### Context Mapping
 
-Use this when a finite set of context values should select the transfer destination. You can add multiple rules and order them. Social Cangaroo evaluates the rules from top to bottom and uses the first route whose value matches, ignoring case and surrounding whitespace.
+Use this when a finite set of context values should select the transfer destination. You can add multiple rules and order them. AICall evaluates the rules from top to bottom and uses the first route whose value matches, ignoring case and surrounding whitespace.
 
 For each rule, enter a context field and one or more value-to-destination mappings. An unprefixed field such as `department` reads `gathered_context.department` first and falls back to `initial_context.department` when the gathered value is absent. You can use `gathered_context.department` or `initial_context.department` when you want to read only one context.
 
@@ -59,13 +59,13 @@ Mapped and fallback destinations can be:
 - An E.164 PSTN number, such as `+1234567890`
 - A context template, such as `{{initial_context.transfer_destination}}`
 
-Social Cangaroo performs final variable extraction before evaluating context mappings. If no rule matches, it uses the optional fallback destination. If there is no fallback, or a selected destination template resolves to an empty value, the transfer fails before dialing and the agent can continue the call.
+AICall performs final variable extraction before evaluating context mappings. If no rule matches, it uses the optional fallback destination. If there is no fallback, or a selected destination template resolves to an empty value, the transfer fails before dialing and the agent can continue the call.
 
 ### Dynamic HTTP Resolver
 
 Use this when the destination must be decided during the conversation.
 
-Social Cangaroo sends a `POST` request to your resolver endpoint before starting the transfer. Your endpoint returns the destination and may return a custom message to play before dialing.
+AICall sends a `POST` request to your resolver endpoint before starting the transfer. Your endpoint returns the destination and may return a custom message to play before dialing.
 
 Common use cases:
 
@@ -73,16 +73,16 @@ Common use cases:
 - Look up the right account team in your customer system
 - Route by customer tier or account status
 - Route by issue type, language, or department
-- Use business logic from your backend instead of hardcoding numbers in Social Cangaroo
+- Use business logic from your backend instead of hardcoding numbers in AICall
 
 ## Dynamic resolver request
 
 The resolver request body is a flat JSON object.
 
-Social Cangaroo builds it from:
+AICall builds it from:
 
 - **LLM parameters**: values the agent extracts from the conversation when it calls the transfer tool
-- **Preset parameters**: values Social Cangaroo injects from fixed values or templates such as `{{initial_context.account_id}}` or `{{gathered_context.billing_issue_type}}`
+- **Preset parameters**: values AICall injects from fixed values or templates such as `{{initial_context.account_id}}` or `{{gathered_context.billing_issue_type}}`
 
 If both define the same key, preset parameters take precedence.
 
@@ -97,7 +97,7 @@ Example request body:
 ```
 
 <Note>
-Social Cangaroo does not send the full conversation transcript to the resolver. Add the specific values you need as LLM parameters or preset parameters.
+AICall does not send the full conversation transcript to the resolver. Add the specific values you need as LLM parameters or preset parameters.
 </Note>
 
 ## Dynamic resolver response
@@ -116,7 +116,7 @@ Your resolver must return a JSON object with `transfer_context.destination`.
 ```
 
 <Warning>
-Follow this response shape exactly. Social Cangaroo reads specific keys from the resolver response. For dynamic transfer resolution, an invalid response does not fall back silently: the transfer fails before dialing.
+Follow this response shape exactly. AICall reads specific keys from the resolver response. For dynamic transfer resolution, an invalid response does not fall back silently: the transfer fails before dialing.
 </Warning>
 
 Field behavior:
@@ -130,11 +130,11 @@ If the resolver fails, times out, returns invalid JSON, or omits `transfer_conte
 
 When using a dynamic resolver, configure:
 
-- **Resolver URL**: HTTPS or HTTP endpoint Social Cangaroo calls with `POST`
-- **Resolver Timeout**: How long Social Cangaroo waits for the resolver response
-- **Resolver Wait Message**: Optional message spoken while Social Cangaroo waits, such as "One moment while I find the right team."
+- **Resolver URL**: HTTPS or HTTP endpoint AICall calls with `POST`
+- **Resolver Timeout**: How long AICall waits for the resolver response
+- **Resolver Wait Message**: Optional message spoken while AICall waits, such as "One moment while I find the right team."
 - **LLM Parameters**: Values the agent should extract from the conversation, such as `billing_issue_type` or `requested_department`
-- **Preset Parameters**: Values injected by Social Cangaroo from context or fixed values
+- **Preset Parameters**: Values injected by AICall from context or fixed values
 - **Custom Headers**: Static headers sent to your resolver endpoint
 - **Credential**: Optional saved credential used to authenticate the resolver request
 
@@ -148,26 +148,26 @@ Call Transfer supports a common pre-transfer message setting for static, context
 
 For static transfers:
 
-1. Social Cangaroo resolves the static or template destination.
-2. Social Cangaroo plays the configured pre-transfer message, if any.
-3. Social Cangaroo starts the provider transfer.
+1. AICall resolves the static or template destination.
+2. AICall plays the configured pre-transfer message, if any.
+3. AICall starts the provider transfer.
 
 For dynamic transfers:
 
-1. Social Cangaroo may play the resolver wait message while calling your resolver.
-2. If the resolver returns `custom_message`, Social Cangaroo plays that message.
-3. If the resolver does not return `custom_message`, Social Cangaroo uses the configured pre-transfer message.
-4. Social Cangaroo starts the provider transfer.
+1. AICall may play the resolver wait message while calling your resolver.
+2. If the resolver returns `custom_message`, AICall plays that message.
+3. If the resolver does not return `custom_message`, AICall uses the configured pre-transfer message.
+4. AICall starts the provider transfer.
 
 Resolver `custom_message` overrides the configured pre-transfer message for that transfer attempt.
 
 ## Transfer timeout
 
-Transfer timeout is the maximum time Social Cangaroo waits for the destination to answer after the provider transfer starts.
+Transfer timeout is the maximum time AICall waits for the destination to answer after the provider transfer starts.
 
 This timeout applies to static, context-mapped, and dynamic transfers.
 
-The resolver timeout is separate. It controls only how long Social Cangaroo waits for your HTTP resolver before dialing starts.
+The resolver timeout is separate. It controls only how long AICall waits for your HTTP resolver before dialing starts.
 
 ## Destination formats
 
@@ -298,7 +298,7 @@ Also verify the resolver URL, authentication headers, credential, and timeout.
 Confirm the parameter is configured as either:
 
 - an LLM parameter, if the agent should extract it from the conversation
-- a preset parameter, if Social Cangaroo should inject it from context
+- a preset parameter, if AICall should inject it from context
 
 For known context values, prefer preset parameters like `{{initial_context.account_id}}` or `{{gathered_context.billing_issue_type}}`.
 

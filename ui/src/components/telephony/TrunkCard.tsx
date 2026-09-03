@@ -302,7 +302,7 @@ export function TrunkCard({
           <DialogHeader>
             <DialogTitle>{editing ? "Edit trunk" : "Add trunk"}</DialogTitle>
             <DialogDescription>
-              Social Cangaroo provisions this trunk with {configuration.provider} and dials
+              AICall provisions this trunk with {configuration.provider} and dials
               your carrier over it.
             </DialogDescription>
           </DialogHeader>

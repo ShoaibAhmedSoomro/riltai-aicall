@@ -22,7 +22,7 @@ LOG_TO_FILE=${LOG_TO_FILE:-true}    # Set to false in Docker to use stdout
 
 # Log startup
 cd "$BASE_DIR"
-echo "Starting Social Cangaroo Services at $(date) in BASE_DIR: ${BASE_DIR}"
+echo "Starting AICall Services at $(date) in BASE_DIR: ${BASE_DIR}"
 
 ###############################################################################
 ### 1) Load environment variables
@@ -33,12 +33,12 @@ if [[ -f "$ENV_FILE" ]]; then
   set -a && . "$ENV_FILE" && set +a
 fi
 
-if [[ -z "${SOCIAL_CANGAROO_DEVOPS_SECRET:-}" ]]; then
-  echo "ERROR: SOCIAL_CANGAROO_DEVOPS_SECRET is not set. Add it to $ENV_FILE before starting production services."
+if [[ -z "${RILT_DEVOPS_SECRET:-}" ]]; then
+  echo "ERROR: RILT_DEVOPS_SECRET is not set. Add it to $ENV_FILE before starting production services."
   exit 1
 fi
-if [[ "$SOCIAL_CANGAROO_DEVOPS_SECRET" == "change-me-social-cangaroo-devops-secret" ]]; then
-  echo "ERROR: SOCIAL_CANGAROO_DEVOPS_SECRET still has the example placeholder value. Replace it in $ENV_FILE."
+if [[ "$RILT_DEVOPS_SECRET" == "change-me-rilt-devops-secret" ]]; then
+  echo "ERROR: RILT_DEVOPS_SECRET still has the example placeholder value. Replace it in $ENV_FILE."
   exit 1
 fi
 
@@ -159,8 +159,8 @@ fi
 
 mkdir -p "$RUN_DIR"
 
-NGINX_UPSTREAM_TEMPLATE="$BASE_DIR/nginx/social_cangaroo_upstream.conf.template"
-NGINX_UPSTREAM_CONF="/etc/nginx/conf.d/social_cangaroo_upstream.conf"
+NGINX_UPSTREAM_TEMPLATE="$BASE_DIR/nginx/rilt_upstream.conf.template"
+NGINX_UPSTREAM_CONF="/etc/nginx/conf.d/rilt_upstream.conf"
 
 ###############################################################################
 ### 4) Install ts_validator npm dependencies

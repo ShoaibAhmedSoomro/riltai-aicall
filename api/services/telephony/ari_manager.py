@@ -28,9 +28,9 @@ from api.constants import REDIS_URL
 from api.db import db_client
 from api.enums import CallType, WorkflowRunMode
 from api.errors.failure import (
-    SocialCangarooFailure,
     ErrorSource,
     ErrorType,
+    RiltFailure,
     classify_exception,
     log_failure,
     redact_failure_message,
@@ -76,7 +76,7 @@ _FAILURE_LOG_INTERVAL = 900  # re-log an unchanged failure at most this often
 
 
 def _log_ari_failure(
-    failure: SocialCangarooFailure,
+    failure: RiltFailure,
     *,
     organization_id: int,
     telephony_configuration_id: int | None = None,
@@ -112,7 +112,7 @@ class ARIConnection:
         self.app_name = app_name
         self.app_password = app_password
         # The ARI username and the Stasis application are separate namespaces in
-        # Asterisk; Social Cangaroo generates the latter so no two configurations can
+        # Asterisk; AICall generates the latter so no two configurations can
         # claim the same application. Rows written before the split carry only
         # app_name and legitimately use it for both.
         self.stasis_app_name = stasis_app_name or app_name
@@ -303,7 +303,7 @@ class ARIConnection:
                 # ceiling forever and never be parked.
                 if self._running and not self._last_connection_stable:
                     await self._record_failure(
-                        SocialCangarooFailure(
+                        RiltFailure(
                             source=ErrorSource.TELEPHONY,
                             type=ErrorType.PROVIDER_ERROR,
                             code="ari-closed-immediately",
@@ -403,7 +403,7 @@ class ARIConnection:
             return True
         return False
 
-    def _should_deactivate(self, failure: SocialCangarooFailure) -> bool:
+    def _should_deactivate(self, failure: RiltFailure) -> bool:
         if failure.retryable is False:
             return self._consecutive_failures >= _PERMANENT_FAILURE_THRESHOLD
         return (
@@ -411,7 +411,7 @@ class ARIConnection:
             and time.monotonic() - self._failing_since >= _TRANSIENT_FAILURE_WINDOW
         )
 
-    async def _record_failure(self, failure: SocialCangarooFailure, **context) -> None:
+    async def _record_failure(self, failure: RiltFailure, **context) -> None:
         """Account for one connection failure and park the config if it persists."""
         now = time.monotonic()
         self._consecutive_failures += 1
@@ -431,7 +431,7 @@ class ARIConnection:
         if self._should_deactivate(failure):
             await self._deactivate(failure)
 
-    async def _deactivate(self, failure: SocialCangarooFailure) -> None:
+    async def _deactivate(self, failure: RiltFailure) -> None:
         """Park this config so the manager stops reconnecting it."""
         reason = f"{failure.code}: {failure.external_message}"
         try:
@@ -724,7 +724,7 @@ class ARIConnection:
         the POST and avoid racing against the StasisStart event.
         """
         # v() appends URI query params to the websocket_client.conf URL
-        # e.g. wss://api.socialcangaroo.com/ws/ari?workflow_id=1&organization_id=2&workflow_run_id=3
+        # e.g. wss://api.rilt.ai/ws/ari?workflow_id=1&organization_id=2&workflow_run_id=3
         vparams = (
             f"workflow_id={workflow_id},"
             f"organization_id={self.organization_id},"
@@ -968,7 +968,7 @@ class ARIConnection:
         created in :meth:`_complete_bridge_after_ext_ready` once the external
         media channel has entered Stasis (its own StasisStart event).
         """
-        ext_channel_id = f"social-cangaroo-ext-{uuid.uuid4()}"
+        ext_channel_id = f"rilt-ext-{uuid.uuid4()}"
         try:
             logger.info(
                 f"[ARI org={self.organization_id}] Setting up external media for "
@@ -1525,7 +1525,7 @@ class ARIManager:
             return True
         return False
 
-    async def _deactivate_invalid_config(self, row, failure: SocialCangarooFailure) -> None:
+    async def _deactivate_invalid_config(self, row, failure: RiltFailure) -> None:
         """Park a config whose stored settings cannot work, and record why.
 
         There is nothing to retry here, unlike a connection failure: the defect
@@ -1588,7 +1588,7 @@ class ARIManager:
             if not all([ari_endpoint, app_name, app_password]):
                 if self._should_log_validation_failure(row.id, "ari-incomplete-config"):
                     _log_ari_failure(
-                        SocialCangarooFailure(
+                        RiltFailure(
                             source=ErrorSource.TELEPHONY,
                             type=ErrorType.CONFIG_ERROR,
                             code="ari-incomplete-config",
@@ -1611,7 +1611,7 @@ class ARIManager:
             if not ws_client_name:
                 await self._deactivate_invalid_config(
                     row,
-                    SocialCangarooFailure(
+                    RiltFailure(
                         source=ErrorSource.TELEPHONY,
                         type=ErrorType.CONFIG_ERROR,
                         code="ari-missing-ws-client-name",

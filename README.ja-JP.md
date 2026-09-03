@@ -1,4 +1,4 @@
-# Social Cangaroo AI
+# AICall
 
 > 💡 **Notice**: This documentation is community-maintained. If you spot any translation inaccuracies or content that has drifted from the English version, please feel free to open a PR!
 >
@@ -7,28 +7,28 @@
 **オープンソースでセルフホスト可能な Vapi / Retell の代替手段** -- ビジュアルワークフロービルダーで本番向け音声エージェントを構築し、数分でテストし、MCP 経由で AI コーディングアシスタントに設計や編集を任せられます。
 
 <p align="center">
-  <a href="https://app.socialcangaroo.com">
-    <img src="https://img.shields.io/badge/▶_クラウド版を試す-app.socialcangaroo.com-2563eb?style=for-the-badge" alt="クラウド版を試す">
+  <a href="https://aicall.rilt.ai">
+    <img src="https://img.shields.io/badge/▶_クラウド版を試す-aicall.rilt.ai-2563eb?style=for-the-badge" alt="クラウド版を試す">
   </a>
   &nbsp;
   <a href="#-クイックスタート">
     <img src="https://img.shields.io/badge/⚡_60秒でセルフホスト-コマンド1つ-111827?style=for-the-badge" alt="60秒でセルフホスト">
   </a>
   &nbsp;
-  <a href="https://join.slack.com/t/social-cangaroo-community/shared_invite/zt-4787daqcn-3TDiQUh~3xrr3pwAqR9wpQ">
-    <img src="https://img.shields.io/badge/💬_Slackに参加-コミュニティ-4A154B?style=for-the-badge&logo=slack" alt="Slackに参加">
+  <a href="https://github.com/ShoaibAhmedSoomro/riltai-aicall/discussions">
+    <img src="https://img.shields.io/badge/%F0%9F%92%AC_Discussions-Community-24292f?style=for-the-badge&logo=github" alt="Slackに参加">
   </a>
 </p>
 
 <p align="center">
-  <a href="https://docs.socialcangaroo.com">📖 ドキュメント</a> &nbsp;·&nbsp;
+  <a href="https://docs.rilt.ai">📖 ドキュメント</a> &nbsp;·&nbsp;
   <a href="LICENSE">📜 BSD 2-Clause</a> &nbsp;·&nbsp;
   <a href="README.md">🌐 English</a> &nbsp;·&nbsp;
   <a href="README.zh-CN.md">🌐 中文</a>
 </p>
 
 <p align="center">
-  <img src="docs/images/hero.gif" alt="Social Cangaroo の動作デモ -- ワークフローを構築し、音声エージェントを起動して会話する" width="80%">
+  <img src="docs/images/hero.gif" alt="AICall の動作デモ -- ワークフローを構築し、音声エージェントを起動して会話する" width="80%">
 </p>
 
 - **100% オープンソース**でセルフホスト可能 -- Vapi や Retell と違い、ベンダーロックインはありません
@@ -36,40 +36,30 @@
 - **YC 卒業生と事業売却を経験した創業者が保守**し、音声 AI をオープンに保つことに取り組んでいます
 
 <p align="center">
-  <a href="https://trendshift.io/repositories/31007" target="_blank"><img src="https://trendshift.io/api/badge/repositories/31007" alt="ShoaibAhmedSoomro%2Fsocial-cangaroo | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 </p>
 
-## 🎥 メディア掲載
-
-<div align="center">
-  <a href="https://www.youtube.com/watch?v=xD9JEvfCH9k">
-    <img src="https://img.youtube.com/vi/xD9JEvfCH9k/maxresdefault.jpg" alt="Better Stack による Social Cangaroo 紹介" width="80%" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-  </a>
-  <br>
-  <em><strong>Better Stack</strong> による実践レビュー -- Social Cangaroo を詳しく紹介</em>
-</div>
 
 <details>
 <summary>📺 2 分のプロダクト紹介動画を見たい場合はこちら。</summary>
 
 <div align="center">
   <a href="https://youtu.be/9gPneyf9M9w">
-    <img src="docs/images/video_thumbnail_1.png" alt="Social Cangaroo AI のデモ動画を見る" width="70%" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+    <img src="docs/images/video_thumbnail_1.png" alt="AICall のデモ動画を見る" width="70%" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
   </a>
 </div>
 
 </details>
 
-## ⚖️ Social Cangaroo vs Vapi vs Retell
+## ⚖️ AICall vs Vapi vs Retell
 
 音声 AI プラットフォームを評価しているチームに向けて、重要な観点を率直に比較します。
 
-|  | **Social Cangaroo** | **Vapi** | **Retell** |
+|  | **AICall** | **Vapi** | **Retell** |
 |---|---|---|---|
 | **ライセンス** | BSD 2-Clause (オープンソース) | プロプライエタリ | プロプライエタリ |
 | **セルフホスト** | ✅ 可能 -- Docker コマンド 1 つ | ❌ SaaS のみ | ❌ SaaS のみ |
 | **料金** | 無料(セルフホスト)・従量課金(クラウド) | 分単位課金の SaaS | 分単位課金の SaaS |
-| **独自 LLM / STT / TTS の利用** | ✅ 任意のプロバイダー、または Social Cangaroo 標準スタック | 提供範囲内で設定可能 | 提供範囲内で設定可能 |
+| **独自 LLM / STT / TTS の利用** | ✅ 任意のプロバイダー、または AICall 標準スタック | 提供範囲内で設定可能 | 提供範囲内で設定可能 |
 | **ソースコードレベルのカスタマイズ** | ✅ すべてのコードを自由に変更可能 | ❌ クローズドソース | ❌ クローズドソース |
 | **データレジデンシー** | 自社インフラ、自社ルール | ベンダーのクラウド | ベンダーのクラウド |
 | **ベンダーロックイン** | なし | あり | あり |
@@ -77,28 +67,28 @@
 
 ## 🚀 クイックスタート
 
-##### ローカルマシンに Social Cangaroo をダウンロードしてセットアップ
+##### ローカルマシンに AICall をダウンロードしてセットアップ
 
 > **注記**
 > 製品改善のため、匿名の利用状況データを収集します。無効にするには、起動スクリプトを実行する前に `ENABLE_TELEMETRY=false` を設定してください。
 
 > **注記**
-> リモートサーバーでプラットフォームを実行したい場合は、[ドキュメント](https://docs.socialcangaroo.com/deployment/docker#option-2:-remote-server-deployment)を参照してください。
+> リモートサーバーでプラットフォームを実行したい場合は、[ドキュメント](https://docs.rilt.ai/deployment/docker#option-2:-remote-server-deployment)を参照してください。
 
 ```bash
-curl -o docker-compose.yaml https://raw.githubusercontent.com/ShoaibAhmedSoomro/social-cangaroo/main/docker-compose.yaml && curl -o start_docker.sh https://raw.githubusercontent.com/ShoaibAhmedSoomro/social-cangaroo/main/scripts/start_docker.sh && chmod +x start_docker.sh && ./start_docker.sh
+curl -o docker-compose.yaml https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/docker-compose.yaml && curl -o start_docker.sh https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/scripts/start_docker.sh && chmod +x start_docker.sh && ./start_docker.sh
 ```
 
 > **⚡ AI エージェントにセットアップを任せたいですか?**
-> **Claude Code** または **Codex** を使っている場合は、公式の [Social Cangaroo セットアップ skill](https://github.com/ShoaibAhmedSoomro/social-cangaroo-plugins) をインストールすると、インストール、設定、トラブルシューティングをエージェントに任せられます。OS を検出し、適切なデプロイ方法を選び、Social Cangaroo 付属のセットアップスクリプトを実行して結果を検証します。
+> **Claude Code** または **Codex** を使っている場合は、公式の [AICall セットアップ skill](https://github.com/ShoaibAhmedSoomro/riltai-aicall-plugins) をインストールすると、インストール、設定、トラブルシューティングをエージェントに任せられます。OS を検出し、適切なデプロイ方法を選び、AICall 付属のセットアップスクリプトを実行して結果を検証します。
 >
 > ```text
 > # Claude Code の場合
-> /plugin marketplace add ShoaibAhmedSoomro/social-cangaroo-plugins
-> /plugin install social-cangaroo@social-cangaroo
+> /plugin marketplace add ShoaibAhmedSoomro/rilt-plugins
+> /plugin install rilt@rilt
 > ```
 >
-> その後、新しいセッションを開始して _"set up Social Cangaroo"_ と依頼するか、`/social-cangaroo-setup` を実行してください。Codex も対応しています。詳しくは[プラグインリポジトリ](https://github.com/ShoaibAhmedSoomro/social-cangaroo-plugins#install)を参照してください。
+> その後、新しいセッションを開始して _"set up AICall"_ と依頼するか、`/rilt-setup` を実行してください。Codex も対応しています。詳しくは[プラグインリポジトリ](https://github.com/ShoaibAhmedSoomro/riltai-aicall-plugins#install)を参照してください。
 
 > **注記**
 > 初回起動では、すべてのイメージをダウンロードするため 2-3 分かかる場合があります。起動後、http://localhost:3010 を開くと最初の AI 音声アシスタントを作成できます。
@@ -109,19 +99,19 @@ curl -o docker-compose.yaml https://raw.githubusercontent.com/ShoaibAhmedSoomro/
 1. ブラウザで [http://localhost:3010](http://localhost:3010) を開きます。
 2. **Inbound(着信)** または **Outbound(発信)** を選び、ボットに名前を付けます(例: _リード判定_)。続けて用途を 5-10 語で説明します(例: _保険フォーム送信者の購入意向を確認_)。
 3. **Test Agent** をクリックします。
-4. **Test Audio** でブラウザからエージェントと会話するか、**Test Chat** でテキストベースに素早く反復します。Test Chat ではユーザー発話を編集または再実行でき、Social Cangaroo がその地点からエージェントの応答とノード遷移を再生成します。
+4. **Test Audio** でブラウザからエージェントと会話するか、**Test Chat** でテキストベースに素早く反復します。Test Chat ではユーザー発話を編集または再実行でき、AICall がその地点からエージェントの応答とノード遷移を再生成します。
 
-> 🔑 **API キーは不要です。** Social Cangaroo には自動生成されるキーと、組み込みの LLM / TTS / STT スタックが付属しています。必要に応じて、独自の LLM、TTS、STT、または Twilio、Vonage、Telnyx などの電話連携プロバイダーをいつでも接続できます。
+> 🔑 **API キーは不要です。** AICall には自動生成されるキーと、組み込みの LLM / TTS / STT スタックが付属しています。必要に応じて、独自の LLM、TTS、STT、または Twilio、Vonage、Telnyx などの電話連携プロバイダーをいつでも接続できます。
 
 ## MCP でエージェントを構築
 
-Social Cangaroo には MCP サーバーが付属しているため、コーディングエージェントが Social Cangaroo ワークスペース内で直接作業できます。
+AICall には MCP サーバーが付属しているため、コーディングエージェントが AICall ワークスペース内で直接作業できます。
 
-Codex、Claude Code、Cursor、または任意の MCP クライアントを接続すると、既存エージェントの確認、Social Cangaroo ドキュメントの検索、ノードスキーマの取得、新しいワークフローの作成、自然言語からのドラフト編集保存ができます。
+Codex、Claude Code、Cursor、または任意の MCP クライアントを接続すると、既存エージェントの確認、AICall ドキュメントの検索、ノードスキーマの取得、新しいワークフローの作成、自然言語からのドラフト編集保存ができます。
 
 コーディングエージェントに音声エージェントの構築を依頼するときは、1 行のプロンプトだけでなく、ユースケース用の短いスクリプトを共有してください。エージェントのペルソナ、通話フロー、ルール、反論処理、成功基準、可能であればサンプル会話を含めると効果的です。
 
-アシスタントの接続方法は [MCP ガイド](https://docs.socialcangaroo.com/integrations/mcp) を参照してください。
+アシスタントの接続方法は [MCP ガイド](https://docs.rilt.ai/integrations/mcp) を参照してください。
 
 ## 機能
 
@@ -147,38 +137,37 @@ Codex、Claude Code、Cursor、または任意の MCP クライアントを接�
 
 ### ローカル開発
 
-[ローカルセットアップ](https://docs.socialcangaroo.com/contribution/setup)を参照してください。
+[ローカルセットアップ](https://docs.rilt.ai/contribution/setup)を参照してください。
 
 ### セルフホストデプロイ
 
-リモートサーバーへのデプロイや HTTPS 設定を含む詳しい手順は、[Docker デプロイガイド](https://docs.socialcangaroo.com/deployment/docker#option-2-remote-server-deployment)を参照してください。
+リモートサーバーへのデプロイや HTTPS 設定を含む詳しい手順は、[Docker デプロイガイド](https://docs.rilt.ai/deployment/docker#option-2-remote-server-deployment)を参照してください。
 
 ### クラウド版
 
-マネージドクラウド版は [https://www.socialcangaroo.com](https://www.socialcangaroo.com/) から利用できます。
+マネージドクラウド版は [https://www.rilt.ai](https://www.rilt.ai/) から利用できます。
 
 ## 📚 ドキュメント
 
-完全なドキュメントは [https://docs.socialcangaroo.com](https://docs.socialcangaroo.com/) を参照してください。
+完全なドキュメントは [https://docs.rilt.ai](https://docs.rilt.ai/) を参照してください。
 
 ## 📦 SDKs
 
-- **Python SDK** -- [pypi.org/project/social-cangaroo-sdk](https://pypi.org/project/social-cangaroo-sdk/)
-- **Node SDK** -- [npmjs.com/package/@social-cangaroo/sdk](https://www.npmjs.com/package/@social-cangaroo/sdk)
+- **Python SDK** -- [pypi.org/project/rilt-sdk](https://pypi.org/project/rilt-sdk/)
+- **Node SDK** -- [npmjs.com/package/@rilt/sdk](https://www.npmjs.com/package/@rilt/sdk)
 
 ## 🤝 コミュニティとサポート
 
-> 👋 **Better Stack の動画から来ましたか?** [固定された GitHub Discussion](https://github.com/orgs/ShoaibAhmedSoomro/discussions/291) にユースケースを投稿してください。すべての返信を確認し、創業チームが初期ユーザーを直接オンボーディングします。
 
-- **Slack** -- Social Cangaroo AI のコラボレーションの中心です。メンテナーとつながり、実装前に機能を相談し、セットアップの支援を受け、コントリビューション活動の最新情報を追えます。
+- **Slack** -- AICall のコラボレーションの中心です。メンテナーとつながり、実装前に機能を相談し、セットアップの支援を受け、コントリビューション活動の最新情報を追えます。
 - **GitHub Discussions** -- ユースケースを共有し、質問し、ワークフローのレシピを交換できます。
 - **GitHub Issues** -- バグ報告や機能リクエストに利用してください。
 
-👉 参加はこちら → [Social Cangaroo Community Slack](https://join.slack.com/t/social-cangaroo-community/shared_invite/zt-4787daqcn-3TDiQUh~3xrr3pwAqR9wpQ)
+👉 参加はこちら → [AICall GitHub Discussions](https://github.com/ShoaibAhmedSoomro/riltai-aicall/discussions)
 
 ## 🙌 コントリビューション
 
-コントリビューションを歓迎します。Social Cangaroo AI は 100% オープンソースであり、今後もそうあり続けます。
+コントリビューションを歓迎します。AICall は 100% オープンソースであり、今後もそうあり続けます。
 
 ### はじめに
 
@@ -190,21 +179,21 @@ Codex、Claude Code、Cursor、または任意の MCP クライアントを接�
 
 ## ⭐ Star 履歴
 
-<img src="docs/images/star-history.png" alt="Social Cangaroo star history" width="80%">
+<img src="docs/images/star-history.png" alt="AICall star history" width="80%">
 
 ## 📄 ライセンス
 
-Social Cangaroo AI は [BSD 2-Clause License](LICENSE) のもとで公開されています。Social Cangaroo AI の構築に使われたプロジェクトと同じライセンスであり、互換性と、利用・変更・配布の自由を確保しています。
+AICall は [BSD 2-Clause License](LICENSE) のもとで公開されています。AICall の構築に使われたプロジェクトと同じライセンスであり、互換性と、利用・変更・配布の自由を確保しています。
 
 ## 🏢 私たちについて
 
-**Social Cangaroo** が ❤️ を込めて開発しています。
+**AICall** が ❤️ を込めて開発しています。
 創業チームは YC 卒業生と事業売却を経験した創業者で構成され、音声 AI をオープンで誰もが利用できるものに保つことに取り組んでいます。
 
 <br><br><br>
 
   <p align="center">
-    <a href="https://github.com/ShoaibAhmedSoomro/social-cangaroo">⭐ GitHub で Star する</a> |
-    <a href="https://app.socialcangaroo.com">☁️ クラウド版を試す</a> |
-    <a href="https://join.slack.com/t/social-cangaroo-community/shared_invite/zt-4787daqcn-3TDiQUh~3xrr3pwAqR9wpQ">💬 Slack に参加</a>
+    <a href="https://github.com/ShoaibAhmedSoomro/riltai-aicall">⭐ GitHub で Star する</a> |
+    <a href="https://aicall.rilt.ai">☁️ クラウド版を試す</a> |
+    <a href="https://github.com/ShoaibAhmedSoomro/riltai-aicall/discussions">💬 Slack に参加</a>
   </p>

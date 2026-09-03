@@ -53,7 +53,7 @@ async def _ensure_application_id(
     backend_endpoint, _ = await get_backend_endpoints()
     inbound_url = f"{backend_endpoint}/api/v1/telephony/inbound/run"
 
-    app_name = f"social-cangaroo-{uuid.uuid4().hex[:12]}"
+    app_name = f"rilt-{uuid.uuid4().hex[:12]}"
     endpoint = f"{VOBIZ_API_BASE_URL}/v1/Account/{auth_id}/Application/"
     body = {
         "app_name": app_name,
@@ -108,7 +108,7 @@ async def _ensure_application_id(
 
 _UI_METADATA = ProviderUIMetadata(
     display_name="Vobiz",
-    docs_url="https://docs.socialcangaroo.com/integrations/telephony/vobiz",
+    docs_url="https://docs.rilt.ai/integrations/telephony/vobiz",
     fields=[
         ProviderUIField(
             name="auth_id",
