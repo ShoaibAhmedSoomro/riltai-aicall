@@ -1,4 +1,6 @@
-from pydantic import BaseModel, EmailStr, field_validator
+from zoneinfo import available_timezones
+
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class SignupRequest(BaseModel):
@@ -19,6 +21,55 @@ class LoginRequest(BaseModel):
     password: str
 
 
+# Fixed set so the UI can guarantee a readable avatar in both themes; a free
+# hex would let a user pick something unreadable on their own dashboard.
+AVATAR_COLORS = ("slate", "teal", "indigo", "amber", "rose", "violet")
+
+
+class UserProfileFields(BaseModel):
+    """Self-service preferences stored in ``users.profile``.
+
+    Validated here rather than by the column so the JSON blob stays a known
+    shape. Unknown keys are rejected outright: silently accepting them would
+    let a typo persist forever as dead data nothing reads.
+    """
+
+    model_config = {"extra": "forbid"}
+
+    job_title: str | None = Field(default=None, max_length=100)
+    phone: str | None = Field(default=None, max_length=40)
+    # Overrides the organization timezone for this user's dated reports.
+    timezone: str | None = None
+    avatar_color: str | None = None
+
+    @field_validator("timezone")
+    @classmethod
+    def known_timezone(cls, v: str | None) -> str | None:
+        if v is None or v == "":
+            return None
+        if v not in available_timezones():
+            raise ValueError(f"Unknown timezone: {v}")
+        return v
+
+    @field_validator("avatar_color")
+    @classmethod
+    def known_color(cls, v: str | None) -> str | None:
+        if v is None or v == "":
+            return None
+        if v not in AVATAR_COLORS:
+            raise ValueError(f"Colour must be one of: {', '.join(AVATAR_COLORS)}")
+        return v
+
+    @field_validator("job_title", "phone")
+    @classmethod
+    def blank_is_cleared(cls, v: str | None) -> str | None:
+        # An empty field in the form means "remove this", not "store an empty
+        # string", so the stored blob never accumulates falsy noise.
+        if v is None:
+            return None
+        return v.strip() or None
+
+
 class ProfileUpdateRequest(BaseModel):
     """A partial profile update for the local auth provider.
 
@@ -35,6 +86,9 @@ class ProfileUpdateRequest(BaseModel):
     email: EmailStr | None = None
     current_password: str | None = None
     new_password: str | None = None
+    # Sent whole when any preference changes: the blob is small and replacing
+    # it avoids a merge protocol for something the form always holds in full.
+    profile: UserProfileFields | None = None
 
     @field_validator("new_password")
     @classmethod
@@ -52,6 +106,10 @@ class UserResponse(BaseModel):
     name: str | None = None
     organization_id: int | None = None
     provider_id: str | None = None
+    profile: UserProfileFields = Field(default_factory=UserProfileFields)
+    # Read-only account facts a profile screen displays but cannot edit.
+    created_at: str | None = None
+    is_superuser: bool = False
 
 
 class AuthResponse(BaseModel):

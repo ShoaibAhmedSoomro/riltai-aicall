@@ -74,6 +74,13 @@ class UserModel(Base):
     # and never writes here; the local provider populates it at signup and lets
     # the user change it afterwards.
     name = Column(String, nullable=True)
+    # Self-service preferences: job_title, phone, timezone, avatar_color. Shape
+    # is enforced at the API boundary by UserProfileFields rather than by the
+    # column, so adding a preference does not need a migration. NOT NULL so
+    # readers can index into it without a null guard.
+    profile = Column(
+        JSON, nullable=False, default=dict, server_default=text("'{}'::json")
+    )
 
     __table_args__ = (
         Index(

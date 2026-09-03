@@ -9,6 +9,7 @@ from api.schemas.auth import (
     LoginRequest,
     ProfileUpdateRequest,
     SignupRequest,
+    UserProfileFields,
     UserResponse,
 )
 from api.services.auth.depends import get_user, require_local_auth
@@ -20,6 +21,32 @@ router = APIRouter(
     prefix="/auth",
     tags=["auth"],
 )
+
+
+def _user_response(
+    user: UserModel, *, organization_id: int | None = None
+) -> UserResponse:
+    """Shape a user for the wire.
+
+    Single place on purpose: signup, login, /me and the profile update all
+    return the same model, and they had already drifted once — login omitted
+    the display name, so a returning user's stored name never reached the
+    session cookie.
+    """
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        name=user.name,
+        organization_id=(
+            organization_id
+            if organization_id is not None
+            else user.selected_organization_id
+        ),
+        provider_id=user.provider_id,
+        profile=UserProfileFields(**(user.profile or {})),
+        created_at=user.created_at.isoformat() if user.created_at else None,
+        is_superuser=bool(user.is_superuser),
+    )
 
 
 @router.post(
@@ -78,13 +105,7 @@ async def signup(request: SignupRequest):
 
     return AuthResponse(
         token=token,
-        user=UserResponse(
-            id=user.id,
-            email=user.email,
-            name=request.name,
-            organization_id=organization.id,
-            provider_id=user.provider_id,
-        ),
+        user=_user_response(user, organization_id=organization.id),
     )
 
 
@@ -117,25 +138,13 @@ async def login(request: LoginRequest):
 
     return AuthResponse(
         token=token,
-        user=UserResponse(
-            id=user.id,
-            email=user.email,
-            name=user.name,
-            organization_id=user.selected_organization_id,
-            provider_id=user.provider_id,
-        ),
+        user=_user_response(user),
     )
 
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user(user: UserModel = Depends(get_user)):
-    return UserResponse(
-        id=user.id,
-        email=user.email,
-        name=user.name,
-        organization_id=user.selected_organization_id,
-        provider_id=user.provider_id,
-    )
+    return _user_response(user)
 
 
 @router.patch(
@@ -195,11 +204,5 @@ async def update_profile(
 
     return AuthResponse(
         token=create_jwt_token(updated.id, updated.email),
-        user=UserResponse(
-            id=updated.id,
-            email=updated.email,
-            name=updated.name,
-            organization_id=updated.selected_organization_id,
-            provider_id=updated.provider_id,
-        ),
+        user=_user_response(updated),
     )

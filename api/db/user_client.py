@@ -197,6 +197,7 @@ class UserClient(BaseDBClient):
         name: str | None = None,
         email: str | None = None,
         password_hash: str | None = None,
+        profile: dict | None = None,
     ) -> UserModel | None:
         """Apply a partial profile update and return the fresh row.
 
@@ -212,6 +213,10 @@ class UserClient(BaseDBClient):
             values["email"] = email.strip().lower()
         if password_hash is not None:
             values["password_hash"] = password_hash
+        if profile is not None:
+            # Replaced wholesale, not merged: the caller always holds the full
+            # blob, and a merge would make "clear this field" impossible.
+            values["profile"] = profile
 
         async with self.async_session() as session:
             from sqlalchemy import update
