@@ -87,19 +87,3 @@ jobs:
             exit 1
           fi
           echo "OpenAPI spec is in sync."
-
-  notify-slack-failure:
-    needs: drift-check
-    if: ${{ always() && needs.drift-check.result == 'failure' }}
-    runs-on: ubuntu-latest
-    env:
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-    steps:
-      - name: Send Slack notification - Failure
-        if: env.SLACK_WEBHOOK_URL != ''
-        uses: slackapi/slack-github-action@v1.26.0
-        with:
-          payload: |
-            {
-              "text": "❌ AICall pre-PR drift check failed on ${{ github.ref_name }} by ${{ github.actor }} - <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
-            }
