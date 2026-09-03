@@ -8,6 +8,41 @@ const widgetSource = readFileSync(
     'utf8',
 );
 
+// The real embed-config response always carries the COMPLETE text set:
+// `EmbedConfigResponse.texts` is a required `WidgetTexts`
+// (api/routes/public_embed.py) and `WidgetTexts.resolve()` fills every field
+// from its own defaults (api/schemas/widget_texts.py), so a partial or absent
+// map is not something a client can receive. That is why the widget holds no
+// copy of its own: `widgetText()` warning and returning '' is its guard against
+// talking to an older API, not a fallback.
+//
+// A fixture without `texts` therefore misrepresents the server. It rendered the
+// panel with blank labels and left an assertion on the end-of-chat banner
+// comparing against an empty string.
+//
+// The values are read out of the committed OpenAPI spec instead of being
+// retyped here, so they cannot drift from the Python schema — CI already fails
+// if the spec and the app disagree, and widget_texts.py is documented as the
+// single source of truth that nothing else may hardcode.
+const widgetTextDefaults: Record<string, string> = Object.fromEntries(
+    Object.entries(
+        (
+            JSON.parse(
+                readFileSync(
+                    resolve(process.cwd(), '../docs/api-reference/openapi.json'),
+                    'utf8',
+                ),
+            ) as {
+                components: {
+                    schemas: {
+                        WidgetTexts: { properties: Record<string, { default: string }> };
+                    };
+                };
+            }
+        ).components.schemas.WidgetTexts.properties,
+    ).map(([key, prop]) => [key, prop.default]),
+);
+
 type WidgetWindow = Window & {
     RiltWidget?: {
         init: () => Promise<void>;
@@ -38,6 +73,7 @@ function createFetchMock(autoStart: boolean) {
                         embedMode: 'inline',
                         containerId: 'rilt-inline-container',
                     },
+                    texts: widgetTextDefaults,
                     auto_start: autoStart,
                 }),
             } as Response;
@@ -92,6 +128,37 @@ async function loadWidget(fetchMock: ReturnType<typeof createFetchMock>) {
     await flushMicrotasks();
     return widget as NonNullable<WidgetWindow['RiltWidget']>;
 }
+
+describe('public embed widget copy contract', () => {
+    // The widget renders whatever the server sends and has no defaults, so any
+    // key it asks for that WidgetTexts does not define renders as an empty
+    // string with only a console warning. That is how a blank end-of-chat
+    // banner survived here unnoticed. A typo in the widget, or a field dropped
+    // from the schema, fails this instead of silently blanking a label.
+    it('asks only for labels the server schema defines', () => {
+        const requested = [
+            ...new Set(
+                [...widgetSource.matchAll(/widgetText\('([A-Za-z0-9_]+)'\)/g)].map(
+                    (match) => match[1],
+                ),
+            ),
+        ].sort();
+
+        expect(requested.length).toBeGreaterThan(0);
+        expect(Object.keys(widgetTextDefaults).length).toBeGreaterThan(0);
+        expect(
+            requested.filter((key) => !(key in widgetTextDefaults)),
+        ).toEqual([]);
+    });
+
+    it('supplies non-empty copy for every one of them', () => {
+        const blank = Object.entries(widgetTextDefaults)
+            .filter(([, value]) => typeof value !== 'string' || value.length === 0)
+            .map(([key]) => key);
+
+        expect(blank).toEqual([]);
+    });
+});
 
 describe('public embed widget chat lifecycle', () => {
     beforeEach(() => {
@@ -172,7 +239,14 @@ describe('public embed widget chat lifecycle', () => {
         );
         expect(endCalls).toHaveLength(1);
         expect(widget.getState().chat.status).toBe('ended');
-        expect(document.querySelector('.rilt-chat-banner')?.textContent).toContain('Conversation ended.');
+        // Asserted against the schema default rather than a retyped literal:
+        // the question is whether the banner renders the conversation-ended
+        // copy at all (it used to render nothing), not whether that copy still
+        // reads exactly as it did when this test was written.
+        expect(document.querySelector('.rilt-chat-banner')?.textContent).toContain(
+            widgetTextDefaults.conversationEndedText,
+        );
+        expect(widgetTextDefaults.conversationEndedText).toBeTruthy();
         expect(document.querySelector<HTMLButtonElement>('.rilt-chat-send')?.disabled).toBe(true);
     });
 
@@ -235,6 +309,7 @@ describe('public embed widget chat lifecycle', () => {
                     embedMode: 'inline',
                     containerId: 'rilt-inline-container',
                 },
+                texts: widgetTextDefaults,
                 auto_start: false,
             }),
         } as Response);
