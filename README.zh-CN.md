@@ -16,7 +16,7 @@
   </a>
   &nbsp;
   <a href="https://github.com/ShoaibAhmedSoomro/riltai-aicall/discussions">
-    <img src="https://img.shields.io/badge/%F0%9F%92%AC_Discussions-Community-24292f?style=for-the-badge&logo=github" alt="加入 Slack">
+    <img src="https://img.shields.io/badge/%F0%9F%92%AC_Discussions-Community-24292f?style=for-the-badge&logo=github" alt="讨论区">
   </a>
 </p>
 
@@ -151,11 +151,10 @@ AICall 内置 MCP 服务器,因此编码智能体可以直接在你的 AICall �
 ## 🤝 社区与支持
 
 
-- **Slack** —— AICall 协作的主阵地。在这里和维护者交流、在动手前讨论功能、获取部署帮助,并跟进每一轮贡献活动。
 - **GitHub Discussions** —— 分享使用场景、提问、交流工作流配方。
 - **GitHub Issues** —— 报告 bug 或提交功能请求。
 
-👉 加入我们 → [AICall 社区 Slack](https://github.com/ShoaibAhmedSoomro/riltai-aicall/discussions)
+👉 加入我们 → [AICall 讨论区](https://github.com/ShoaibAhmedSoomro/riltai-aicall/discussions)
 
 ## 🙌 参与贡献
 
@@ -169,10 +168,6 @@ AICall 内置 MCP 服务器,因此编码智能体可以直接在你的 AICall �
 - 推送到该分支(`git push origin feature/AmazingFeature`)
 - 提交一个 Pull Request
 
-## ⭐ Star 历史
-
-<img src="docs/images/star-history.png" alt="AICall star history" width="80%">
-
 ## 📄 许可协议
 
 AICall 基于 [BSD 2-Clause 协议](LICENSE)开源 —— 与构建 AICall 时所采用的项目使用相同的协议,确保兼容性,以及自由使用、修改和分发的权利。
@@ -185,7 +180,6 @@ AICall 基于 [BSD 2-Clause 协议](LICENSE)开源 —— 与构建 AICall 时�
 <br><br><br>
 
   <p align="center">
-    <a href="https://github.com/ShoaibAhmedSoomro/riltai-aicall">⭐ 给我们一个 Star</a> |
     <a href="https://aicall.rilt.ai">☁️ 试用云端版本</a> |
-    <a href="https://github.com/ShoaibAhmedSoomro/riltai-aicall/discussions">💬 加入 Slack</a>
+    <a href="https://github.com/ShoaibAhmedSoomro/riltai-aicall/discussions">💬 讨论区</a>
   </p>

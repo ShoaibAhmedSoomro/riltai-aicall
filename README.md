@@ -155,7 +155,6 @@ You can go to [https://docs.rilt.ai](https://docs.rilt.ai/) for our documentatio
 ## 🤝Community & Support
 
 
-- **Slack** — the cornerstone of AICall contributions. Connect with maintainers, discuss features before coding, get help with setup, and stay current on contribution sprints.
 - **GitHub Discussions** — share use cases, ask questions, swap workflow recipes.
 - **GitHub Issues** — report bugs or request features.
 
@@ -173,10 +172,6 @@ We love contributions! AICall is 100% open source and we intend to keep it that 
 - Push to the branch (git push origin feature/AmazingFeature)
 - Open a Pull Request
 
-## ⭐ Star History
-
-<img src="docs/images/star-history.png" alt="AICall star history" width="80%">
-
 ## 📄 License
 
 AICall is licensed under the [BSD 2-Clause License](LICENSE)- the same license as projects that were used in building AICall, ensuring compatibility and freedom to use, modify, and distribute.
@@ -188,7 +183,6 @@ Built with ❤️ by **AICall**
 <br><br><br>
 
   <p align="center">
-    <a href="https://github.com/ShoaibAhmedSoomro/riltai-aicall">⭐ Star us on GitHub</a> |
     <a href="https://aicall.rilt.ai">☁️ Try Cloud Version</a> |
     <a href="https://github.com/ShoaibAhmedSoomro/riltai-aicall/discussions">💬 Discussions</a>
   </p>

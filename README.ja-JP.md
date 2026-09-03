@@ -16,7 +16,7 @@
   </a>
   &nbsp;
   <a href="https://github.com/ShoaibAhmedSoomro/riltai-aicall/discussions">
-    <img src="https://img.shields.io/badge/%F0%9F%92%AC_Discussions-Community-24292f?style=for-the-badge&logo=github" alt="Slackに参加">
+    <img src="https://img.shields.io/badge/%F0%9F%92%AC_Discussions-Community-24292f?style=for-the-badge&logo=github" alt="ディスカッション">
   </a>
 </p>
 
@@ -159,7 +159,6 @@ Codex、Claude Code、Cursor、または任意の MCP クライアントを接�
 ## 🤝 コミュニティとサポート
 
 
-- **Slack** -- AICall のコラボレーションの中心です。メンテナーとつながり、実装前に機能を相談し、セットアップの支援を受け、コントリビューション活動の最新情報を追えます。
 - **GitHub Discussions** -- ユースケースを共有し、質問し、ワークフローのレシピを交換できます。
 - **GitHub Issues** -- バグ報告や機能リクエストに利用してください。
 
@@ -177,10 +176,6 @@ Codex、Claude Code、Cursor、または任意の MCP クライアントを接�
 - ブランチへプッシュする(`git push origin feature/AmazingFeature`)
 - Pull Request を作成する
 
-## ⭐ Star 履歴
-
-<img src="docs/images/star-history.png" alt="AICall star history" width="80%">
-
 ## 📄 ライセンス
 
 AICall は [BSD 2-Clause License](LICENSE) のもとで公開されています。AICall の構築に使われたプロジェクトと同じライセンスであり、互換性と、利用・変更・配布の自由を確保しています。
@@ -193,7 +188,6 @@ AICall は [BSD 2-Clause License](LICENSE) のもとで公開されています�
 <br><br><br>
 
   <p align="center">
-    <a href="https://github.com/ShoaibAhmedSoomro/riltai-aicall">⭐ GitHub で Star する</a> |
     <a href="https://aicall.rilt.ai">☁️ クラウド版を試す</a> |
-    <a href="https://github.com/ShoaibAhmedSoomro/riltai-aicall/discussions">💬 Slack に参加</a>
+    <a href="https://github.com/ShoaibAhmedSoomro/riltai-aicall/discussions">💬 ディスカッション</a>
   </p>
