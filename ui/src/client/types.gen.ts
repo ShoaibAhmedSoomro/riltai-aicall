@@ -4606,6 +4606,7 @@ export type ProfileUpdateRequest = {
      * New Password
      */
     new_password?: string | null;
+    profile?: UserProfileFields | null;
 };
 
 /**
@@ -7007,6 +7008,34 @@ export type UserConfigurationRequestResponseSchema = {
 };
 
 /**
+ * UserProfileFields
+ *
+ * Self-service preferences stored in ``users.profile``.
+ *
+ * Validated here rather than by the column so the JSON blob stays a known
+ * shape. Unknown keys are rejected outright: silently accepting them would
+ * let a typo persist forever as dead data nothing reads.
+ */
+export type UserProfileFields = {
+    /**
+     * Job Title
+     */
+    job_title?: string | null;
+    /**
+     * Phone
+     */
+    phone?: string | null;
+    /**
+     * Timezone
+     */
+    timezone?: string | null;
+    /**
+     * Avatar Color
+     */
+    avatar_color?: string | null;
+};
+
+/**
  * UserResponse
  */
 export type UserResponse = {
@@ -7030,6 +7059,15 @@ export type UserResponse = {
      * Provider Id
      */
     provider_id?: string | null;
+    profile?: UserProfileFields;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+    /**
+     * Is Superuser
+     */
+    is_superuser?: boolean;
 };
 
 /**

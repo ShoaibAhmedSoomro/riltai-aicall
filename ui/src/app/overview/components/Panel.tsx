@@ -7,6 +7,8 @@ import type { ReactNode } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
+import { SampleBadge } from './SampleBadge';
+
 /**
  * A titled dashboard panel with an optional "view all" link and a built-in
  * empty state.
@@ -20,6 +22,7 @@ export function Panel({
     title,
     subtitle,
     action,
+    sample = false,
     loading = false,
     empty,
     className,
@@ -29,6 +32,8 @@ export function Panel({
     title: string;
     subtitle?: ReactNode;
     action?: { label: string; href: string };
+    /** Renders the Sample badge: this panel's figures are illustrative. */
+    sample?: boolean;
     loading?: boolean;
     /** When set, replaces the body: a sentence saying what would fill this. */
     empty?: ReactNode;
@@ -40,7 +45,10 @@ export function Panel({
         <section className={cn('flex flex-col rounded-xl border border-border/60 bg-card', className)}>
             <header className="flex items-start justify-between gap-3 border-b border-border/60 px-4 py-3">
                 <div className="min-w-0">
-                    <h2 className="truncate text-sm font-semibold">{title}</h2>
+                    <div className="flex items-center gap-2">
+                        <h2 className="truncate text-sm font-semibold">{title}</h2>
+                        {sample && <SampleBadge />}
+                    </div>
                     {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
                 </div>
                 {action && (

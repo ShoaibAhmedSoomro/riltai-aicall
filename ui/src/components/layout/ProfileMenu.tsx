@@ -14,16 +14,10 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/lib/auth';
+import { AVATAR_COLOR_CLASS, avatarInitials } from '@/lib/avatar';
+import { cn } from '@/lib/utils';
 
 import { ProfileDialog } from './ProfileDialog';
-
-/** Up to two initials from a name, falling back to the email local part. */
-function initials(name?: string | null, email?: string | null): string {
-    const source = (name || '').trim() || (email || '').split('@')[0] || '';
-    const parts = source.split(/[\s._-]+/).filter(Boolean);
-    if (!parts.length) return '?';
-    return (parts[0][0] + (parts[1]?.[0] ?? '')).toUpperCase();
-}
 
 /**
  * The account menu in the app header.
@@ -43,9 +37,18 @@ export function ProfileMenu() {
     const router = useRouter();
     const [editing, setEditing] = useState(false);
 
-    const details = user as { name?: string; displayName?: string; email?: string; primaryEmail?: string } | null;
+    const details = user as {
+        name?: string;
+        displayName?: string;
+        email?: string;
+        primaryEmail?: string;
+        profile?: { job_title?: string | null; avatar_color?: string | null };
+    } | null;
     const name = details?.name || details?.displayName || null;
     const email = details?.email || details?.primaryEmail || null;
+    const jobTitle = details?.profile?.job_title || null;
+    const avatarClass =
+        AVATAR_COLOR_CLASS[details?.profile?.avatar_color ?? 'slate'] ?? AVATAR_COLOR_CLASS.slate;
     const isLocal = provider !== 'stack';
 
     if (!user) return null;
@@ -61,9 +64,12 @@ export function ProfileMenu() {
                     >
                         <span
                             aria-hidden
-                            className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground"
+                            className={cn(
+                                'flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold',
+                                avatarClass,
+                            )}
                         >
-                            {initials(name, email)}
+                            {avatarInitials(name, email)}
                         </span>
                         <span className="hidden max-w-[9rem] truncate text-sm font-medium sm:inline">
                             {name || email || 'Account'}
@@ -73,10 +79,32 @@ export function ProfileMenu() {
 
                 <DropdownMenuContent align="end" className="w-64">
                     <DropdownMenuLabel className="font-normal">
-                        <span className="block truncate text-sm font-medium">{name || 'Unnamed user'}</span>
-                        {email && (
-                            <span className="block truncate text-xs text-muted-foreground">{email}</span>
-                        )}
+                        <div className="flex items-center gap-2.5">
+                            <span
+                                aria-hidden
+                                className={cn(
+                                    'flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
+                                    avatarClass,
+                                )}
+                            >
+                                {avatarInitials(name, email)}
+                            </span>
+                            <span className="min-w-0">
+                                <span className="block truncate text-sm font-medium">
+                                    {name || 'Unnamed user'}
+                                </span>
+                                {jobTitle && (
+                                    <span className="block truncate text-xs text-muted-foreground">
+                                        {jobTitle}
+                                    </span>
+                                )}
+                                {email && (
+                                    <span className="block truncate text-xs text-muted-foreground">
+                                        {email}
+                                    </span>
+                                )}
+                            </span>
+                        </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
 

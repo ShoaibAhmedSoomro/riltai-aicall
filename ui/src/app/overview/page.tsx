@@ -1,6 +1,6 @@
 'use client';
 
-import { Bot, Clock, Megaphone, Phone, PhoneCall, RefreshCw } from 'lucide-react';
+import { Bot, Clock, FlaskConical, Megaphone, Phone, PhoneCall, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -15,8 +15,24 @@ import { OutcomeDonut } from './components/OutcomeDonut';
 import { Panel } from './components/Panel';
 import { QuickActionsPanel } from './components/QuickActionsPanel';
 import { RecentCallsPanel } from './components/RecentCallsPanel';
+import {
+    AgentHealthPanel,
+    AlertsPanel,
+    AnswerRatePanel,
+    CompliancePanel,
+    ContactsPanel,
+    ConversionPanel,
+    CostVsMarginPanel,
+    PerformancePanel,
+    PipelinePanel,
+    RegionsPanel,
+    RevenuePanel,
+    SampleKpiTiles,
+    UnitEconomicsPanel,
+} from './components/SamplePanels';
 import { SetupHealthPanel } from './components/SetupHealthPanel';
 import { StatCard } from './components/StatCard';
+import { SAMPLE_PANEL_IDS } from './sampleData';
 import { useDashboardData } from './useDashboardData';
 
 function greeting(): string {
@@ -40,10 +56,11 @@ export default function OverviewPage() {
     const { telnyxMissingWebhookPublicKeyCount, vonageMissingSignatureSecretCount } =
         useTelephonyConfigWarnings();
 
-    // Reports are date-bounded, so they need a timezone. The organization's
-    // configured zone wins; the browser's is the fallback, and the header says
-    // which one is in force so a number is never ambiguous.
-    const data = useDashboardData(organizationPreferences?.timezone ?? null);
+    // Reports are date-bounded, so they need a timezone. Precedence: the user's
+    // own profile setting, then the organization default, then the browser.
+    // The header names the zone in force so a dated figure is never ambiguous.
+    const userTimezone = (user as { profile?: { timezone?: string | null } } | null)?.profile?.timezone;
+    const data = useDashboardData(userTimezone || organizationPreferences?.timezone || null);
 
     const firstName =
         (user as { displayName?: string } | null)?.displayName?.split(' ')[0] ??
@@ -68,7 +85,12 @@ export default function OverviewPage() {
                     <h1 className="mt-0.5 text-2xl font-semibold tracking-tight">Operations Overview</h1>
                     <p className="mt-1 text-sm text-muted-foreground">
                         Live view of your voice agents, calls and configuration. Dated figures use{' '}
-                        <span className="font-medium text-foreground">{data.timezone}</span>.
+                        <span className="font-medium text-foreground">{data.timezone}</span>
+                        {userTimezone
+                            ? ' from your profile.'
+                            : organizationPreferences?.timezone
+                              ? ' from the organization default.'
+                              : ' from your browser.'}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -80,6 +102,22 @@ export default function OverviewPage() {
                         <Link href="/reports">Daily report</Link>
                     </Button>
                 </div>
+            </div>
+
+            {/* One disclosure for the whole page, so the Sample badges are
+                explained once rather than only on hover. */}
+            <div className="mt-4 flex items-start gap-2.5 rounded-lg border border-[var(--chart-4)]/35 bg-[var(--chart-4)]/[0.07] px-3 py-2.5">
+                <FlaskConical className="mt-0.5 size-4 shrink-0 text-[var(--chart-4)]" aria-hidden />
+                <p className="text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">
+                        {SAMPLE_PANEL_IDS.length} panels show sample figures.
+                    </span>{' '}
+                    Revenue, answer rate, contact rate, compliance and geography are not
+                    measured by the platform yet, so those are placeholders for layout and
+                    are not from your account. Anything without a{' '}
+                    <span className="font-medium text-foreground">Sample</span> badge is
+                    read live from your data.
+                </p>
             </div>
 
             {/* ── KPI row. Every tile links to the page that explains it. */}
@@ -148,6 +186,7 @@ export default function OverviewPage() {
                             : 'None running'
                     }
                 />
+                <SampleKpiTiles />
             </div>
 
             {/* ── Charts */}
@@ -266,6 +305,37 @@ export default function OverviewPage() {
                 <div className="xl:col-span-2">
                     <QuickActionsPanel />
                 </div>
+            </div>
+
+            {/* ── Illustrative rows. Everything below carries a Sample badge:
+                these mirror the reference layout for panels the platform does
+                not measure. Delete a panel here and its export in sampleData.ts
+                once a real source exists. */}
+            <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-3">
+                <RevenuePanel />
+                <CostVsMarginPanel />
+                <AnswerRatePanel />
+            </div>
+
+            <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-3">
+                <PerformancePanel />
+                <PipelinePanel />
+                <ConversionPanel />
+            </div>
+
+            <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-2">
+                <AgentHealthPanel />
+                <ContactsPanel />
+            </div>
+
+            <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-3">
+                <CompliancePanel />
+                <UnitEconomicsPanel />
+                <RegionsPanel />
+            </div>
+
+            <div className="mt-3">
+                <AlertsPanel />
             </div>
         </div>
     );
