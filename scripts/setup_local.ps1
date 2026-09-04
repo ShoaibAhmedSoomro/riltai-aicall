@@ -296,7 +296,7 @@ Write-Success '╔════════════════════�
 Write-Success '║                    Setup Complete!                           ║'
 Write-Success '╚══════════════════════════════════════════════════════════════╝'
 Write-Host ''
-Write-Host "Files created in $CurrentDir:" -ForegroundColor Blue
+Write-Host "Files created in ${CurrentDir}:" -ForegroundColor Blue
 Write-Host '  - docker-compose.yaml'
 Write-Host '  - .env'
 if ($UseCoturn) {
