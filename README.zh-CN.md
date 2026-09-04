@@ -73,7 +73,7 @@
 > 如果希望在远程服务器上运行该平台,请参考[文档](https://docs.rilt.ai/deployment/docker#option-2:-remote-server-deployment)。
 
 ```bash
-curl -o docker-compose.yaml https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/docker-compose.yaml && REGISTRY=ghcr.io/ShoaibAhmedSoomro ENABLE_TELEMETRY=true docker compose up --pull always
+curl -o docker-compose.yaml https://raw.githubusercontent.com/ShoaibAhmedSoomro/riltai-aicall/main/docker-compose.yaml && REGISTRY=ghcr.io/ShoaibAhmedSoomro ENABLE_TELEMETRY=true docker compose up --pull always
 ```
 
 > **⚡ 想让 AI 智能体帮你完成部署?**

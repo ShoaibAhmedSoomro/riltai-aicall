@@ -9,7 +9,7 @@ Everything on this page is optional reading — [Setup](/contribution/setup) cov
 
 Run everything directly on your host instead of inside the devcontainer. You need Git, Node.js 24, Python 3.13, and Docker (for Postgres, Redis, and MinIO).
 
-1. Run the contributor bootstrap. It configures `origin` as your fork and `upstream` as `ShoaibAhmedSoomro/rilt`, initializes the pipecat submodule, creates the Python venv, and copies the `.env` templates:
+1. Run the contributor bootstrap. It configures `origin` as your fork and `upstream` as `ShoaibAhmedSoomro/riltai-aicall`, initializes the pipecat submodule, creates the Python venv, and copies the `.env` templates:
 
 <CodeGroup>
 ```bash macOS/Linux
@@ -156,9 +156,9 @@ devcontainer exec --workspace-folder . bash -lc 'cd ui && npm run dev -- --hostn
 The contributor bootstrap (`scripts/setup_fork.sh`) configures two remotes:
 
 - `origin`: your fork, where you push
-- `upstream`: `ShoaibAhmedSoomro/rilt`, where new commits land
+- `upstream`: `ShoaibAhmedSoomro/riltai-aicall`, where new commits land
 
-If you cloned `ShoaibAhmedSoomro/rilt` directly instead of your fork, run it once (inside the devcontainer is fine):
+If you cloned `ShoaibAhmedSoomro/riltai-aicall` directly instead of your fork, run it once (inside the devcontainer is fine):
 
 ```bash
 bash scripts/setup_fork.sh
@@ -181,5 +181,5 @@ upstream  https://github.com/ShoaibAhmedSoomro/riltai-aicall.git    (fetch/push)
 ```
 
 <Note>
-Always push feature branches to **`origin`** (your fork), then open a pull request against `ShoaibAhmedSoomro/rilt:main`. Never push directly to `upstream`.
+Always push feature branches to **`origin`** (your fork), then open a pull request against `ShoaibAhmedSoomro/riltai-aicall:main`. Never push directly to `upstream`.
 </Note>

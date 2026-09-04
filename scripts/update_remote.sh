@@ -14,7 +14,7 @@ BOOTSTRAP_LIB=""
 
 if [[ ! -f "$LIB_PATH" ]]; then
     BOOTSTRAP_LIB="$(mktemp)"
-    curl -fsSL -o "$BOOTSTRAP_LIB" "https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/scripts/lib/setup_common.sh"
+    curl -fsSL -o "$BOOTSTRAP_LIB" "https://raw.githubusercontent.com/ShoaibAhmedSoomro/riltai-aicall/main/scripts/lib/setup_common.sh"
     LIB_PATH="$BOOTSTRAP_LIB"
 fi
 
@@ -38,7 +38,7 @@ trap cleanup EXIT
 # shellcheck disable=SC1090
 . "$LIB_PATH"
 
-REPO="ShoaibAhmedSoomro/rilt"
+REPO="ShoaibAhmedSoomro/riltai-aicall"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 generate_secret() {
