@@ -48,6 +48,41 @@ new api route in backend, and wish to use it in the UI, generate the client usin
 npm run generate-client
 ```
 
+### Regenerate as the last commit before you merge — never mid-branch
+
+Two generated files are checked in and both are hard CI gates:
+
+- `docs/api-reference/openapi.json`, dumped by `python -m scripts.dump_docs_openapi`. The
+  pre-PR drift check fails on any diff.
+- `ui/src/client/{types,sdk}.gen.ts` and `index.ts`, rewritten wholesale by `generate-client`.
+
+Three things make the ordering matter rather than being a preference:
+
+1. **`generate-client` needs a live backend.** `openapi-ts.config.ts` reads
+   `${backendUrl}/api/v1/openapi.json` over HTTP, so it reflects whatever is running — not
+   whatever is in your branch. Start the backend on your branch first, or you will regenerate
+   against someone else's schema.
+2. **It is a whole-file rewrite, not a patch.** Two branches that each add an endpoint conflict
+   in a ~400 KB generated JSON every single time, in a file nobody hand-edits and nobody can
+   sensibly review a conflict in.
+3. **The dump has to come first.** `generate-client` reads the spec the running app serves;
+   `dump_docs_openapi` writes the file CI compares against. Regenerating the client from a stale
+   spec produces a client that passes locally and fails the drift gate.
+
+So: do the work, and only when the branch is otherwise final, run both in this order and commit
+the result as one final commit.
+
+```bash
+# with api/.env sourced and the backend running on your branch
+python -m scripts.dump_docs_openapi
+(cd ui && npm run generate-client)
+git add docs/api-reference/openapi.json ui/src/client
+git commit -m "chore: regenerate the API client"
+```
+
+Expect to redo this on every rebase. That is the cost of checking generated files in, and it is
+cheaper than the alternative of not catching drift at all.
+
 ## Conventions
 
 ### File Uploads

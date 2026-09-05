@@ -151,6 +151,10 @@ COPY --chown=rilt:rilt ./api ./api
 #     with the command:[] entries in deploy/helm/rilt/templates/*.yaml.
 #   drain_web.sh             — web pod preStop hook (call-safe scale-down); see
 #     lifecycle.preStop in deploy/helm/rilt/templates/web-deployment.yaml.
+#   grant_superuser.py       - the only way to grant the platform SuperAdmin
+#     tier. Deliberately server-side: the tier spans every tenant, so it is
+#     reachable from no endpoint. Must be in the image so an operator can run
+#     `docker compose exec api python -m scripts.grant_superuser <email>`.
 COPY --chown=rilt:rilt \
      ./scripts/start_services_docker.sh \
      ./scripts/run_migrate.sh \
@@ -159,6 +163,7 @@ COPY --chown=rilt:rilt \
      ./scripts/run_ari_manager.sh \
      ./scripts/run_campaign_orchestrator.sh \
      ./scripts/drain_web.sh \
+     ./scripts/grant_superuser.py \
      ./scripts/
 
 # ts_validator Node deps (built in ts-deps stage with full node:22-slim image).
