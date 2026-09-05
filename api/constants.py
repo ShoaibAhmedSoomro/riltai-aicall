@@ -79,6 +79,14 @@ RILT_MPS_SECRET_KEY = os.getenv("RILT_MPS_SECRET_KEY", None)
 MPS_API_URL = os.getenv("MPS_API_URL", "https://services.dograh.com")
 RILT_DEVOPS_SECRET = os.getenv("RILT_DEVOPS_SECRET") or None
 
+# How long a public recording/transcript link stays valid, in days. These links
+# are unauthenticated bearer URLs -- anyone holding one can fetch the call -- and
+# before this they never expired at all. Tokens minted before expiry existed keep
+# working forever on purpose: their URLs were handed to third parties in webhook
+# payloads and exported CSVs, and the integrations guide tells authors to treat
+# them as durable, so backfilling a deadline would revoke links we promised.
+PUBLIC_ARTIFACT_TOKEN_TTL_DAYS = int(os.getenv("PUBLIC_ARTIFACT_TOKEN_TTL_DAYS") or 7)
+
 # Storage Configuration
 ENABLE_AWS_S3 = os.getenv("ENABLE_AWS_S3", "false").lower() == "true"
 

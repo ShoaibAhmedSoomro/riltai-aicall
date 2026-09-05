@@ -188,6 +188,14 @@ services:
       # live calls with no way to wait them out.
       RILT_DEVOPS_SECRET: "${RILT_DEVOPS_SECRET:-}"
 
+      # How long a public recording/transcript link stays valid, in days.
+      # These are unauthenticated bearer URLs and used to never expire.
+      # Links minted before expiry existed keep working; this only bounds
+      # new ones. Wired through here deliberately -- a setting the API
+      # reads but compose never passes is a setting that silently does
+      # nothing, which is already true of a good many of them.
+      PUBLIC_ARTIFACT_TOKEN_TTL_DAYS: "${PUBLIC_ARTIFACT_TOKEN_TTL_DAYS:-7}"
+
       # Background job concurrency. Defaulted to 1 inside the container, which
       # silently serialised post-call usage/cost/billing jobs and webhooks.
       ARQ_WORKERS: "${ARQ_WORKERS:-2}"

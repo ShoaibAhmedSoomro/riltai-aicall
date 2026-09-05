@@ -1,10 +1,12 @@
 import uuid
+from datetime import UTC, datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload, selectinload
 
+from api.constants import PUBLIC_ARTIFACT_TOKEN_TTL_DAYS
 from api.db.base_client import BaseDBClient
 from api.db.filters import apply_workflow_run_filters, get_workflow_run_order_clause
 from api.db.models import (
@@ -453,13 +455,27 @@ class WorkflowRunClient(BaseDBClient):
             if not run:
                 return None
 
-            # Return existing token if present
-            if run.public_access_token:
-                return run.public_access_token
+            now = datetime.now(UTC)
 
-            # Generate and persist new token
+            # Return the existing token while it is still valid. A NULL expiry
+            # means "never expires" and belongs to tokens minted before expiry
+            # existed -- those URLs are already out in webhook payloads and
+            # exported CSVs, so they keep working.
+            if run.public_access_token:
+                expires = run.public_access_token_expires_at
+                if expires is None or expires > now:
+                    return run.public_access_token
+                # Expired: rotate rather than extend. Extending would let any
+                # authenticated view silently resurrect a link shared months ago,
+                # which would make the expiry meaningless for the only party it
+                # is meant to constrain -- whoever is holding the old URL.
+
+            # Generate and persist a new token
             token = str(uuid.uuid4())
             run.public_access_token = token
+            run.public_access_token_expires_at = now + timedelta(
+                days=PUBLIC_ARTIFACT_TOKEN_TTL_DAYS
+            )
 
             try:
                 await session.commit()
@@ -479,12 +495,28 @@ class WorkflowRunClient(BaseDBClient):
             token: The public access token
 
         Returns:
-            The WorkflowRunModel if found, None otherwise
+            The WorkflowRunModel if found and unexpired, None otherwise
+
+        The single validation choke point for the whole public download surface:
+        the route does no other checking, so the expiry predicate lives here.
+
+        An expired token returns None, which the caller turns into the same 404
+        an unknown token gets. That sameness is deliberate -- the endpoint is
+        unauthenticated and unrate-limited, so distinguishing "expired" from
+        "never existed" would turn it into an oracle for probing token validity.
         """
         async with self.async_session() as session:
             result = await session.execute(
                 select(WorkflowRunModel).where(
-                    WorkflowRunModel.public_access_token == token
+                    WorkflowRunModel.public_access_token == token,
+                    # NULL expiry means never expires: tokens minted before this
+                    # column existed keep working, because their URLs were handed
+                    # to third parties as durable.
+                    or_(
+                        WorkflowRunModel.public_access_token_expires_at.is_(None),
+                        WorkflowRunModel.public_access_token_expires_at
+                        > datetime.now(UTC),
+                    ),
                 )
             )
             return result.scalars().first()

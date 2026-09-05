@@ -674,6 +674,12 @@ class WorkflowRunModel(Base):
     queued_run_id = Column(Integer, ForeignKey("queued_runs.id"), nullable=True)
     queued_run = relationship("QueuedRunModel", foreign_keys=[queued_run_id])
     public_access_token = Column(String(36), nullable=True)
+    # When the token above stops working. NULL means "never", which is what every
+    # token minted before expiry existed keeps: those URLs were handed to third
+    # parties in webhook payloads, integration payloads and exported CSVs, and
+    # api/services/integrations/AGENTS.md tells integration authors to treat them
+    # as durable. Backfilling a deadline would revoke links the product promised.
+    public_access_token_expires_at = Column(DateTime(timezone=True), nullable=True)
     text_session = relationship(
         "WorkflowRunTextSessionModel",
         back_populates="workflow_run",
