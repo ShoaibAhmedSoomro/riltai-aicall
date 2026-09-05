@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Contributor bootstrap. Run this once after cloning your fork.
-# Configures git remotes (origin = your fork, upstream = ShoaibAhmedSoomro/rilt),
+# Configures git remotes (origin = your fork, upstream = ShoaibAhmedSoomro/riltai-aicall),
 # initializes the pipecat submodule, creates the Python venv, and copies
 # the .env templates.
 
@@ -35,7 +35,7 @@ echo -e "${BLUE}[1/4] Configuring git remotes${NC}"
 
 current_origin=$(git remote get-url origin 2>/dev/null || echo "")
 canonical_https="https://github.com/ShoaibAhmedSoomro/riltai-aicall.git"
-canonical_ssh="git@github.com:ShoaibAhmedSoomro/rilt.git"
+canonical_ssh="git@github.com:ShoaibAhmedSoomro/riltai-aicall.git"
 
 # If origin is missing or points at the canonical repo (i.e. user cloned the
 # canonical repo directly without forking), prompt for the fork URL.
@@ -70,7 +70,7 @@ if [[ -z "$existing_upstream" ]]; then
     echo -e "${GREEN}✓ upstream set to $UPSTREAM_URL${NC}"
 elif [[ "$existing_upstream" != "$UPSTREAM_URL" && "$existing_upstream" != "$canonical_ssh" ]]; then
     echo -e "${YELLOW}upstream currently points at $existing_upstream (expected $UPSTREAM_URL).${NC}"
-    echo -e "${YELLOW}Reset upstream to ShoaibAhmedSoomro/rilt? [y/N]:${NC}"
+    echo -e "${YELLOW}Reset upstream to ShoaibAhmedSoomro/riltai-aicall? [y/N]:${NC}"
     read -r -p "> " RESET_UPSTREAM
     if [[ "$RESET_UPSTREAM" =~ ^[Yy] ]]; then
         git remote set-url upstream "$UPSTREAM_URL"

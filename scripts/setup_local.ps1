@@ -117,8 +117,8 @@ function Download-File([string]$Url, [string]$Destination) {
 }
 
 function Download-BundleFileForRef([string]$Destination, [string]$RemotePath, [string]$Ref) {
-    $rawBase = "https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/$Ref"
-    $fallbackBase = 'https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main'
+    $rawBase = "https://raw.githubusercontent.com/ShoaibAhmedSoomro/riltai-aicall/$Ref"
+    $fallbackBase = 'https://raw.githubusercontent.com/ShoaibAhmedSoomro/riltai-aicall/main'
 
     try {
         Download-File "$rawBase/$RemotePath" $Destination
@@ -225,7 +225,7 @@ if ($env:RILT_SKIP_DOWNLOAD -ne '1') {
         Write-Info "[1/$TotalSteps] Downloading docker-compose.yaml..."
     }
 
-    Download-File 'https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/docker-compose.yaml' (Join-Path $CurrentDir 'docker-compose.yaml')
+    Download-File 'https://raw.githubusercontent.com/ShoaibAhmedSoomro/riltai-aicall/main/docker-compose.yaml' (Join-Path $CurrentDir 'docker-compose.yaml')
     if ($UseCoturn) {
         Download-InitSupportBundle $CurrentDir 'main'
     }
@@ -296,7 +296,7 @@ Write-Success '╔════════════════════�
 Write-Success '║                    Setup Complete!                           ║'
 Write-Success '╚══════════════════════════════════════════════════════════════╝'
 Write-Host ''
-Write-Host "Files created in $CurrentDir:" -ForegroundColor Blue
+Write-Host "Files created in ${CurrentDir}:" -ForegroundColor Blue
 Write-Host '  - docker-compose.yaml'
 Write-Host '  - .env'
 if ($UseCoturn) {

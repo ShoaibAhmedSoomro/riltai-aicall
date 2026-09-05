@@ -14,7 +14,7 @@ BOOTSTRAP_LIB=""
 
 if [[ ! -f "$LIB_PATH" ]]; then
     BOOTSTRAP_LIB="$(mktemp)"
-    curl -fsSL -o "$BOOTSTRAP_LIB" "https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/scripts/lib/setup_common.sh"
+    curl -fsSL -o "$BOOTSTRAP_LIB" "https://raw.githubusercontent.com/ShoaibAhmedSoomro/riltai-aicall/main/scripts/lib/setup_common.sh"
     LIB_PATH="$BOOTSTRAP_LIB"
 fi
 
@@ -182,10 +182,10 @@ if [[ "$DEPLOY_MODE" == "build" ]]; then
             if [[ -t 0 ]]; then
                 echo ""
                 echo -e "${YELLOW}GitHub repo to clone (format: owner/name):${NC}"
-                read -p "[ShoaibAhmedSoomro/rilt]: " FORK_REPO
-                FORK_REPO="${FORK_REPO:-ShoaibAhmedSoomro/rilt}"
+                read -p "[ShoaibAhmedSoomro/riltai-aicall]: " FORK_REPO
+                FORK_REPO="${FORK_REPO:-ShoaibAhmedSoomro/riltai-aicall}"
             else
-                FORK_REPO="ShoaibAhmedSoomro/rilt"
+                FORK_REPO="ShoaibAhmedSoomro/riltai-aicall"
             fi
         fi
 
@@ -293,7 +293,7 @@ else
         cd rilt
 
         echo -e "${BLUE}[1/$TOTAL] Downloading deployment bundle...${NC}"
-        curl -fsSL -o docker-compose.yaml "https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/docker-compose.yaml"
+        curl -fsSL -o docker-compose.yaml "https://raw.githubusercontent.com/ShoaibAhmedSoomro/riltai-aicall/main/docker-compose.yaml"
         rilt_download_remote_support_bundle "$(pwd)" "main"
         echo -e "${GREEN}✓ Deployment bundle downloaded${NC}"
     else

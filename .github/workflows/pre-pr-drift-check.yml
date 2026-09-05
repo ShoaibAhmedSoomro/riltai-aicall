@@ -87,3 +87,24 @@ jobs:
             exit 1
           fi
           echo "OpenAPI spec is in sync."
+
+      # Two heads make `alembic upgrade head` fail inside the api container's
+      # own CMD, which restart: unless-stopped turns into a production crash
+      # loop with no old version still serving. Catch it on the PR instead.
+      - name: Check for a single alembic head
+        run: python scripts/check_alembic_heads.py
+
+      # The UI is only ever compiled inside ui/Dockerfile during the release
+      # image build, so a change that lints clean but fails to compile passes
+      # both PR gates and first breaks after the version has been cut. These
+      # env values mirror ui/Dockerfile so the CI build matches the shipped one.
+      - name: Build the UI
+        working-directory: ui
+        env:
+          NEXT_PUBLIC_NODE_ENV: "oss"
+          NEXT_TELEMETRY_DISABLED: "1"
+          NEXT_PUBLIC_CHATWOOT_URL: ""
+          NEXT_PUBLIC_CHATWOOT_TOKEN: ""
+          BACKEND_URL: "http://api:8000"
+          NODE_OPTIONS: "--max-old-space-size=4096"
+        run: npm run build

@@ -14,7 +14,7 @@ BOOTSTRAP_LIB=""
 
 if [[ ! -f "$LIB_PATH" ]]; then
     BOOTSTRAP_LIB="$(mktemp)"
-    curl -fsSL -o "$BOOTSTRAP_LIB" "https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/scripts/lib/setup_common.sh"
+    curl -fsSL -o "$BOOTSTRAP_LIB" "https://raw.githubusercontent.com/ShoaibAhmedSoomro/riltai-aicall/main/scripts/lib/setup_common.sh"
     LIB_PATH="$BOOTSTRAP_LIB"
 fi
 
@@ -53,7 +53,7 @@ if [[ ! -d "rilt" ]]; then
     echo -e "${RED}Error: 'rilt' directory not found.${NC}"
     echo -e "${YELLOW}Please run this script from the directory containing your AICall installation.${NC}"
     echo -e "${YELLOW}If you haven't set up AICall yet, run the remote setup first:${NC}"
-    echo -e "${BLUE}  curl -o setup_remote.sh https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/scripts/setup_remote.sh && chmod +x setup_remote.sh && sudo ./setup_remote.sh${NC}"
+    echo -e "${BLUE}  curl -o setup_remote.sh https://raw.githubusercontent.com/ShoaibAhmedSoomro/riltai-aicall/main/scripts/setup_remote.sh && chmod +x setup_remote.sh && sudo ./setup_remote.sh${NC}"
     exit 1
 fi
 

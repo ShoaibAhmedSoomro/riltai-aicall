@@ -76,7 +76,7 @@
 > リモートサーバーでプラットフォームを実行したい場合は、[ドキュメント](https://docs.rilt.ai/deployment/docker#option-2:-remote-server-deployment)を参照してください。
 
 ```bash
-curl -o docker-compose.yaml https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/docker-compose.yaml && curl -o start_docker.sh https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/scripts/start_docker.sh && chmod +x start_docker.sh && ./start_docker.sh
+curl -o docker-compose.yaml https://raw.githubusercontent.com/ShoaibAhmedSoomro/riltai-aicall/main/docker-compose.yaml && curl -o start_docker.sh https://raw.githubusercontent.com/ShoaibAhmedSoomro/riltai-aicall/main/scripts/start_docker.sh && chmod +x start_docker.sh && ./start_docker.sh
 ```
 
 > **⚡ AI エージェントにセットアップを任せたいですか?**

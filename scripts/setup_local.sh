@@ -14,7 +14,7 @@ BOOTSTRAP_LIB=""
 
 if [[ ! -f "$LIB_PATH" ]]; then
     BOOTSTRAP_LIB="$(mktemp)"
-    curl -fsSL -o "$BOOTSTRAP_LIB" "https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/scripts/lib/setup_common.sh"
+    curl -fsSL -o "$BOOTSTRAP_LIB" "https://raw.githubusercontent.com/ShoaibAhmedSoomro/riltai-aicall/main/scripts/lib/setup_common.sh"
     LIB_PATH="$BOOTSTRAP_LIB"
 fi
 
@@ -131,7 +131,7 @@ if [[ "${RILT_SKIP_DOWNLOAD:-}" != "1" ]]; then
     else
         echo -e "${BLUE}[1/$TOTAL_STEPS] Downloading docker-compose.yaml...${NC}"
     fi
-    curl -sS -o docker-compose.yaml https://raw.githubusercontent.com/ShoaibAhmedSoomro/rilt/main/docker-compose.yaml
+    curl -sS -o docker-compose.yaml https://raw.githubusercontent.com/ShoaibAhmedSoomro/riltai-aicall/main/docker-compose.yaml
     if [[ "${ENABLE_COTURN:-false}" == "true" ]]; then
         rilt_download_init_support_bundle "$(pwd)" "main"
     fi
