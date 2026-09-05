@@ -45,7 +45,7 @@ class _State:
     them apart."""
 
     def __init__(self):
-        self.counts = [0]      # popped left to right; the last value repeats
+        self.counts = [0]  # popped left to right; the last value repeats
         self.status = 200
 
 
@@ -57,7 +57,11 @@ def _handler_for(state):
             if state.status != 200:
                 self.send_error(state.status)
                 return
-            n = state.counts.pop(0) if len(state.counts) > 1 else (state.counts[0] if state.counts else 0)
+            n = (
+                state.counts.pop(0)
+                if len(state.counts) > 1
+                else (state.counts[0] if state.counts else 0)
+            )
             body = f'{{"active_calls":{n},"loop_lag_p95_ms":0,"loop_lag_max_ms":0}}'.encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -109,13 +113,15 @@ def pair():
             try:
                 b = _serve(base + 1, s1)
             except OSError:
-                a.shutdown(); a.server_close()
+                a.shutdown()
+                a.server_close()
                 continue
             try:
                 yield base, s0, s1
             finally:
                 for srv in (a, b):
-                    srv.shutdown(); srv.server_close()
+                    srv.shutdown()
+                    srv.server_close()
             return
         except OSError:
             continue
@@ -130,8 +136,19 @@ def run_drain(port, workers=1, max_wait=6, interval=1, secret="s"):
     env.pop("http_proxy", None)
     env["NO_PROXY"] = "127.0.0.1,localhost"
     return subprocess.run(
-        [sys.executable, "-c", drain_source(), str(port), str(workers), str(max_wait), str(interval)],
-        capture_output=True, text=True, timeout=max_wait + 25, env=env,
+        [
+            sys.executable,
+            "-c",
+            drain_source(),
+            str(port),
+            str(workers),
+            str(max_wait),
+            str(interval),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=max_wait + 25,
+        env=env,
     )
 
 
@@ -145,7 +162,7 @@ def test_returns_immediately_when_nothing_in_flight(worker):
 
 def test_waits_while_calls_are_live_then_drains(worker):
     port, w = worker
-    w.counts = [2, 1, 0]           # busy, busy, then clear
+    w.counts = [2, 1, 0]  # busy, busy, then clear
     r = run_drain(port)
     # "call(s) in flight" only appears on the busy branch. Matching bare
     # "in flight" would also match the success line "drained: no calls in
@@ -156,7 +173,7 @@ def test_waits_while_calls_are_live_then_drains(worker):
 
 def test_gives_up_after_max_wait_rather_than_hanging(worker):
     port, w = worker
-    w.counts = [1]                 # never clears
+    w.counts = [1]  # never clears
     r = run_drain(port, max_wait=3)
     assert "timed out" in r.stdout, r.stdout
     assert r.returncode == 0, "must not fail the shutdown path"
@@ -184,7 +201,7 @@ def test_a_port_with_no_listener_is_not_counted_as_busy():
     s = socket.socket()
     s.bind(("127.0.0.1", 0))
     dead = s.getsockname()[1]
-    s.close()                       # nothing is listening on `dead` now
+    s.close()  # nothing is listening on `dead` now
     r = run_drain(dead, max_wait=4)
     assert "drained" in r.stdout, r.stdout
 
@@ -204,7 +221,7 @@ def test_a_worker_that_never_answers_counts_as_busy():
     # A generous backlog: with listen(1) the queue fills on the first poll and
     # the next connect is refused, which flips the stub into the *other* case
     # mid-test and makes it flaky.
-    hole.listen(50)                 # accepts the TCP connect, answers nothing
+    hole.listen(50)  # accepts the TCP connect, answers nothing
     port = hole.getsockname()[1]
     try:
         r = run_drain(port, max_wait=6)
@@ -231,8 +248,8 @@ def test_polls_every_worker_port_not_just_the_base(pair):
     for and never prints the busy line.
     """
     base, idle, busy = pair
-    idle.counts = [0]              # base port: nothing in flight
-    busy.counts = [3, 3, 0]        # base+1: busy, busy, then clear
+    idle.counts = [0]  # base port: nothing in flight
+    busy.counts = [3, 3, 0]  # base+1: busy, busy, then clear
     r = run_drain(base, workers=2, max_wait=10)
     assert "call(s) in flight" in r.stdout, (
         f"drain did not notice the busy worker on {base + 1}:\n{r.stdout}"

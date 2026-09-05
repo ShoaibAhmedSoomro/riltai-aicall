@@ -10,7 +10,10 @@ from pydantic import BaseModel, Field
 from api.constants import DEPLOYMENT_MODE, UI_APP_URL
 from api.db import db_client
 from api.db.models import UserModel
-from api.services.auth.depends import get_user, get_user_with_selected_organization
+from api.services.auth.depends import (
+    get_user,
+    require_admin,
+)
 from api.services.mps_service_key_client import mps_service_key_client
 from api.services.reports import generate_usage_runs_report_csv
 from api.utils.artifacts import artifact_url
@@ -284,7 +287,7 @@ async def get_billing_credits(
     response_model=MPSCreditPurchaseUrlResponse,
 )
 async def create_mps_credit_purchase_url(
-    user: UserModel = Depends(get_user_with_selected_organization),
+    user: UserModel = Depends(require_admin),
 ):
     """Create a checkout URL for purchasing organization credits."""
     if DEPLOYMENT_MODE == "oss":

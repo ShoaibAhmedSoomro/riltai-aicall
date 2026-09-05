@@ -483,7 +483,7 @@ async def get_model_configuration_pricing(
 )
 async def save_model_configuration_v2(
     request: OrganizationAIModelConfigurationV2,
-    user: UserModel = Depends(get_user_with_selected_organization),
+    user: UserModel = Depends(require_admin),
 ):
     organization_id = user.selected_organization_id
     existing = await get_organization_ai_model_configuration_v2(organization_id)
@@ -532,7 +532,7 @@ async def preview_model_configuration_v2_migration(
 )
 async def migrate_model_configuration_v2(
     force: bool = Query(default=False),
-    user: UserModel = Depends(get_user_with_selected_organization),
+    user: UserModel = Depends(require_admin),
 ):
     organization_id = user.selected_organization_id
     existing = await get_organization_ai_model_configuration_v2(organization_id)
@@ -910,7 +910,7 @@ async def list_telephony_configurations(user: UserModel = Depends(get_user)):
 @router.post("/telephony-configs", response_model=TelephonyConfigurationDetail)
 async def create_telephony_configuration(
     request: TelephonyConfigurationCreateRequest,
-    user: UserModel = Depends(get_user),
+    user: UserModel = Depends(require_admin),
 ):
     """Create a new telephony configuration for the org."""
     if not user.selected_organization_id:
@@ -977,7 +977,7 @@ async def get_telephony_configuration_by_id(
 async def update_telephony_configuration(
     config_id: int,
     request: TelephonyConfigurationUpdateRequest,
-    user: UserModel = Depends(get_user),
+    user: UserModel = Depends(require_admin),
 ):
     if not user.selected_organization_id:
         raise HTTPException(status_code=400, detail="No organization selected")
@@ -1037,7 +1037,9 @@ async def update_telephony_configuration(
     "/telephony-configs/{config_id}/set-default-outbound",
     response_model=TelephonyConfigurationDetail,
 )
-async def set_default_outbound(config_id: int, user: UserModel = Depends(get_user)):
+async def set_default_outbound(
+    config_id: int, user: UserModel = Depends(require_admin)
+):
     if not user.selected_organization_id:
         raise HTTPException(status_code=400, detail="No organization selected")
 
@@ -1054,7 +1056,7 @@ async def set_default_outbound(config_id: int, user: UserModel = Depends(get_use
     response_model=TelephonyConfigurationDetail,
 )
 async def reactivate_telephony_configuration(
-    config_id: int, user: UserModel = Depends(get_user)
+    config_id: int, user: UserModel = Depends(require_admin)
 ):
     """Clear the inactive flag so connection workers pick the config up again.
 
@@ -1081,7 +1083,7 @@ async def reactivate_telephony_configuration(
 
 @router.delete("/telephony-configs/{config_id}")
 async def delete_telephony_configuration(
-    config_id: int, user: UserModel = Depends(get_user)
+    config_id: int, user: UserModel = Depends(require_admin)
 ):
     if not user.selected_organization_id:
         raise HTTPException(status_code=400, detail="No organization selected")
@@ -1234,7 +1236,7 @@ async def list_telephony_trunks(config_id: int, user: UserModel = Depends(get_us
 async def create_telephony_trunk(
     config_id: int,
     request: TrunkCreateRequest,
-    user: UserModel = Depends(get_user),
+    user: UserModel = Depends(require_admin),
 ):
     if not user.selected_organization_id:
         raise HTTPException(status_code=400, detail="No organization selected")
@@ -1277,7 +1279,7 @@ async def update_telephony_trunk(
     config_id: int,
     trunk_id: int,
     request: TrunkUpdateRequest,
-    user: UserModel = Depends(get_user),
+    user: UserModel = Depends(require_admin),
 ):
     if not user.selected_organization_id:
         raise HTTPException(status_code=400, detail="No organization selected")
@@ -1333,7 +1335,7 @@ async def update_telephony_trunk(
 
 @router.delete("/telephony-configs/{config_id}/trunks/{trunk_id}")
 async def delete_telephony_trunk(
-    config_id: int, trunk_id: int, user: UserModel = Depends(get_user)
+    config_id: int, trunk_id: int, user: UserModel = Depends(require_admin)
 ):
     if not user.selected_organization_id:
         raise HTTPException(status_code=400, detail="No organization selected")
@@ -1428,7 +1430,7 @@ async def list_phone_numbers(config_id: int, user: UserModel = Depends(get_user)
 async def create_phone_number(
     config_id: int,
     request: PhoneNumberCreateRequest,
-    user: UserModel = Depends(get_user),
+    user: UserModel = Depends(require_admin),
 ):
     if not user.selected_organization_id:
         raise HTTPException(status_code=400, detail="No organization selected")
@@ -1522,7 +1524,7 @@ async def update_phone_number(
     config_id: int,
     phone_number_id: int,
     request: PhoneNumberUpdateRequest,
-    user: UserModel = Depends(get_user),
+    user: UserModel = Depends(require_admin),
 ):
     if not user.selected_organization_id:
         raise HTTPException(status_code=400, detail="No organization selected")
@@ -1575,7 +1577,7 @@ async def update_phone_number(
 async def set_default_caller_id(
     config_id: int,
     phone_number_id: int,
-    user: UserModel = Depends(get_user),
+    user: UserModel = Depends(require_admin),
 ):
     if not user.selected_organization_id:
         raise HTTPException(status_code=400, detail="No organization selected")
@@ -1591,7 +1593,7 @@ async def set_default_caller_id(
 async def delete_phone_number(
     config_id: int,
     phone_number_id: int,
-    user: UserModel = Depends(get_user),
+    user: UserModel = Depends(require_admin),
 ):
     if not user.selected_organization_id:
         raise HTTPException(status_code=400, detail="No organization selected")
@@ -1669,7 +1671,7 @@ async def get_langfuse_credentials(user: UserModel = Depends(get_user)):
 @router.post("/langfuse-credentials")
 async def save_langfuse_credentials(
     request: LangfuseCredentialsRequest,
-    user: UserModel = Depends(get_user),
+    user: UserModel = Depends(require_admin),
 ):
     """Save Langfuse credentials for the user's organization."""
     if not user.selected_organization_id:
@@ -1711,7 +1713,7 @@ async def save_langfuse_credentials(
 
 
 @router.delete("/langfuse-credentials")
-async def delete_langfuse_credentials(user: UserModel = Depends(get_user)):
+async def delete_langfuse_credentials(user: UserModel = Depends(require_admin)):
     """Delete Langfuse credentials for the user's organization."""
     if not user.selected_organization_id:
         raise HTTPException(status_code=400, detail="No organization selected")

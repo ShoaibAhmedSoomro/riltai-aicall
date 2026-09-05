@@ -100,7 +100,9 @@ async def test_missing_membership_row_resolves_to_admin(monkeypatch):
 
 def _patch_members(monkeypatch, members, admins, updated=True):
     monkeypatch.setattr(
-        org_routes.db_client, "get_organization_members", AsyncMock(return_value=members)
+        org_routes.db_client,
+        "get_organization_members",
+        AsyncMock(return_value=members),
     )
     monkeypatch.setattr(
         org_routes.db_client, "count_admins", AsyncMock(return_value=admins)

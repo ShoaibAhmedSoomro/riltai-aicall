@@ -17,7 +17,7 @@ from api.schemas.workflow_configurations import (
     WorkflowConfigurationDefaults,
     get_default_workflow_configurations,
 )
-from api.services.auth.depends import get_user
+from api.services.auth.depends import get_user, require_admin
 from api.services.configuration.ai_model_configuration import (
     convert_legacy_ai_model_configuration_to_v2,
     get_resolved_ai_model_configuration,
@@ -166,7 +166,7 @@ async def get_user_configurations(
 @router.put("/configurations/user")
 async def update_user_configurations(
     request: UserConfigurationRequestResponseSchema,
-    user: UserModel = Depends(get_user),
+    user: UserModel = Depends(require_admin),
 ) -> UserConfigurationRequestResponseSchema:
     existing_config = (
         await get_resolved_ai_model_configuration(
@@ -361,7 +361,7 @@ async def get_api_keys(
 @router.post("/api-keys")
 async def create_api_key(
     request: CreateAPIKeyRequest,
-    user: UserModel = Depends(get_user),
+    user: UserModel = Depends(require_admin),
 ) -> CreateAPIKeyResponse:
     """Create a new API key for the user's selected organization."""
     if not user.selected_organization_id:
@@ -385,7 +385,7 @@ async def create_api_key(
 @router.delete("/api-keys/{api_key_id}")
 async def archive_api_key(
     api_key_id: int,
-    user: UserModel = Depends(get_user),
+    user: UserModel = Depends(require_admin),
 ) -> dict:
     """Archive an API key (soft delete)."""
     if not user.selected_organization_id:
@@ -408,7 +408,7 @@ async def archive_api_key(
 @router.put("/api-keys/{api_key_id}/reactivate")
 async def reactivate_api_key(
     api_key_id: int,
-    user: UserModel = Depends(get_user),
+    user: UserModel = Depends(require_admin),
 ) -> dict:
     """Reactivate an archived API key."""
     if not user.selected_organization_id:
