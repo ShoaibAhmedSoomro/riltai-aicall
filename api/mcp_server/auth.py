@@ -3,14 +3,25 @@ from fastmcp.server.dependencies import get_http_headers
 from opentelemetry import trace
 
 from api.db.models import UserModel
-from api.services.auth.depends import _handle_api_key_auth
+from api.services.auth.depends import _handle_api_key_auth, require_admin
 
 
-async def authenticate_mcp_request() -> UserModel:
+async def authenticate_mcp_request(*, require_admin_role: bool = False) -> UserModel:
     """Resolve the authenticated AICall user for an MCP tool invocation.
 
     Accepts either `X-API-Key: <key>` or `Authorization: Bearer <key>`,
     reusing the API-key flow from `api.services.auth.depends`.
+
+    Pass ``require_admin_role=True`` for any tool whose REST equivalent is
+    gated on ``require_admin``. This surface is a mounted sub-application, not
+    a set of FastAPI routes, so a route dependency does not reach it — without
+    this a tool added here would bypass a gate its REST twin enforces. No tool
+    needs it today; every one of them maps to member-level work.
+
+    It delegates to the same ``require_admin`` used by the REST routes rather
+    than re-deriving the rule, so the two cannot drift: superusers pass, and a
+    missing membership row resolves to admin (API-key auth sets the org in
+    memory without requiring a row to exist).
 
     Tags the currently-active OTel span with the resolved organization
     and user identifiers. `_OrgRoutingExporter` reads `rilt.org_id`
@@ -32,6 +43,13 @@ async def authenticate_mcp_request() -> UserModel:
             detail="Missing API key — send X-API-Key or Authorization: Bearer <key>",
         )
     user = await _handle_api_key_auth(api_key)
+
+    if require_admin_role:
+        # Raises 403 when the caller is not an org admin. Checked after the key
+        # resolves a user, because the role is a property of that user in the
+        # key's organization -- and re-resolved on every call, so demoting
+        # someone takes effect without having to hunt down their API keys.
+        await require_admin(user)
 
     span = trace.get_current_span()
     if span.is_recording():
