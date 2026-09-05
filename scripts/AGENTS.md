@@ -21,6 +21,8 @@ Bash-only (deployment / CI / OSS-user setup — not intended for Windows contrib
 - `setup_remote.sh` — OSS remote Docker-compose setup
 - `format.sh` / `lint.sh` / `pre_commit.sh`
 - `generate_sdk.sh` / `release_sdks.sh` / `dump_docs_openapi.py`
+- `backup.sh` — dump/verify/restore Postgres + MinIO on a compose install. Server-side ops, so no `.ps1` pair; it drives `docker compose` from the repo root and is meant to run from cron. Documented in `docs/deployment/update.mdx`.
+- `check_alembic_heads.py` — CI gate, run by `pre-pr-drift-check.yml`. Fails on more than one migration head, because `alembic upgrade head` runs inside the api container's CMD and a second head becomes a restart loop rather than a failed deploy. `--self-check` proves the logic against synthetic graphs.
 - `setup-worktree.sh` / `worktree-sync-env.sh` — VS Code git-worktree dev flow (`.vscode/tasks.json`)
 
 ## Deployment Memory — current OSS Docker state
