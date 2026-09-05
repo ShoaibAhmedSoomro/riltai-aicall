@@ -10,8 +10,6 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     environment: production
     steps:
       - name: Checkout code
@@ -65,21 +63,3 @@ jobs:
               body: context.payload.release.body +
                     '\n\n---\n🚀 **Deployed to Production:** ' + deployment_url
             });
-
-      - name: Send Slack notification - Success
-        if: success() && env.SLACK_WEBHOOK_URL != ''
-        uses: slackapi/slack-github-action@v1.26.0
-        with:
-          payload: |
-            {
-              "text": "✅ AICall Dashboard - Vercel Deployment Successful - ${{ steps.deploy.outputs.deployment_url || 'URL not captured' }} on ${{ github.ref_name }} by ${{ github.actor }} - <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
-            }
-
-      - name: Send Slack notification - Failure
-        if: failure() && env.SLACK_WEBHOOK_URL != ''
-        uses: slackapi/slack-github-action@v1.26.0
-        with:
-          payload: |
-            {
-              "text": "❌ AICall Dashboard - Vercel Deployment Failed on ${{ github.ref_name }} by ${{ github.actor }} - <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
-            }
