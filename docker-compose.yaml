@@ -166,6 +166,13 @@ services:
     # Survive a host reboot. Previously absent, so a reboot left the
     # whole stack down until someone ran remote_up.sh by hand.
     restart: unless-stopped
+    # Give the entrypoint's drain time to let in-flight calls finish before
+    # Docker SIGKILLs it. Without this the default is 10s, which is shorter
+    # than any real call, so every deploy cut live conversations regardless of
+    # what the drain did. Must stay comfortably above DRAIN_MAX_WAIT (default
+    # 300s in scripts/start_services_docker.sh) -- raise BOTH or neither, or
+    # the drain gets killed halfway and you are back where you started.
+    stop_grace_period: 330s
     environment:
       # Core application config
       ENVIRONMENT: "${ENVIRONMENT:-local}"
