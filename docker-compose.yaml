@@ -196,6 +196,9 @@ services:
       # nothing, which is already true of a good many of them.
       PUBLIC_ARTIFACT_TOKEN_TTL_DAYS: "${PUBLIC_ARTIFACT_TOKEN_TTL_DAYS:-7}"
 
+      # How long an organization invite stays acceptable, in days.
+      ORG_INVITE_TTL_DAYS: "${ORG_INVITE_TTL_DAYS:-7}"
+
       # Background job concurrency. Defaulted to 1 inside the container, which
       # silently serialised post-call usage/cost/billing jobs and webhooks.
       ARQ_WORKERS: "${ARQ_WORKERS:-2}"

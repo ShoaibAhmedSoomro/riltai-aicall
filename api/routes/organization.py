@@ -7,6 +7,7 @@ from pydantic import (
     AliasChoices,
     BaseModel,
     ConfigDict,
+    EmailStr,
     Field,
     ValidationError,
 )
@@ -18,6 +19,10 @@ from api.constants import (
 )
 from api.db import db_client
 from api.db.models import UserModel
+from api.db.organization_invite_client import (
+    InviteConflictError,
+    normalize_invite_email,
+)
 from api.db.telephony_configuration_client import (
     TelephonyConfigurationConflictError,
     TelephonyConfigurationInUseError,
@@ -1961,3 +1966,108 @@ async def update_member_role(
         is_superuser=bool(member.is_superuser),
         is_self=(member.id == user.id),
     )
+
+
+class OrganizationInviteResponse(BaseModel):
+    """A pending invitation. The token is deliberately NOT exposed.
+
+    Nothing can deliver an invite yet -- there is no email capability -- and
+    returning the token here would turn this into a copy-a-link flow by the back
+    door, which is not the shape that was chosen. It is stored so that adding
+    email later is the sending step and nothing else.
+    """
+
+    id: int
+    email: str
+    role: str
+    created_at: Optional[str] = None
+    expires_at: Optional[str] = None
+    invited_by_email: Optional[str] = None
+
+
+class CreateInviteRequest(BaseModel):
+    email: EmailStr
+    # Defaults to the lesser tier so the safe option is the one you get by not
+    # thinking about it.
+    role: OrgRole = OrgRole.MEMBER
+
+
+@router.get("/invites", response_model=List[OrganizationInviteResponse])
+async def list_invites(user: UserModel = Depends(require_admin)):
+    """Invitations still outstanding for this organization."""
+    invites = await db_client.list_invites(user.selected_organization_id)
+    inviters = {
+        m.id: m.email
+        for m, _ in await db_client.get_organization_members(
+            user.selected_organization_id
+        )
+    }
+    return [
+        OrganizationInviteResponse(
+            id=i.id,
+            email=i.email,
+            role=i.role,
+            created_at=i.created_at.isoformat() if i.created_at else None,
+            expires_at=i.expires_at.isoformat() if i.expires_at else None,
+            invited_by_email=inviters.get(i.invited_by),
+        )
+        for i in invites
+    ]
+
+
+@router.post("/invites", response_model=OrganizationInviteResponse, status_code=201)
+async def create_invite(
+    request: CreateInviteRequest,
+    user: UserModel = Depends(require_admin),
+):
+    """Invite someone to join this organization.
+
+    Records the invitation; it does not send it. There is no email capability in
+    this codebase, so until one exists the invite sits here unaccepted. That is
+    a deliberate staging decision rather than an oversight -- see the model.
+    """
+    organization_id = user.selected_organization_id
+    email = normalize_invite_email(request.email)
+
+    # Inviting someone already in the org is a mistake worth naming rather than
+    # a second membership row to reconcile later.
+    members = await db_client.get_organization_members(organization_id)
+    if any((m.email or "").lower() == email for m, _ in members):
+        raise HTTPException(
+            status_code=409, detail="That person is already in this organization."
+        )
+
+    try:
+        invite = await db_client.create_invite(
+            organization_id=organization_id,
+            email=email,
+            role=request.role.value,
+            invited_by=user.id,
+        )
+    except InviteConflictError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+
+    return OrganizationInviteResponse(
+        id=invite.id,
+        email=invite.email,
+        role=invite.role,
+        created_at=invite.created_at.isoformat() if invite.created_at else None,
+        expires_at=invite.expires_at.isoformat() if invite.expires_at else None,
+        invited_by_email=user.email,
+    )
+
+
+@router.delete("/invites/{invite_id}", status_code=204)
+async def revoke_invite(
+    invite_id: int,
+    user: UserModel = Depends(require_admin),
+):
+    """Withdraw an invitation that has not been accepted."""
+    # Scoped by organization: invite_id arrives from a URL and proves nothing
+    # about ownership on its own.
+    revoked = await db_client.revoke_invite(invite_id, user.selected_organization_id)
+    if not revoked:
+        raise HTTPException(
+            status_code=404,
+            detail="No pending invite with that id in this organization",
+        )

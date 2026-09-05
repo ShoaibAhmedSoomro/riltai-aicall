@@ -956,6 +956,55 @@ class QueuedRunModel(Base):
     )
 
 
+class OrganizationInviteModel(Base):
+    """A pending invitation for someone to join an organization.
+
+    Delivery is deliberately not part of this: there is no email capability in
+    the codebase, so nothing sends the token yet. The record and the token exist
+    so that adding email later is only the sending step, not a redesign.
+
+    The token is generated even though nothing transmits it, because an invite
+    without one is not acceptable later without a migration.
+    """
+
+    __tablename__ = "organization_invites"
+
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(
+        Integer,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # Stored lowercased and stripped. Every other email lookup in this codebase
+    # is an exact match, so an invite for "A@x.com" would never be found by a
+    # signup as "a@x.com" without normalising at the boundary.
+    email = Column(String(320), nullable=False, index=True)
+    role = Column(String(32), nullable=False, server_default="member")
+    token = Column(String(64), unique=True, nullable=False, index=True)
+    invited_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    # Both nullable and both terminal: an invite is pending only while each is
+    # NULL. Kept rather than deleted so "who invited whom, and what happened"
+    # survives, which is the first question asked when access is disputed.
+    accepted_at = Column(DateTime(timezone=True), nullable=True)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        # At most one LIVE invite per address per org. Partial, so a revoked or
+        # accepted invite does not block re-inviting the same person -- which
+        # someone will need to do the first time an invite expires.
+        Index(
+            "uq_org_invite_pending_email",
+            "organization_id",
+            "email",
+            unique=True,
+            postgresql_where=text("accepted_at IS NULL AND revoked_at IS NULL"),
+        ),
+    )
+
+
 class EmbedTokenModel(Base):
     """Model for storing workflow embed tokens"""
 

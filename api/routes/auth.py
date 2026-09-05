@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from api.constants import ENABLE_SIGNUP
 from api.db import db_client
 from api.db.models import UserModel
-from api.enums import PostHogEvent
+from api.enums import OrgRole, PostHogEvent
 from api.schemas.auth import (
     AuthResponse,
     LoginRequest,
@@ -55,7 +55,28 @@ def _user_response(
     dependencies=[Depends(require_local_auth)],
 )
 async def signup(request: SignupRequest):
-    if not ENABLE_SIGNUP:
+    # An invite is resolved first because it decides two things: whether signup
+    # is permitted at all on an invite-only install, and which organization the
+    # new user lands in.
+    invite = None
+    if request.invite_token:
+        invite = await db_client.get_acceptable_invite(request.invite_token)
+        if invite is None:
+            # One message for unknown, revoked, already-used and expired. The
+            # endpoint is unauthenticated, so distinguishing them would let
+            # anyone probe which tokens exist.
+            raise HTTPException(
+                status_code=400, detail="This invitation is no longer valid."
+            )
+        if invite.email != request.email.strip().lower():
+            raise HTTPException(
+                status_code=400,
+                detail="This invitation was sent to a different email address.",
+            )
+
+    # ENABLE_SIGNUP=false means invite-only, not closed: an invitation is exactly
+    # the permission that flag is withholding from the general public.
+    if not ENABLE_SIGNUP and invite is None:
         raise HTTPException(status_code=403, detail="Signup is disabled")
 
     # Check if email is already taken
@@ -71,14 +92,36 @@ async def signup(request: SignupRequest):
         name=request.name,
     )
 
-    # Create organization for the user
-    org_provider_id = f"org_{user.provider_id}"
-    organization, _ = await db_client.get_or_create_organization_by_provider_id(
-        org_provider_id=org_provider_id, user_id=user.id
-    )
+    if invite is not None:
+        # Join the inviting organization instead of creating a personal one.
+        # Consume the invite BEFORE linking: mark_invite_accepted is conditional
+        # on the row still being pending, so two concurrent signups on one token
+        # cannot both produce a membership.
+        if not await db_client.mark_invite_accepted(invite.id):
+            raise HTTPException(
+                status_code=400, detail="This invitation is no longer valid."
+            )
+        organization = await db_client.get_organization_by_id(invite.organization_id)
+        if organization is None:
+            raise HTTPException(
+                status_code=400, detail="The inviting organization no longer exists."
+            )
+        await db_client.add_user_to_organization(
+            user.id, organization.id, role=invite.role
+        )
+    else:
+        # Create organization for the user
+        org_provider_id = f"org_{user.provider_id}"
+        organization, _ = await db_client.get_or_create_organization_by_provider_id(
+            org_provider_id=org_provider_id, user_id=user.id
+        )
 
-    # Link user to organization
-    await db_client.add_user_to_organization(user.id, organization.id)
+        # Link user to organization. Explicitly admin: this person created the
+        # organization, so they must be able to administer it.
+        await db_client.add_user_to_organization(
+            user.id, organization.id, role=OrgRole.ADMIN.value
+        )
+
     await db_client.update_user_selected_organization(user.id, organization.id)
 
     # Create default service configuration. This never raises, so signup still

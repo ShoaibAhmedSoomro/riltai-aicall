@@ -90,6 +90,12 @@ PUBLIC_ARTIFACT_TOKEN_TTL_DAYS = int(os.getenv("PUBLIC_ARTIFACT_TOKEN_TTL_DAYS")
 # Storage Configuration
 ENABLE_AWS_S3 = os.getenv("ENABLE_AWS_S3", "false").lower() == "true"
 
+# How long an organization invite stays acceptable, in days. Nothing sends these
+# yet -- there is no email capability in the codebase -- so the deadline only
+# starts mattering once delivery exists. Bounded anyway, because an invite that
+# never expires is a standing grant of access to whoever eventually reads it.
+ORG_INVITE_TTL_DAYS = int(os.getenv("ORG_INVITE_TTL_DAYS") or 7)
+
 # MinIO Configuration
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")
 # Full URL (scheme + host) browsers use to reach object storage. Derives from

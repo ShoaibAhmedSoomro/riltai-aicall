@@ -7,6 +7,10 @@ class SignupRequest(BaseModel):
     email: EmailStr
     password: str
     name: str | None = None
+    # Supplied when joining an organization someone invited you to, rather
+    # than creating your own. Also the only way to sign up at all on an
+    # invite-only install (ENABLE_SIGNUP=false).
+    invite_token: str | None = None
 
     @field_validator("password")
     @classmethod

@@ -1490,6 +1490,17 @@ export type CreateFolderRequest = {
 };
 
 /**
+ * CreateInviteRequest
+ */
+export type CreateInviteRequest = {
+    /**
+     * Email
+     */
+    email: string;
+    role?: OrgRole;
+};
+
+/**
  * CreateServiceKeyRequest
  */
 export type CreateServiceKeyRequest = {
@@ -4264,6 +4275,43 @@ export type OrganizationContextResponse = {
 };
 
 /**
+ * OrganizationInviteResponse
+ *
+ * A pending invitation. The token is deliberately NOT exposed.
+ *
+ * Nothing can deliver an invite yet -- there is no email capability -- and
+ * returning the token here would turn this into a copy-a-link flow by the back
+ * door, which is not the shape that was chosen. It is stored so that adding
+ * email later is the sending step and nothing else.
+ */
+export type OrganizationInviteResponse = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Role
+     */
+    role: string;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+    /**
+     * Expires At
+     */
+    expires_at?: string | null;
+    /**
+     * Invited By Email
+     */
+    invited_by_email?: string | null;
+};
+
+/**
  * OrganizationMemberResponse
  *
  * One member of the caller's organization.
@@ -5650,6 +5698,10 @@ export type SignupRequest = {
      * Name
      */
     name?: string | null;
+    /**
+     * Invite Token
+     */
+    invite_token?: string | null;
 };
 
 /**
@@ -9652,6 +9704,16 @@ export type DownloadWorkflowReportApiV1WorkflowWorkflowIdReportGetResponses = {
 
 export type GetWorkflowTemplatesApiV1WorkflowTemplatesGetData = {
     body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
     path?: never;
     query?: never;
     url: '/api/v1/workflow/templates';
@@ -9662,7 +9724,13 @@ export type GetWorkflowTemplatesApiV1WorkflowTemplatesGetErrors = {
      * Not found
      */
     404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
 };
+
+export type GetWorkflowTemplatesApiV1WorkflowTemplatesGetError = GetWorkflowTemplatesApiV1WorkflowTemplatesGetErrors[keyof GetWorkflowTemplatesApiV1WorkflowTemplatesGetErrors];
 
 export type GetWorkflowTemplatesApiV1WorkflowTemplatesGetResponses = {
     /**
@@ -13091,6 +13159,130 @@ export type UpdateMemberRoleApiV1OrganizationsMembersUserIdPatchResponses = {
 };
 
 export type UpdateMemberRoleApiV1OrganizationsMembersUserIdPatchResponse = UpdateMemberRoleApiV1OrganizationsMembersUserIdPatchResponses[keyof UpdateMemberRoleApiV1OrganizationsMembersUserIdPatchResponses];
+
+export type ListInvitesApiV1OrganizationsInvitesGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/organizations/invites';
+};
+
+export type ListInvitesApiV1OrganizationsInvitesGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListInvitesApiV1OrganizationsInvitesGetError = ListInvitesApiV1OrganizationsInvitesGetErrors[keyof ListInvitesApiV1OrganizationsInvitesGetErrors];
+
+export type ListInvitesApiV1OrganizationsInvitesGetResponses = {
+    /**
+     * Response List Invites Api V1 Organizations Invites Get
+     *
+     * Successful Response
+     */
+    200: Array<OrganizationInviteResponse>;
+};
+
+export type ListInvitesApiV1OrganizationsInvitesGetResponse = ListInvitesApiV1OrganizationsInvitesGetResponses[keyof ListInvitesApiV1OrganizationsInvitesGetResponses];
+
+export type CreateInviteApiV1OrganizationsInvitesPostData = {
+    body: CreateInviteRequest;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/organizations/invites';
+};
+
+export type CreateInviteApiV1OrganizationsInvitesPostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateInviteApiV1OrganizationsInvitesPostError = CreateInviteApiV1OrganizationsInvitesPostErrors[keyof CreateInviteApiV1OrganizationsInvitesPostErrors];
+
+export type CreateInviteApiV1OrganizationsInvitesPostResponses = {
+    /**
+     * Successful Response
+     */
+    201: OrganizationInviteResponse;
+};
+
+export type CreateInviteApiV1OrganizationsInvitesPostResponse = CreateInviteApiV1OrganizationsInvitesPostResponses[keyof CreateInviteApiV1OrganizationsInvitesPostResponses];
+
+export type RevokeInviteApiV1OrganizationsInvitesInviteIdDeleteData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Invite Id
+         */
+        invite_id: number;
+    };
+    query?: never;
+    url: '/api/v1/organizations/invites/{invite_id}';
+};
+
+export type RevokeInviteApiV1OrganizationsInvitesInviteIdDeleteErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RevokeInviteApiV1OrganizationsInvitesInviteIdDeleteError = RevokeInviteApiV1OrganizationsInvitesInviteIdDeleteErrors[keyof RevokeInviteApiV1OrganizationsInvitesInviteIdDeleteErrors];
+
+export type RevokeInviteApiV1OrganizationsInvitesInviteIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type RevokeInviteApiV1OrganizationsInvitesInviteIdDeleteResponse = RevokeInviteApiV1OrganizationsInvitesInviteIdDeleteResponses[keyof RevokeInviteApiV1OrganizationsInvitesInviteIdDeleteResponses];
 
 export type GetSignedUrlApiV1S3SignedUrlGetData = {
     body?: never;
