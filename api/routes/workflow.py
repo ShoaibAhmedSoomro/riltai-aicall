@@ -1609,7 +1609,12 @@ async def download_workflow_report(
 
 
 @router.get("/templates")
-async def get_workflow_templates() -> List[WorkflowTemplateResponse]:
+async def get_workflow_templates(
+    # Reads the templates table with no org scoping and no auth. The UI has
+    # no call site for it (searched), so requiring a session costs nothing
+    # and stops an unauthenticated caller enumerating the table.
+    user: UserModel = Depends(get_user),
+) -> List[WorkflowTemplateResponse]:
     """
     Get all available workflow templates.
 
