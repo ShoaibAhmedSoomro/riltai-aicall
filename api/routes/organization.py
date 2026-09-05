@@ -638,9 +638,28 @@ async def save_preferences(
     user: UserModel = Depends(get_user_with_selected_organization),
 ):
     organization_id = user.selected_organization_id
+
+    # Merge, never replace. Every field on the model has a default, so a client
+    # that PUTs a subset used to silently rewrite the fields it omitted --
+    # and `external_pbx_integrations_enabled: bool = False` is not None, so the
+    # exclude_none applied downstream did not protect it. A PUT of just
+    # {"timezone": ...} therefore turned external PBX off for the whole org.
+    #
+    # This cannot be fixed in the UI: the generated SDK marks every field
+    # optional and the endpoint is public API, so the server can never assume a
+    # complete blob arrives.
+    #
+    # exclude_unset, NOT exclude_none, is the discriminator. Pydantic tracks
+    # which fields the caller actually supplied, which keeps None a legal,
+    # storable "clear this" value -- merging on exclude_none would make
+    # test_phone_number permanently unclearable, regressing behaviour that
+    # works today.
+    current = await get_organization_preferences(organization_id)
+    merged = current.model_copy(update=request.model_dump(exclude_unset=True))
+
     return await upsert_organization_preferences(
         organization_id,
-        request,
+        merged,
     )
 
 

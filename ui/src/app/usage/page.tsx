@@ -239,6 +239,14 @@ export default function UsagePage() {
         setPreferencesLoading(true);
         try {
             const response = await getPreferencesApiV1OrganizationsPreferencesGet();
+            // The generated client resolves on HTTP errors rather than throwing,
+            // so without this check a failed GET left preferences as {} and the
+            // next timezone save spread that empty object back over the org's
+            // real settings. The other two callers of this endpoint already
+            // check response.error; this one did not.
+            if (response.error) {
+                throw new Error('Failed to load organization preferences');
+            }
             const nextPreferences = response.data || {};
             setPreferences(nextPreferences);
             setSelectedTimezone(nextPreferences.timezone || localTimezone);
