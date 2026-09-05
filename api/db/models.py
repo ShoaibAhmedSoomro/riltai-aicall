@@ -49,6 +49,18 @@ organization_users_association = Table(
     Column(
         "organization_id", Integer, ForeignKey("organizations.id"), primary_key=True
     ),
+    # The caller's role WITHIN this organization. Distinct from users.is_superuser,
+    # which is platform-wide and spans every org.
+    #
+    # server_default "admin" is deliberate and load-bearing: every member could
+    # already do everything before this column existed, so defaulting to admin
+    # keeps existing installs behaving exactly as they did. It also covers the
+    # one production INSERT (OrganizationClient.add_user_to_organization), which
+    # is ON CONFLICT DO NOTHING and therefore write-once.
+    #
+    # A plain String rather than a native enum so a future tier ("owner") is a
+    # code change, not a migration on a live table.
+    Column("role", String(32), nullable=False, server_default="admin"),
 )
 
 

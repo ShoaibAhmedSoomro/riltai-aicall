@@ -6,7 +6,7 @@ from loguru import logger
 from api.constants import AUTH_PROVIDER
 from api.db import db_client
 from api.db.models import UserModel
-from api.enums import PostHogEvent
+from api.enums import OrgRole, PostHogEvent
 from api.services.auth.stack_auth import stackauth
 from api.services.organization_bootstrap import ensure_organization_bootstrapped
 from api.services.posthog_client import (
@@ -248,6 +248,46 @@ async def get_user_with_selected_organization(
 ) -> UserModel:
     if not user.selected_organization_id:
         raise HTTPException(status_code=400, detail="No organization selected")
+    return user
+
+
+async def get_org_role(user: UserModel) -> str:
+    """The caller's role in their selected organization.
+
+    A missing membership row resolves to ADMIN, and that is deliberate rather
+    than lax. Two live paths reach an org with no row at all: API-key auth sets
+    ``selected_organization_id`` on the user in memory without requiring one
+    (an API key is already org-scoped and its holder could do everything before
+    roles existed), and the hosted path skips its INSERT whenever the selected
+    org already matches. Denying those callers would break working installs the
+    moment this shipped, so absence preserves the pre-roles behaviour. It is one
+    function so the rule can be tightened in one place once a members endpoint
+    has had time to populate the table.
+    """
+    role = await db_client.get_user_role(user.id, user.selected_organization_id)
+    return role or OrgRole.ADMIN.value
+
+
+async def require_admin(
+    user: Annotated[UserModel, Depends(get_user_with_selected_organization)],
+) -> UserModel:
+    """Gate an org-wide or destructive action on the admin role.
+
+    Superusers pass regardless: the platform tier spans every organization, and
+    it is the tier support uses to act inside a customer's org.
+
+    Note this does NOT prove membership -- get_user_with_selected_organization
+    only checks the field is non-empty, it never queries the association table.
+    Org scoping is still every handler's own job (see api/AGENTS.md); this adds
+    a permission tier on top of that, it does not replace it.
+    """
+    if user.is_superuser:
+        return user
+    if await get_org_role(user) != OrgRole.ADMIN.value:
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied. Organization admin privileges required.",
+        )
     return user
 
 

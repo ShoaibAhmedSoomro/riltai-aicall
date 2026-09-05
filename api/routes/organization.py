@@ -24,7 +24,7 @@ from api.db.telephony_configuration_client import (
 )
 from api.db.telephony_phone_number_client import TelephonyPhoneNumberConflictError
 from api.db.telephony_trunk_client import TelephonyTrunkConflictError
-from api.enums import OrganizationConfigurationKey, PostHogEvent
+from api.enums import OrganizationConfigurationKey, OrgRole, PostHogEvent
 from api.errors.failure import ErrorSource, classify_exception, log_failure
 from api.errors.mps import MPSUnavailableError
 from api.schemas.ai_model_configuration import (
@@ -60,6 +60,7 @@ from api.schemas.telephony_phone_number import (
 from api.services.auth.depends import (
     get_user,
     get_user_with_selected_organization,
+    require_admin,
 )
 from api.services.configuration.ai_model_configuration import (
     check_for_masked_keys_in_ai_model_configuration_v2,
@@ -1839,4 +1840,103 @@ async def get_campaign_defaults(user: UserModel = Depends(get_user)):
         from_numbers_count=from_numbers_count,
         default_retry_config=RetryConfigResponse(**DEFAULT_CAMPAIGN_RETRY_CONFIG),
         last_campaign_settings=last_campaign_settings,
+    )
+
+
+class OrganizationMemberResponse(BaseModel):
+    """One member of the caller's organization."""
+
+    user_id: int
+    email: Optional[str] = None
+    name: Optional[str] = None
+    role: str
+    # Platform-wide tier, surfaced here so the UI can explain why a superuser
+    # passes admin gates without holding the org's admin role.
+    is_superuser: bool = False
+    is_self: bool = False
+
+
+class MemberRoleUpdateRequest(BaseModel):
+    # Typed as the enum so an unknown role is a 422 from the framework with the
+    # valid values listed, rather than a string we have to validate by hand and
+    # that would otherwise be written straight into the column.
+    role: OrgRole
+
+
+@router.get("/members", response_model=List[OrganizationMemberResponse])
+async def list_members(
+    user: UserModel = Depends(get_user_with_selected_organization),
+):
+    """Who is in this organization, and what each of them can do.
+
+    Readable by any member: knowing who your teammates are is not privileged,
+    and hiding it would leave a member unable to work out who to ask for an
+    admin action. Changing a role is admin-only, below.
+    """
+    members = await db_client.get_organization_members(user.selected_organization_id)
+    return [
+        OrganizationMemberResponse(
+            user_id=m.id,
+            email=m.email,
+            name=m.name,
+            role=role,
+            is_superuser=bool(m.is_superuser),
+            is_self=(m.id == user.id),
+        )
+        for m, role in members
+    ]
+
+
+@router.patch("/members/{user_id}", response_model=OrganizationMemberResponse)
+async def update_member_role(
+    user_id: int,
+    request: MemberRoleUpdateRequest,
+    user: UserModel = Depends(require_admin),
+):
+    """Promote or demote a member of this organization.
+
+    Without this endpoint the role column would be a one-way door: rows are
+    created by an INSERT ... ON CONFLICT DO NOTHING that never updates, so a
+    member could be created but never changed.
+    """
+    organization_id = user.selected_organization_id
+
+    # Tenant isolation: the path parameter is an arbitrary user id, so it has to
+    # be proved to belong to THIS org before anything is written. Otherwise an
+    # admin of one org could set roles in another.
+    members = await db_client.get_organization_members(organization_id)
+    target = next(((m, r) for m, r in members if m.id == user_id), None)
+    if target is None:
+        raise HTTPException(
+            status_code=404, detail="No such member in this organization"
+        )
+    member, current_role = target
+    new_role = request.role.value
+
+    # An organization with no admin cannot be administered again through the
+    # product -- there is no invite or ownership-transfer path to recover with,
+    # so this would need database surgery. Refuse it, including when an admin is
+    # demoting themselves, which is the likeliest way to get here by accident.
+    if current_role == OrgRole.ADMIN.value and new_role != OrgRole.ADMIN.value:
+        if await db_client.count_admins(organization_id) <= 1:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "This is the organization's only admin. Promote someone else "
+                    "before changing this role."
+                ),
+            )
+
+    if current_role != new_role:
+        updated = await db_client.set_user_role(user_id, organization_id, new_role)
+        if not updated:
+            raise HTTPException(status_code=404, detail="Membership no longer exists")
+
+    return OrganizationMemberResponse(
+        user_id=member.id,
+        email=member.email,
+        name=member.name,
+        role=new_role,
+        is_superuser=bool(member.is_superuser),
+        is_self=(member.id == user.id),
     )

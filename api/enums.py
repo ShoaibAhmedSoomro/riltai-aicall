@@ -6,6 +6,25 @@ class IntegrationAction(Enum):
     QUALIFIED_CALLS = "Qualified Calls"
 
 
+class OrgRole(str, Enum):
+    """A member's role WITHIN one organization.
+
+    Deliberately distinct from ``users.is_superuser``, which is a platform-wide
+    tier spanning every organization. A user can be an org admin in their own
+    org and hold no superuser rights at all, which is the normal case.
+
+    ADMIN is exactly the access every member had before roles existed, so
+    existing rows backfill to it and nobody's abilities change. MEMBER is the
+    lesser tier that makes gating possible.
+
+    str-valued so it compares directly against the VARCHAR column and serialises
+    without a converter, matching TelephonyCallStatus below.
+    """
+
+    ADMIN = "admin"
+    MEMBER = "member"
+
+
 class Environment(Enum):
     LOCAL = "local"
     PRODUCTION = "production"
