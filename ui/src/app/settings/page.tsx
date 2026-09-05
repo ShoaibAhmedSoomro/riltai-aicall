@@ -3,6 +3,7 @@
 import { ExternalLink } from "lucide-react";
 
 import { MCPSection } from "@/components/MCPSection";
+import { OrganizationInvitesSection } from "@/components/OrganizationInvitesSection";
 import { OrganizationMembersSection } from "@/components/OrganizationMembersSection";
 import { OrganizationPreferencesSection } from "@/components/OrganizationPreferencesSection";
 import { TelemetrySection } from "@/components/TelemetrySection";
@@ -49,6 +50,19 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent>
             <OrganizationMembersSection />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Invitations</CardTitle>
+            <CardDescription>
+              Invite people to join this organization and choose what they can
+              change.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <OrganizationInvitesSection />
           </CardContent>
         </Card>
 
