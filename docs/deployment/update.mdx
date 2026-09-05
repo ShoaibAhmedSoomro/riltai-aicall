@@ -99,6 +99,43 @@ curl -k https://YOUR_SERVER_IP/api/v1/health      # remote
 curl http://localhost:8000/api/v1/health           # local
 ```
 
+## Back up and restore
+
+Rolling back restores **configuration files only** — it does nothing for your data. Postgres, Redis and MinIO live in Docker volumes on the host, so losing the host loses every agent, call, credential and recording. Set this up before you need it:
+
+```bash
+./scripts/backup.sh backup
+```
+
+That dumps Postgres and archives the MinIO volume into `./backups/<timestamp>/`, checks the dump is valid, and prunes anything older than `BACKUP_KEEP_DAYS` (default 14). Redis is intentionally skipped — it holds the job queue and rate-limit counters, all rebuildable, and restoring stale in-flight jobs on top of a restored database is worse than losing them.
+
+Run it nightly:
+
+```bash
+0 3 * * * cd /path/to/rilt && ./scripts/backup.sh backup >> backups/backup.log 2>&1
+```
+
+<Warning>
+A backup on the same host is not a backup. Set `BACKUP_POST_HOOK` to copy it somewhere else — it receives the backup directory as `$1`, so any tool works and no credentials are baked into the repo:
+
+```bash
+BACKUP_POST_HOOK='rclone copy "$1" r2:aicall-backups/' ./scripts/backup.sh backup
+```
+</Warning>
+
+**Prove it works before you rely on it.** This restores into a throwaway container and counts what came back; it never touches your live database:
+
+```bash
+./scripts/backup.sh verify backups/<timestamp>
+```
+
+To restore for real (this overwrites the live database and object storage, and asks for confirmation first):
+
+```bash
+./scripts/backup.sh restore backups/<timestamp>
+docker compose restart api
+```
+
 ## Roll back
 
 `update_remote.sh` saves backups of every file it touched. To roll back, restore them and recreate the stack — the exact commands (including the timestamp it used) are printed at the end of the script's output. The generic form:

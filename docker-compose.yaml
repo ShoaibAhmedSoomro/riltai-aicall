@@ -32,7 +32,13 @@ services:
         max-size: "10m"
         max-file: "3"
     ports:
-      - "5432:5432"
+      # Loopback only. Docker publishes ports through its own NAT rules, which
+      # a host ufw ruleset does not filter, so "5432:5432" put the database on
+      # the public internet of any VPS running this file -- with the password
+      # above falling back to a well-known default. MinIO was already bound
+      # this way; postgres and redis were not. A client on the host still
+      # connects; reach it from elsewhere over an SSH tunnel.
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -49,7 +55,10 @@ services:
     # whole stack down until someone ran remote_up.sh by hand.
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      # Loopback only, for the same reason as postgres above: REDIS_PASSWORD
+      # falls back to a well-known default, and this port was reachable from
+      # the internet. Redis holds the job queue and call-transfer state.
+      - "127.0.0.1:6379:6379"
     command: >
       --requirepass ${REDIS_PASSWORD:-redissecret}
     volumes:
