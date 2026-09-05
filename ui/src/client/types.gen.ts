@@ -3692,6 +3692,13 @@ export type McpToolDefinition = {
 };
 
 /**
+ * MemberRoleUpdateRequest
+ */
+export type MemberRoleUpdateRequest = {
+    role: OrgRole;
+};
+
+/**
  * MiniMaxLLMConfiguration
  */
 export type MiniMaxLlmConfiguration = {
@@ -4186,6 +4193,24 @@ export type OpenRouterLlmConfiguration = {
 };
 
 /**
+ * OrgRole
+ *
+ * A member's role WITHIN one organization.
+ *
+ * Deliberately distinct from ``users.is_superuser``, which is a platform-wide
+ * tier spanning every organization. A user can be an org admin in their own
+ * org and hold no superuser rights at all, which is the normal case.
+ *
+ * ADMIN is exactly the access every member had before roles existed, so
+ * existing rows backfill to it and nobody's abilities change. MEMBER is the
+ * lesser tier that makes gating possible.
+ *
+ * str-valued so it compares directly against the VARCHAR column and serialises
+ * without a converter, matching TelephonyCallStatus below.
+ */
+export type OrgRole = 'admin' | 'member';
+
+/**
  * OrganizationAIModelConfigurationResponse
  */
 export type OrganizationAiModelConfigurationResponse = {
@@ -4236,6 +4261,38 @@ export type OrganizationContextResponse = {
      */
     organization_provider_id?: string | null;
     model_services: OrganizationModelServicesContext;
+};
+
+/**
+ * OrganizationMemberResponse
+ *
+ * One member of the caller's organization.
+ */
+export type OrganizationMemberResponse = {
+    /**
+     * User Id
+     */
+    user_id: number;
+    /**
+     * Email
+     */
+    email?: string | null;
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Role
+     */
+    role: string;
+    /**
+     * Is Superuser
+     */
+    is_superuser?: boolean;
+    /**
+     * Is Self
+     */
+    is_self?: boolean;
 };
 
 /**
@@ -12949,6 +13006,91 @@ export type GetCampaignDefaultsApiV1OrganizationsCampaignDefaultsGetResponses = 
 };
 
 export type GetCampaignDefaultsApiV1OrganizationsCampaignDefaultsGetResponse = GetCampaignDefaultsApiV1OrganizationsCampaignDefaultsGetResponses[keyof GetCampaignDefaultsApiV1OrganizationsCampaignDefaultsGetResponses];
+
+export type ListMembersApiV1OrganizationsMembersGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/organizations/members';
+};
+
+export type ListMembersApiV1OrganizationsMembersGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListMembersApiV1OrganizationsMembersGetError = ListMembersApiV1OrganizationsMembersGetErrors[keyof ListMembersApiV1OrganizationsMembersGetErrors];
+
+export type ListMembersApiV1OrganizationsMembersGetResponses = {
+    /**
+     * Response List Members Api V1 Organizations Members Get
+     *
+     * Successful Response
+     */
+    200: Array<OrganizationMemberResponse>;
+};
+
+export type ListMembersApiV1OrganizationsMembersGetResponse = ListMembersApiV1OrganizationsMembersGetResponses[keyof ListMembersApiV1OrganizationsMembersGetResponses];
+
+export type UpdateMemberRoleApiV1OrganizationsMembersUserIdPatchData = {
+    body: MemberRoleUpdateRequest;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * User Id
+         */
+        user_id: number;
+    };
+    query?: never;
+    url: '/api/v1/organizations/members/{user_id}';
+};
+
+export type UpdateMemberRoleApiV1OrganizationsMembersUserIdPatchErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateMemberRoleApiV1OrganizationsMembersUserIdPatchError = UpdateMemberRoleApiV1OrganizationsMembersUserIdPatchErrors[keyof UpdateMemberRoleApiV1OrganizationsMembersUserIdPatchErrors];
+
+export type UpdateMemberRoleApiV1OrganizationsMembersUserIdPatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: OrganizationMemberResponse;
+};
+
+export type UpdateMemberRoleApiV1OrganizationsMembersUserIdPatchResponse = UpdateMemberRoleApiV1OrganizationsMembersUserIdPatchResponses[keyof UpdateMemberRoleApiV1OrganizationsMembersUserIdPatchResponses];
 
 export type GetSignedUrlApiV1S3SignedUrlGetData = {
     body?: never;

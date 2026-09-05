@@ -3,6 +3,7 @@
 import { ExternalLink } from "lucide-react";
 
 import { MCPSection } from "@/components/MCPSection";
+import { OrganizationMembersSection } from "@/components/OrganizationMembersSection";
 import { OrganizationPreferencesSection } from "@/components/OrganizationPreferencesSection";
 import { TelemetrySection } from "@/components/TelemetrySection";
 import {
@@ -34,6 +35,20 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent>
             <OrganizationPreferencesSection />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Members</CardTitle>
+            <CardDescription>
+              Who is in this organization and what each of them can change.
+              Admins manage billing, credentials, phone numbers and roles;
+              members build agents and run calls.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <OrganizationMembersSection />
           </CardContent>
         </Card>
 
