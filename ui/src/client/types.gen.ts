@@ -13116,6 +13116,50 @@ export type ListMembersApiV1OrganizationsMembersGetResponses = {
 
 export type ListMembersApiV1OrganizationsMembersGetResponse = ListMembersApiV1OrganizationsMembersGetResponses[keyof ListMembersApiV1OrganizationsMembersGetResponses];
 
+export type RemoveMemberApiV1OrganizationsMembersUserIdDeleteData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * User Id
+         */
+        user_id: number;
+    };
+    query?: never;
+    url: '/api/v1/organizations/members/{user_id}';
+};
+
+export type RemoveMemberApiV1OrganizationsMembersUserIdDeleteErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RemoveMemberApiV1OrganizationsMembersUserIdDeleteError = RemoveMemberApiV1OrganizationsMembersUserIdDeleteErrors[keyof RemoveMemberApiV1OrganizationsMembersUserIdDeleteErrors];
+
+export type RemoveMemberApiV1OrganizationsMembersUserIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type RemoveMemberApiV1OrganizationsMembersUserIdDeleteResponse = RemoveMemberApiV1OrganizationsMembersUserIdDeleteResponses[keyof RemoveMemberApiV1OrganizationsMembersUserIdDeleteResponses];
+
 export type UpdateMemberRoleApiV1OrganizationsMembersUserIdPatchData = {
     body: MemberRoleUpdateRequest;
     headers?: {
