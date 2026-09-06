@@ -28,6 +28,22 @@ DEFAULT_PROVISIONAL_VAD_PAUSE_SECS = 1.5
 DEFAULT_TURN_STOP_STRATEGY = "transcription"
 DEFAULT_CONTEXT_COMPACTION_ENABLED = False
 
+# Every constant below equals a literal that is live in the pipeline today, so
+# adding these dials changes nothing until somebody moves one. Sources:
+#   VAD_*  -> pipecat VADParams defaults (audio/vad/vad_analyzer.py)
+#   STT_*  -> the Deepgram Flux and RiltAI Flux branches of service_factory
+#   KB_*   -> PipecatEngine's knowledge-base lookup
+DEFAULT_VAD_STOP_SECS = 0.2
+DEFAULT_VAD_CONFIDENCE = 0.7
+DEFAULT_VAD_START_SECS = 0.2
+DEFAULT_STT_ENDPOINTING_MS = 100
+DEFAULT_STT_EOT_THRESHOLD = 0.7
+DEFAULT_STT_EAGER_EOT_THRESHOLD = 0.5
+DEFAULT_STT_EOT_TIMEOUT_MS = 3000
+DEFAULT_KB_CHUNKS_TO_RETRIEVE = 3
+# 0.0 keeps every result, which is what no filter at all did.
+DEFAULT_KB_MIN_SIMILARITY = 0.0
+
 
 class ExternalPBXFieldMapping(BaseModel):
     """Map one gathered-context value to a provider-native field."""
@@ -64,6 +80,49 @@ class AmbientNoiseConfigurationDefaults(BaseModel):
     volume: float = 0.3
 
 
+class VADConfigurationDefaults(BaseModel):
+    """When the agent decides the caller has stopped talking.
+
+    Mirrors pipecat's VADParams. min_volume is deliberately not exposed: it is
+    the one parameter where a wrong value makes the agent deaf rather than
+    merely eager or slow.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    stop_secs: float = Field(default=DEFAULT_VAD_STOP_SECS, ge=0.05, le=2.0)
+    confidence: float = Field(default=DEFAULT_VAD_CONFIDENCE, ge=0.1, le=1.0)
+    start_secs: float = Field(default=DEFAULT_VAD_START_SECS, ge=0.0, le=1.0)
+
+
+class STTTurnConfigurationDefaults(BaseModel):
+    """End-of-turn detection inside the transcriber.
+
+    Provider-specific by nature: the three eot_* dials reach Deepgram Flux and
+    the AICall managed transcriber, endpointing_ms reaches Deepgram Nova, and
+    on any other provider they are accepted and ignored -- the same tolerance
+    the Dictionary feature already has.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    endpointing_ms: int = Field(default=DEFAULT_STT_ENDPOINTING_MS, ge=10, le=2000)
+    eot_threshold: float = Field(default=DEFAULT_STT_EOT_THRESHOLD, ge=0.1, le=1.0)
+    eager_eot_threshold: float = Field(
+        default=DEFAULT_STT_EAGER_EOT_THRESHOLD, ge=0.1, le=1.0
+    )
+    eot_timeout_ms: int = Field(default=DEFAULT_STT_EOT_TIMEOUT_MS, ge=500, le=15000)
+
+
+class KnowledgeBaseConfigurationDefaults(BaseModel):
+    """How much the agent pulls back from its documents, and how strictly."""
+
+    model_config = ConfigDict(extra="allow")
+
+    chunks_to_retrieve: int = Field(default=DEFAULT_KB_CHUNKS_TO_RETRIEVE, ge=1, le=10)
+    min_similarity: float = Field(default=DEFAULT_KB_MIN_SIMILARITY, ge=0.0, le=1.0)
+
+
 class WorkflowConfigurationDefaults(BaseModel):
     model_config = ConfigDict(extra="allow")
 
@@ -79,6 +138,15 @@ class WorkflowConfigurationDefaults(BaseModel):
 
     ambient_noise_configuration: AmbientNoiseConfigurationDefaults = Field(
         default_factory=AmbientNoiseConfigurationDefaults
+    )
+    vad_configuration: VADConfigurationDefaults = Field(
+        default_factory=VADConfigurationDefaults
+    )
+    stt_turn_configuration: STTTurnConfigurationDefaults = Field(
+        default_factory=STTTurnConfigurationDefaults
+    )
+    knowledge_base_configuration: KnowledgeBaseConfigurationDefaults = Field(
+        default_factory=KnowledgeBaseConfigurationDefaults
     )
     max_call_duration: int = Field(
         default=DEFAULT_MAX_CALL_DURATION_SECONDS,
@@ -131,6 +199,23 @@ class TextChatInactivityTimeoutConstraints(BaseModel):
     default_seconds: int = TEXT_CHAT_INACTIVITY_TIMEOUT_SECONDS
     minimum_seconds: int = MIN_TEXT_CHAT_INACTIVITY_TIMEOUT_SECONDS
     maximum_seconds: int = MAX_TEXT_CHAT_INACTIVITY_TIMEOUT_SECONDS
+
+
+def resolve_knowledge_base_configuration(
+    configs: dict | None,
+) -> KnowledgeBaseConfigurationDefaults:
+    """Validated KB dials from a stored config blob, or the defaults.
+
+    Shared by the voice and text-chat runners so the two cannot drift. Invalid
+    values fall back rather than raise: these come out of a JSON column, and a
+    bad dial must degrade retrieval quality, not stop the call connecting.
+    """
+    try:
+        return KnowledgeBaseConfigurationDefaults(
+            **((configs or {}).get("knowledge_base_configuration") or {})
+        )
+    except Exception:
+        return KnowledgeBaseConfigurationDefaults()
 
 
 def get_default_workflow_configurations() -> WorkflowConfigurationDefaults:

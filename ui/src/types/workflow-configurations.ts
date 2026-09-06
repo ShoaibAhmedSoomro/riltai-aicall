@@ -120,8 +120,51 @@ type WorkflowConfigurationBase = Omit<
     | "external_pbx_lead_headers"
 >;
 
+// Every default below equals a literal that is live in the pipeline today, so
+// these dials change nothing until somebody moves one. Kept in step with
+// api/schemas/workflow_configurations.py.
+export type VADConfiguration = {
+    stop_secs: number;
+    confidence: number;
+    start_secs: number;
+};
+
+export type STTTurnConfiguration = {
+    endpointing_ms: number;
+    eot_threshold: number;
+    eager_eot_threshold: number;
+    eot_timeout_ms: number;
+};
+
+export type KnowledgeBaseConfiguration = {
+    chunks_to_retrieve: number;
+    min_similarity: number;
+};
+
+export const DEFAULT_VAD_CONFIGURATION: VADConfiguration = {
+    stop_secs: 0.2,
+    confidence: 0.7,
+    start_secs: 0.2,
+};
+
+export const DEFAULT_STT_TURN_CONFIGURATION: STTTurnConfiguration = {
+    endpointing_ms: 100,
+    eot_threshold: 0.7,
+    eager_eot_threshold: 0.5,
+    eot_timeout_ms: 3000,
+};
+
+export const DEFAULT_KNOWLEDGE_BASE_CONFIGURATION: KnowledgeBaseConfiguration = {
+    chunks_to_retrieve: 3,
+    // 0 keeps every result, which is what having no filter at all did.
+    min_similarity: 0,
+};
+
 export type WorkflowConfigurations = WorkflowConfigurationBase & {
     ambient_noise_configuration: AmbientNoiseConfiguration;
+    vad_configuration: VADConfiguration;
+    stt_turn_configuration: STTTurnConfiguration;
+    knowledge_base_configuration: KnowledgeBaseConfiguration;
     max_call_duration: number;  // Maximum call duration in seconds
     max_user_idle_timeout: number;  // Maximum user idle time in seconds
     smart_turn_stop_secs: number;  // Timeout in seconds for incomplete turn detection
@@ -146,6 +189,9 @@ const FALLBACK_WORKFLOW_CONFIGURATIONS: WorkflowConfigurations = {
         enabled: false,
         volume: 0.3
     },
+    vad_configuration: DEFAULT_VAD_CONFIGURATION,
+    stt_turn_configuration: DEFAULT_STT_TURN_CONFIGURATION,
+    knowledge_base_configuration: DEFAULT_KNOWLEDGE_BASE_CONFIGURATION,
     max_call_duration: 300,
     max_user_idle_timeout: 10,  // 10 seconds
     smart_turn_stop_secs: 2,  // 2 seconds
@@ -172,6 +218,24 @@ export function resolveWorkflowConfigurations(
             ...FALLBACK_WORKFLOW_CONFIGURATIONS.ambient_noise_configuration,
             ...defaults?.ambient_noise_configuration,
             ...configurations?.ambient_noise_configuration,
+        },
+        // Nested spread, not `??`: a stored blob written before one of these
+        // fields existed carries only the keys it knew about, and replacing the
+        // whole object would leave the rest undefined rather than defaulted.
+        vad_configuration: {
+            ...FALLBACK_WORKFLOW_CONFIGURATIONS.vad_configuration,
+            ...defaults?.vad_configuration,
+            ...configurations?.vad_configuration,
+        },
+        stt_turn_configuration: {
+            ...FALLBACK_WORKFLOW_CONFIGURATIONS.stt_turn_configuration,
+            ...defaults?.stt_turn_configuration,
+            ...configurations?.stt_turn_configuration,
+        },
+        knowledge_base_configuration: {
+            ...FALLBACK_WORKFLOW_CONFIGURATIONS.knowledge_base_configuration,
+            ...defaults?.knowledge_base_configuration,
+            ...configurations?.knowledge_base_configuration,
         },
         max_call_duration:
             configurations?.max_call_duration

@@ -14,6 +14,9 @@ from api.schemas.workflow_configurations import (
     DEFAULT_SMART_TURN_STOP_SECS,
     DEFAULT_TURN_START_MIN_WORDS,
     DEFAULT_TURN_START_STRATEGY,
+    STTTurnConfigurationDefaults,
+    VADConfigurationDefaults,
+    resolve_knowledge_base_configuration,
 )
 from api.services.call_concurrency import call_concurrency
 from api.services.configuration.registry import ServiceProviders
@@ -147,6 +150,44 @@ def _resolve_provisional_vad_pause_secs(run_configs: dict) -> float:
     )
 
 
+def _resolve_vad_params(run_configs: dict) -> VADParams:
+    """Barge-in sensitivity for this agent, or pipecat's defaults.
+
+    Validated through the schema rather than read raw: run_configs comes out of
+    a JSON column that anything could have written, and an out-of-range
+    stop_secs here is a call that either never lets the caller finish or never
+    notices they did. Invalid values fall back to the defaults instead of
+    raising -- a bad dial must not stop the call from connecting.
+    """
+    try:
+        vad = VADConfigurationDefaults(**(run_configs.get("vad_configuration") or {}))
+    except Exception:
+        logger.warning("Invalid vad_configuration; falling back to defaults")
+        vad = VADConfigurationDefaults()
+    return VADParams(
+        stop_secs=vad.stop_secs,
+        confidence=vad.confidence,
+        start_secs=vad.start_secs,
+    )
+
+
+def _resolve_stt_turn_config(run_configs: dict) -> dict:
+    """End-of-turn dials for the transcriber, as a plain dict.
+
+    A dict rather than the model because each STT branch consumes a different
+    subset -- Flux takes the three eot_* values, Nova takes endpointing_ms, and
+    everything else ignores all four.
+    """
+    try:
+        turn = STTTurnConfigurationDefaults(
+            **(run_configs.get("stt_turn_configuration") or {})
+        )
+    except Exception:
+        logger.warning("Invalid stt_turn_configuration; falling back to defaults")
+        turn = STTTurnConfigurationDefaults()
+    return turn.model_dump()
+
+
 def _create_non_realtime_user_turn_start_strategies(
     run_configs: dict, *, uses_external_turns: bool
 ):
@@ -203,8 +244,13 @@ def _create_non_realtime_user_turn_stop_strategies(
     return [SpeechTimeoutUserTurnStopStrategy()]
 
 
-def _create_realtime_user_turn_config(provider: str):
-    """Return user turn strategies and optional local VAD for realtime providers."""
+def _create_realtime_user_turn_config(provider: str, run_configs: dict):
+    """Return user turn strategies and optional local VAD for realtime providers.
+
+    Takes run_configs so the VAD dials reach the realtime path too. Without it
+    the barge-in setting would apply on the normal path and silently do nothing
+    on realtime providers, which is worse than not offering it.
+    """
 
     def external_provider_turn_config():
         return (
@@ -223,7 +269,7 @@ def _create_realtime_user_turn_config(provider: str):
                 ],
                 stop=[SpeechTimeoutUserTurnStopStrategy(wait_for_transcript=False)],
             ),
-            SileroVADAnalyzer(params=VADParams(stop_secs=0.2)),
+            SileroVADAnalyzer(params=_resolve_vad_params(run_configs)),
         )
 
     if provider in {
@@ -687,6 +733,7 @@ async def _run_pipeline_impl(
             audio_config,
             keyterms=keyterms,
             correlation_id=mps_correlation_id,
+            turn_config=_resolve_stt_turn_config(run_configs),
         )
         tts = create_tts_service(
             user_config,
@@ -840,6 +887,7 @@ async def _run_pipeline_impl(
     if is_realtime and context_compaction_enabled:
         logger.info("Disabling context_compaction_enabled for realtime workflow run")
         context_compaction_enabled = False
+    _kb_config = resolve_knowledge_base_configuration(run_configs)
 
     engine = PipecatEngine(
         llm=llm,
@@ -857,6 +905,8 @@ async def _run_pipeline_impl(
         embeddings_api_version=embeddings_api_version,
         has_recordings=has_recordings,
         context_compaction_enabled=context_compaction_enabled,
+        kb_chunks_to_retrieve=_kb_config.chunks_to_retrieve,
+        kb_min_similarity=_kb_config.min_similarity,
     )
 
     # Create pipeline components
@@ -887,7 +937,7 @@ async def _run_pipeline_impl(
         FunctionCallUserMuteStrategy(),
         CallbackUserMuteStrategy(should_mute_callback=engine.should_mute_user),
     ]
-    user_vad_analyzer = SileroVADAnalyzer(params=VADParams(stop_secs=0.2))
+    user_vad_analyzer = SileroVADAnalyzer(params=_resolve_vad_params(run_configs))
 
     # Configure turn strategies based on STT provider, model, and workflow configuration
     if is_realtime:
@@ -895,7 +945,7 @@ async def _run_pipeline_impl(
         # Realtime services still need user-turn tracking even when the model
         # itself owns speech generation and interruption behavior.
         user_turn_strategies, user_vad_analyzer = _create_realtime_user_turn_config(
-            user_config.realtime.provider
+            user_config.realtime.provider, run_configs
         )
     else:
         # Some STT services emit their own turn boundaries, so the aggregator

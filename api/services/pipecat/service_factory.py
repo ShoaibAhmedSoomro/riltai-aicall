@@ -249,18 +249,39 @@ def _validate_runtime_service_url(url: str, field_name: str) -> None:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
+def _flux_turn_settings(turn_config: dict | None) -> dict:
+    """The three end-of-turn dials Flux understands, or today's literals.
+
+    Both Flux branches -- Deepgram's and the AICall proxy's -- carried the same
+    three numbers written out twice. Resolving them in one place is why the two
+    cannot drift apart again.
+    """
+    turn_config = turn_config or {}
+    return {
+        "eot_timeout_ms": turn_config.get("eot_timeout_ms", 3000),
+        "eot_threshold": turn_config.get("eot_threshold", 0.7),
+        "eager_eot_threshold": turn_config.get("eager_eot_threshold", 0.5),
+    }
+
+
 @_report_service_factory_failures(ErrorSource.STT, config_section="stt")
 def create_stt_service(
     user_config,
     audio_config: "AudioConfig",
     keyterms: list[str] | None = None,
     correlation_id: str | None = None,
+    turn_config: dict | None = None,
 ):
     """Create and return appropriate STT service based on user configuration
 
     Args:
         user_config: User configuration containing STT settings
         keyterms: Optional list of keyterms for speech recognition boosting (Deepgram only)
+        turn_config: Optional per-agent end-of-turn dials. The eot_* values
+            reach Deepgram Flux and the AICall managed transcriber;
+            endpointing_ms reaches Deepgram Nova. Every other provider ignores
+            them, the same way the Dictionary feature is ignored where it does
+            not apply.
     """
     logger.info(
         f"Creating STT service: provider={user_config.stt.provider}, model={user_config.stt.model}"
@@ -269,9 +290,7 @@ def create_stt_service(
         if user_config.stt.model in DEEPGRAM_FLUX_MODELS:
             settings_kwargs = {
                 "model": user_config.stt.model,
-                "eot_timeout_ms": 3000,
-                "eot_threshold": 0.7,
-                "eager_eot_threshold": 0.5,
+                **_flux_turn_settings(turn_config),
                 "keyterm": keyterms or [],
             }
             if user_config.stt.model == "flux-general-multi":
@@ -295,7 +314,7 @@ def create_stt_service(
             settings=DeepgramSTTSettings(
                 language=language,
                 profanity_filter=False,
-                endpointing=100,
+                endpointing=(turn_config or {}).get("endpointing_ms", 100),
                 model=user_config.stt.model,
                 keyterm=keyterms or [],
             ),
@@ -357,9 +376,7 @@ def create_stt_service(
             # same language hint subset as Deepgram Flux multilingual.
             settings_kwargs = {
                 "model": "flux-general-multi",
-                "eot_timeout_ms": 3000,
-                "eot_threshold": 0.7,
-                "eager_eot_threshold": 0.5,
+                **_flux_turn_settings(turn_config),
                 "keyterm": keyterms or [],
             }
             language_hint = DEEPGRAM_FLUX_LANGUAGE_HINTS.get(language)
@@ -625,17 +642,25 @@ def create_tts_service(
         # scheme-less base_url contract.
         _validate_runtime_service_url(user_config.tts.base_url, "base_url")
         elevenlabs_url = _elevenlabs_websocket_url(user_config.tts.base_url)
+        # style and use_speaker_boost are added only when configured: the
+        # settings object distinguishes "not given" from an explicit None, and
+        # sending None is not the same as leaving them out.
+        elevenlabs_voice_settings = {
+            "voice": voice_id,
+            "model": user_config.tts.model,
+            "stability": getattr(user_config.tts, "stability", 0.8),
+            "speed": user_config.tts.speed,
+            "similarity_boost": getattr(user_config.tts, "similarity_boost", 0.75),
+        }
+        for _optional in ("style", "use_speaker_boost"):
+            _value = getattr(user_config.tts, _optional, None)
+            if _value is not None:
+                elevenlabs_voice_settings[_optional] = _value
         return ElevenLabsTTSService(
             reconnect_on_error=False,
             api_key=user_config.tts.api_key,
             url=elevenlabs_url,
-            settings=ElevenLabsTTSSettings(
-                voice=voice_id,
-                model=user_config.tts.model,
-                stability=0.8,
-                speed=user_config.tts.speed,
-                similarity_boost=0.75,
-            ),
+            settings=ElevenLabsTTSSettings(**elevenlabs_voice_settings),
             text_filters=[xml_function_tag_filter],
             skip_aggregator_types=["recording_router", "recording"],
             silence_time_s=1.0,
@@ -934,6 +959,20 @@ def _migrate_deprecated_google_model(model: str) -> str:
     return model
 
 
+def _llm_settings_kwargs(model: str, temperature: float | None) -> dict:
+    """Settings for the providers that sent no temperature before this dial.
+
+    RILT, Bedrock and Speaches were constructed with `model` alone. Passing
+    `temperature=None` instead would not be equivalent -- the settings objects
+    serialise what they are given, so an explicit None can reach the provider
+    as a null and be rejected. Omit the key entirely unless it was configured.
+    """
+    kwargs: dict = {"model": model}
+    if temperature is not None:
+        kwargs["temperature"] = temperature
+    return kwargs
+
+
 @_report_service_factory_failures(ErrorSource.LLM, provider_argument=0)
 def create_llm_service_from_provider(
     provider: str,
@@ -982,13 +1021,19 @@ def create_llm_service_from_provider(
             )
         return OpenAILLMService(
             api_key=api_key,
-            settings=OpenAILLMSettings(model=model, temperature=0.1),
+            settings=OpenAILLMSettings(
+                model=model,
+                temperature=temperature if temperature is not None else 0.1,
+            ),
             **kwargs,
         )
     elif provider == ServiceProviders.GROQ.value:
         return GroqLLMService(
             api_key=api_key,
-            settings=GroqLLMSettings(model=model, temperature=0.1),
+            settings=GroqLLMSettings(
+                model=model,
+                temperature=temperature if temperature is not None else 0.1,
+            ),
         )
     elif provider == ServiceProviders.OPENROUTER.value:
         kwargs = {}
@@ -997,21 +1042,30 @@ def create_llm_service_from_provider(
             kwargs["base_url"] = base_url
         return OpenRouterLLMService(
             api_key=api_key,
-            settings=OpenRouterLLMSettings(model=model, temperature=0.1),
+            settings=OpenRouterLLMSettings(
+                model=model,
+                temperature=temperature if temperature is not None else 0.1,
+            ),
             **kwargs,
         )
     elif provider == ServiceProviders.GOOGLE.value:
         model = _migrate_deprecated_google_model(model)
         return RiltGoogleLLMService(
             api_key=api_key,
-            settings=GoogleLLMSettings(model=model, temperature=0.1),
+            settings=GoogleLLMSettings(
+                model=model,
+                temperature=temperature if temperature is not None else 0.1,
+            ),
         )
     elif provider == ServiceProviders.GOOGLE_VERTEX.value:
         return RiltGoogleVertexLLMService(
             credentials=credentials,
             project_id=project_id,
             location=location or "us-east4",
-            settings=GoogleVertexLLMSettings(model=model, temperature=0.1),
+            settings=GoogleVertexLLMSettings(
+                model=model,
+                temperature=temperature if temperature is not None else 0.1,
+            ),
         )
     elif provider == ServiceProviders.AZURE.value:
         if endpoint:
@@ -1019,7 +1073,10 @@ def create_llm_service_from_provider(
         return AzureLLMService(
             api_key=api_key,
             endpoint=endpoint,
-            settings=AzureLLMSettings(model=model, temperature=0.1),
+            settings=AzureLLMSettings(
+                model=model,
+                temperature=temperature if temperature is not None else 0.1,
+            ),
         )
     elif provider == ServiceProviders.RILT.value:
         return RiltLLMService(
@@ -1027,14 +1084,14 @@ def create_llm_service_from_provider(
             api_key=api_key,
             correlation_id=correlation_id,
             usage_context=usage_context,
-            settings=OpenAILLMSettings(model=model),
+            settings=OpenAILLMSettings(**_llm_settings_kwargs(model, temperature)),
         )
     elif provider == ServiceProviders.AWS_BEDROCK.value:
         return AWSBedrockLLMService(
             aws_access_key=aws_access_key,
             aws_secret_key=aws_secret_key,
             aws_region=aws_region,
-            settings=AWSBedrockLLMSettings(model=model),
+            settings=AWSBedrockLLMSettings(**_llm_settings_kwargs(model, temperature)),
         )
     elif provider == ServiceProviders.SPEACHES.value:
         base_url = base_url or "http://localhost:11434/v1"
@@ -1042,7 +1099,7 @@ def create_llm_service_from_provider(
         return SpeachesLLMService(
             base_url=base_url,
             api_key=api_key or "none",
-            settings=SpeachesLLMSettings(model=model),
+            settings=SpeachesLLMSettings(**_llm_settings_kwargs(model, temperature)),
         )
     elif provider == ServiceProviders.HUGGINGFACE.value:
         base_url = base_url or "https://router.huggingface.co/v1"
@@ -1051,7 +1108,10 @@ def create_llm_service_from_provider(
             api_key=api_key,
             base_url=base_url,
             bill_to=bill_to,
-            settings=HuggingFaceLLMSettings(model=model, temperature=0.1),
+            settings=HuggingFaceLLMSettings(
+                model=model,
+                temperature=temperature if temperature is not None else 0.1,
+            ),
         )
     elif provider == ServiceProviders.MINIMAX.value:
         base_url = base_url or "https://api.minimax.io/v1"
@@ -1321,9 +1381,13 @@ def create_llm_service(
         kwargs["credentials"] = user_config.llm.credentials
     elif provider == ServiceProviders.MINIMAX.value:
         kwargs["base_url"] = user_config.llm.base_url
-        kwargs["temperature"] = user_config.llm.temperature
-    elif provider == ServiceProviders.SARVAM.value:
-        kwargs["temperature"] = user_config.llm.temperature
+
+    # Every LLM configuration carries a temperature now (BaseLLMConfiguration),
+    # so it is resolved once here rather than in a branch per provider -- which
+    # is how MiniMax and Sarvam came to be the only two that honoured it.
+    # getattr, not attribute access: the realtime configs reach this function
+    # and are not BaseLLMConfiguration subclasses.
+    kwargs["temperature"] = getattr(user_config.llm, "temperature", None)
 
     return create_llm_service_from_provider(
         provider,

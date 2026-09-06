@@ -31,6 +31,9 @@ from pipecat.utils.run_context import set_current_org_id
 
 from api.db import db_client
 from api.enums import WorkflowRunMode, WorkflowRunState
+from api.schemas.workflow_configurations import (
+    resolve_knowledge_base_configuration,
+)
 from api.services.configuration.registry import ServiceProviders
 from api.services.pipecat.audio_config import create_audio_config
 from api.services.pipecat.pipeline_builder import create_pipeline_task
@@ -597,6 +600,7 @@ async def execute_text_chat_pending_turn(
     context_compaction_enabled = (workflow.workflow_configurations or {}).get(
         "context_compaction_enabled", False
     )
+    _kb_config = resolve_knowledge_base_configuration(run_configs)
     engine = PipecatEngine(
         llm=llm,
         inference_llm=inference_llm,
@@ -614,6 +618,8 @@ async def execute_text_chat_pending_turn(
         embeddings_api_version=embeddings_api_version,
         has_recordings=has_recordings,
         context_compaction_enabled=context_compaction_enabled,
+        kb_chunks_to_retrieve=_kb_config.chunks_to_retrieve,
+        kb_min_similarity=_kb_config.min_similarity,
         # Each text turn owns a short-lived pipeline. Complete extraction before
         # leaving a node so teardown cannot discard the result before checkpointing.
         run_transition_variable_extraction_in_background=False,

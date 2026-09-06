@@ -1,7 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
-import { ArrowLeft, BookA, Brain, CalendarIcon, Clipboard, Download, ExternalLink, FileDown, Fingerprint, Loader2, Mic, Pause, PhoneOff, Play, Plus, Rocket, Settings, Trash2Icon, Upload, Variable, X } from "lucide-react";
+import { ArrowLeft, BookA, BookOpen, Brain, CalendarIcon, Clipboard, Download, ExternalLink, FileDown, Fingerprint, Loader2, Mic, Pause, PhoneOff, Play, Plus, Rocket, Settings, Trash2Icon, Upload, Variable, X } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -52,10 +52,13 @@ import {
     DEFAULT_TURN_START_MIN_WORDS,
     DEFAULT_VOICEMAIL_DETECTION_CONFIGURATION,
     type ExternalPBXFieldMapping,
+    type KnowledgeBaseConfiguration,
     resolveWorkflowConfigurations,
+    type STTTurnConfiguration,
     TURN_START_STRATEGY_OPTIONS,
     type TurnStartStrategy,
     type TurnStopStrategy,
+    type VADConfiguration,
     type VoicemailDetectionConfiguration,
     type WorkflowConfigurations,
 } from "@/types/workflow-configurations";
@@ -97,6 +100,7 @@ const NAV_ITEMS = [
     { id: "models", label: "Model Overrides", icon: Brain },
     { id: "variables", label: "Template Variables", icon: Variable },
     { id: "dictionary", label: "Dictionary", icon: BookA },
+    { id: "knowledge", label: "Knowledge Base", icon: BookOpen },
     { id: "voicemail", label: "Voicemail Detection", icon: PhoneOff },
     { id: "recordings", label: "Recordings", icon: Mic },
     { id: "deployment", label: "Add to Website", icon: Rocket },
@@ -286,6 +290,12 @@ function GeneralSection({
     const [maxCallDuration, setMaxCallDuration] = useState(workflowConfigurations.max_call_duration);
     const [maxUserIdleTimeout, setMaxUserIdleTimeout] = useState(workflowConfigurations.max_user_idle_timeout);
     const [smartTurnStopSecs, setSmartTurnStopSecs] = useState(workflowConfigurations.smart_turn_stop_secs);
+    const [vadConfig, setVadConfig] = useState<VADConfiguration>(
+        workflowConfigurations.vad_configuration,
+    );
+    const [sttTurnConfig, setSttTurnConfig] = useState<STTTurnConfiguration>(
+        workflowConfigurations.stt_turn_configuration,
+    );
     const [turnStartStrategy, setTurnStartStrategy] = useState<TurnStartStrategy>(
         workflowConfigurations.turn_start_strategy,
     );
@@ -337,6 +347,8 @@ function GeneralSection({
             maxCallDuration !== workflowConfigurations.max_call_duration ||
             maxUserIdleTimeout !== workflowConfigurations.max_user_idle_timeout ||
             smartTurnStopSecs !== workflowConfigurations.smart_turn_stop_secs ||
+            JSON.stringify(vadConfig) !== JSON.stringify(workflowConfigurations.vad_configuration) ||
+            JSON.stringify(sttTurnConfig) !== JSON.stringify(workflowConfigurations.stt_turn_configuration) ||
             turnStartStrategy !== workflowConfigurations.turn_start_strategy ||
             turnStartMinWords !== workflowConfigurations.turn_start_min_words ||
             provisionalVadPauseSecs !== workflowConfigurations.provisional_vad_pause_secs ||
@@ -349,7 +361,7 @@ function GeneralSection({
             JSON.stringify(externalPbxLeadHeaders) !==
             JSON.stringify(workflowConfigurations.external_pbx_lead_headers)
         );
-    }, [name, workflowName, ambientNoiseConfig, maxCallDuration, maxUserIdleTimeout, smartTurnStopSecs, turnStartStrategy, turnStartMinWords, provisionalVadPauseSecs, turnStopStrategy, contextCompactionEnabled, includeTranscriptEndTimestamps, externalPbxFieldMappings, externalPbxLeadHeaders, workflowConfigurations]);
+    }, [name, workflowName, ambientNoiseConfig, maxCallDuration, maxUserIdleTimeout, smartTurnStopSecs, vadConfig, sttTurnConfig, turnStartStrategy, turnStartMinWords, provisionalVadPauseSecs, turnStopStrategy, contextCompactionEnabled, includeTranscriptEndTimestamps, externalPbxFieldMappings, externalPbxLeadHeaders, workflowConfigurations]);
 
     useUnsavedChanges("general", isDirty);
 
@@ -421,6 +433,8 @@ function GeneralSection({
                     max_call_duration: maxCallDuration,
                     max_user_idle_timeout: maxUserIdleTimeout,
                     smart_turn_stop_secs: smartTurnStopSecs,
+                    vad_configuration: vadConfig,
+                    stt_turn_configuration: sttTurnConfig,
                     turn_start_strategy: turnStartStrategy,
                     turn_start_min_words: turnStartMinWords,
                     provisional_vad_pause_secs: provisionalVadPauseSecs,
@@ -645,6 +659,99 @@ function GeneralSection({
                             </p>
                         </div>
                     )}
+
+                    {/*
+                      * These four reach the transcriber rather than the turn
+                      * strategy above, and which of them applies depends on the
+                      * transcriber. This section has no access to the resolved
+                      * STT provider, so each one says where it applies instead
+                      * of being hidden -- a control that silently does nothing
+                      * is worse than one labelled with its scope.
+                      */}
+                    <div className="space-y-2">
+                        <Label htmlFor="eot_threshold" className="text-xs">
+                            End-of-Turn Confidence
+                        </Label>
+                        <Input
+                            id="eot_threshold"
+                            type="number"
+                            step="0.05"
+                            min="0.1"
+                            max="1"
+                            value={sttTurnConfig.eot_threshold}
+                            onChange={(e) => {
+                                const value = parseFloat(e.target.value);
+                                if (!isNaN(value)) setSttTurnConfig((prev) => ({ ...prev, eot_threshold: value }));
+                            }}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            How sure the transcriber must be that the caller has finished. Higher waits longer
+                            and interrupts less. Default: 0.7. Applies to Deepgram Flux and AICall managed transcription.
+                        </p>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="eager_eot_threshold" className="text-xs">
+                            Eager End-of-Turn Confidence
+                        </Label>
+                        <Input
+                            id="eager_eot_threshold"
+                            type="number"
+                            step="0.05"
+                            min="0.1"
+                            max="1"
+                            value={sttTurnConfig.eager_eot_threshold}
+                            onChange={(e) => {
+                                const value = parseFloat(e.target.value);
+                                if (!isNaN(value)) setSttTurnConfig((prev) => ({ ...prev, eager_eot_threshold: value }));
+                            }}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Lower bar for starting to think early, before the turn is confirmed. Default: 0.5.
+                            Applies to Deepgram Flux and AICall managed transcription.
+                        </p>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="eot_timeout_ms" className="text-xs">
+                            End-of-Turn Timeout (ms)
+                        </Label>
+                        <Input
+                            id="eot_timeout_ms"
+                            type="number"
+                            step="100"
+                            min="500"
+                            max="15000"
+                            value={sttTurnConfig.eot_timeout_ms}
+                            onChange={(e) => {
+                                const value = parseInt(e.target.value);
+                                if (!isNaN(value)) setSttTurnConfig((prev) => ({ ...prev, eot_timeout_ms: value }));
+                            }}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Give up waiting for confirmation after this long. Default: 3000.
+                            Applies to Deepgram Flux and AICall managed transcription.
+                        </p>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="endpointing_ms" className="text-xs">
+                            Endpointing (ms)
+                        </Label>
+                        <Input
+                            id="endpointing_ms"
+                            type="number"
+                            step="10"
+                            min="10"
+                            max="2000"
+                            value={sttTurnConfig.endpointing_ms}
+                            onChange={(e) => {
+                                const value = parseInt(e.target.value);
+                                if (!isNaN(value)) setSttTurnConfig((prev) => ({ ...prev, endpointing_ms: value }));
+                            }}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Silence before the transcriber closes the utterance. Default: 100.
+                            Applies to Deepgram Nova models.
+                        </p>
+                    </div>
                 </div>
 
                 <Separator />
@@ -681,6 +788,53 @@ function GeneralSection({
                                     Experimental
                                 </span>
                             )}
+                        </p>
+                    </div>
+                    {/*
+                      * Unlike the strategy above, these two apply on every
+                      * provider including the realtime ones, because the local
+                      * Silero VAD runs either way.
+                      */}
+                    <div className="space-y-2">
+                        <Label htmlFor="vad_stop_secs" className="text-xs">
+                            Barge-in Silence (seconds)
+                        </Label>
+                        <Input
+                            id="vad_stop_secs"
+                            type="number"
+                            step="0.05"
+                            min="0.05"
+                            max="2"
+                            value={vadConfig.stop_secs}
+                            onChange={(e) => {
+                                const value = parseFloat(e.target.value);
+                                if (!isNaN(value)) setVadConfig((prev) => ({ ...prev, stop_secs: value }));
+                            }}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            How long the caller must stop speaking before the agent treats the turn as over.
+                            Default: 0.2
+                        </p>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="vad_confidence" className="text-xs">
+                            Voice Detection Confidence
+                        </Label>
+                        <Input
+                            id="vad_confidence"
+                            type="number"
+                            step="0.05"
+                            min="0.1"
+                            max="1"
+                            value={vadConfig.confidence}
+                            onChange={(e) => {
+                                const value = parseFloat(e.target.value);
+                                if (!isNaN(value)) setVadConfig((prev) => ({ ...prev, confidence: value }));
+                            }}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            How sure the agent must be that it is hearing speech rather than background noise.
+                            Raise it on noisy lines. Default: 0.7
                         </p>
                     </div>
                     {turnStartStrategy === "min_words" && (
@@ -1156,6 +1310,113 @@ function DictionarySection({
                 {isDirty && <span className="text-xs text-muted-foreground">Unsaved changes</span>}
                 <Button onClick={handleSave} disabled={isSaving || !isDirty}>
                     {isSaving ? "Saving..." : "Save Dictionary"}
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Section: Knowledge Base
+// ---------------------------------------------------------------------------
+
+function KnowledgeBaseSection({
+    workflowConfigurations,
+    workflowName,
+    onSave,
+}: {
+    workflowConfigurations: WorkflowConfigurations;
+    workflowName: string;
+    onSave: (configurations: WorkflowConfigurations, workflowName: string) => Promise<void>;
+}) {
+    const [kbConfig, setKbConfig] = useState<KnowledgeBaseConfiguration>(
+        workflowConfigurations.knowledge_base_configuration,
+    );
+    const [isSaving, setIsSaving] = useState(false);
+
+    const isDirty =
+        JSON.stringify(kbConfig) !==
+        JSON.stringify(workflowConfigurations.knowledge_base_configuration);
+
+    useUnsavedChanges("knowledge", isDirty);
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            await onSave(
+                { ...workflowConfigurations, knowledge_base_configuration: kbConfig },
+                workflowName,
+            );
+            toast.success(`Knowledge base settings saved. ${PUBLISH_WORKFLOW_REMINDER}`);
+        } catch (error) {
+            console.error("Failed to save knowledge base settings:", error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <Card id="knowledge">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                    <BookOpen className="h-4 w-4" />
+                    Knowledge Base
+                </CardTitle>
+                <CardDescription>
+                    How much the agent pulls back from its documents, and how strictly. Which
+                    documents an agent can read is set per node in the graph; these limits apply
+                    to the whole agent.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="kb_chunks_to_retrieve" className="text-xs">
+                        Chunks to Retrieve
+                    </Label>
+                    <Input
+                        id="kb_chunks_to_retrieve"
+                        type="number"
+                        step="1"
+                        min="1"
+                        max="10"
+                        value={kbConfig.chunks_to_retrieve}
+                        onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            if (!isNaN(value)) setKbConfig((prev) => ({ ...prev, chunks_to_retrieve: value }));
+                        }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        How many document passages the agent pulls per lookup. More gives it context
+                        but costs tokens and latency on every lookup. Default: 3
+                    </p>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="kb_min_similarity" className="text-xs">
+                        Similarity Threshold
+                    </Label>
+                    <Input
+                        id="kb_min_similarity"
+                        type="number"
+                        step="0.05"
+                        min="0"
+                        max="1"
+                        value={kbConfig.min_similarity}
+                        onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            if (!isNaN(value)) setKbConfig((prev) => ({ ...prev, min_similarity: value }));
+                        }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        Passages scoring below this are dropped, so the agent says it does not know
+                        rather than answering from a weak match. 0 keeps every result &mdash;
+                        today&apos;s behaviour. Documents attached whole are always returned.
+                    </p>
+                </div>
+            </CardContent>
+            <CardFooter className="justify-end gap-3 border-t pt-6">
+                {isDirty && <span className="text-xs text-muted-foreground">Unsaved changes</span>}
+                <Button onClick={handleSave} disabled={isSaving || !isDirty}>
+                    {isSaving ? "Saving..." : "Save Knowledge Base"}
                 </Button>
             </CardFooter>
         </Card>
@@ -1769,6 +2030,12 @@ function WorkflowSettingsInner({
 
                             {/* Dictionary */}
                             <DictionarySection dictionary={dictionary} onSave={saveDictionary} />
+
+                            <KnowledgeBaseSection
+                                workflowConfigurations={resolvedWorkflowConfigurationsForRender}
+                                workflowName={workflowName}
+                                onSave={saveWorkflowConfigurations}
+                            />
 
                             {/* Voicemail Detection */}
                             <VoicemailSection

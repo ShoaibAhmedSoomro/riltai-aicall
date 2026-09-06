@@ -85,6 +85,10 @@ class PipecatEngine:
         embeddings_api_version: Optional[str] = None,
         has_recordings: bool = False,
         context_compaction_enabled: bool = False,
+        # Defaults equal the literals these replaced, so an agent that never
+        # touches them retrieves exactly what it retrieved before.
+        kb_chunks_to_retrieve: int = 3,
+        kb_min_similarity: float = 0.0,
         run_transition_variable_extraction_in_background: bool = True,
     ):
         self.task = task
@@ -173,6 +177,8 @@ class PipecatEngine:
 
         # Background context summarization on node transitions
         self._context_compaction_enabled: bool = context_compaction_enabled
+        self._kb_chunks_to_retrieve: int = kb_chunks_to_retrieve
+        self._kb_min_similarity: float = kb_min_similarity
         self._context_summarization_manager: Optional[ContextSummarizationManager] = (
             None
         )
@@ -406,7 +412,8 @@ class PipecatEngine:
                     query=query,
                     organization_id=organization_id,
                     document_uuids=document_uuids,
-                    limit=3,  # Return top 3 most relevant chunks
+                    limit=self._kb_chunks_to_retrieve,
+                    min_similarity=self._kb_min_similarity,
                     embeddings_api_key=self._embeddings_api_key,
                     embeddings_model=self._embeddings_model,
                     embeddings_base_url=self._embeddings_base_url,

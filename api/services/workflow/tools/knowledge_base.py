@@ -22,6 +22,7 @@ async def retrieve_from_knowledge_base(
     organization_id: int,
     document_uuids: Optional[List[str]] = None,
     limit: int = 3,
+    min_similarity: float = 0.0,
     embeddings_api_key: Optional[str] = None,
     embeddings_model: Optional[str] = None,
     embeddings_base_url: Optional[str] = None,
@@ -76,6 +77,7 @@ async def retrieve_from_knowledge_base(
                 embeddings_endpoint,
                 embeddings_api_version,
                 correlation_id,
+                min_similarity=min_similarity,
             )
 
         # Create span with parent context
@@ -93,6 +95,12 @@ async def retrieve_from_knowledge_base(
                     )
                     span.set_attribute("retrieval.query", query)
                     span.set_attribute("retrieval.limit", limit)
+                    # NOT "retrieval.min_similarity" -- that key is already
+                    # written further down with the lowest score actually
+                    # returned, and the later write would win.
+                    span.set_attribute(
+                        "retrieval.min_similarity_threshold", min_similarity
+                    )
                     span.set_attribute("retrieval.organization_id", organization_id)
 
                     # Add document filter info
@@ -117,6 +125,7 @@ async def retrieve_from_knowledge_base(
                         embeddings_endpoint,
                         embeddings_api_version,
                         correlation_id,
+                        min_similarity=min_similarity,
                     )
 
                     # Add result metadata to span
@@ -195,6 +204,7 @@ async def retrieve_from_knowledge_base(
                 embeddings_endpoint,
                 embeddings_api_version,
                 correlation_id,
+                min_similarity=min_similarity,
             )
     else:
         # Tracing is disabled - perform retrieval without tracing
@@ -210,6 +220,7 @@ async def retrieve_from_knowledge_base(
             embeddings_endpoint,
             embeddings_api_version,
             correlation_id,
+            min_similarity=min_similarity,
         )
 
 
@@ -225,11 +236,18 @@ async def _perform_retrieval(
     embeddings_endpoint: Optional[str] = None,
     embeddings_api_version: Optional[str] = None,
     correlation_id: Optional[str] = None,
+    *,
+    min_similarity: float = 0.0,
 ) -> Dict[str, Any]:
     """Internal function to perform the actual retrieval operation.
 
     Separated from tracing logic for cleaner code organization.
     Handles both chunked (vector search) and full_document (full text) modes.
+
+    min_similarity is keyword-only and last on purpose: all four callers pass
+    every other argument positionally, so inserting it anywhere earlier would
+    silently shift embeddings_api_key onto it -- a runtime failure on every
+    knowledge-base lookup rather than an error at import.
     """
     try:
         chunks = []
@@ -293,6 +311,12 @@ async def _perform_retrieval(
                     "similarity": round(result.get("similarity", 0), 4),
                     "chunk_index": result.get("chunk_index"),
                 }
+                # Only vector-search hits are scored. The full_document chunks
+                # appended above carry a pinned similarity of 1.0 and are
+                # deliberately outside this loop: they were selected by the
+                # author, not by a score, and must not be dropped by a floor.
+                if chunk_info["similarity"] < min_similarity:
+                    continue
                 chunks.append(chunk_info)
 
         logger.info(

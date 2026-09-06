@@ -164,7 +164,40 @@ class BaseServiceConfiguration(BaseModel):
 
 
 class BaseLLMConfiguration(BaseServiceConfiguration):
+    """Any LLM, conversational or speech-to-speech.
+
+    Deliberately does NOT carry temperature. The realtime (speech-to-speech)
+    configurations inherit from here too, and four of the six providers behind
+    them -- OpenAI Realtime, Grok, Ultravox, Azure Realtime -- do not accept the
+    parameter at all. A dial on this class shows up in the UI for those four and
+    does nothing. Chat models get it from BaseChatLLMConfiguration below; the
+    two realtime providers that do support it declare their own.
+    """
+
     model: str
+
+
+class BaseChatLLMConfiguration(BaseLLMConfiguration):
+    """A conversational (non-realtime) LLM."""
+
+    # None is a meaningful value rather than a missing one: it means "whatever
+    # this provider did before this field existed", which is 0.1 for most of
+    # them and nothing at all for RILT / Bedrock / Speaches. Resolving a default
+    # here instead would silently move every existing agent onto one number.
+    #
+    # MiniMax and Sarvam redeclare this with their own bounds and defaults --
+    # MiniMax rejects 0, which ge=0.0 here would let through.
+    temperature: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=2.0,
+        description=(
+            "Sampling temperature. Lower values give more deterministic "
+            "replies and better tool-call accuracy. Leave empty to keep this "
+            "provider's default. Ignored by OpenAI reasoning models (gpt-5*), "
+            "which do not accept it."
+        ),
+    )
 
 
 class BaseTTSConfiguration(BaseServiceConfiguration):
@@ -399,7 +432,7 @@ AWS_BEDROCK_MODELS = [
 
 
 @register_llm
-class OpenAILLMService(BaseLLMConfiguration):
+class OpenAILLMService(BaseChatLLMConfiguration):
     model_config = OPENAI_PROVIDER_MODEL_CONFIG
     provider: Literal[ServiceProviders.OPENAI] = ServiceProviders.OPENAI
     model: str = Field(
@@ -414,7 +447,7 @@ class OpenAILLMService(BaseLLMConfiguration):
 
 
 @register_llm
-class AtlasCloudLLMService(BaseLLMConfiguration):
+class AtlasCloudLLMService(BaseChatLLMConfiguration):
     model_config = ATLASCLOUD_PROVIDER_MODEL_CONFIG
     provider: Literal[ServiceProviders.ATLASCLOUD] = ServiceProviders.ATLASCLOUD
     model: str = Field(
@@ -429,7 +462,7 @@ class AtlasCloudLLMService(BaseLLMConfiguration):
 
 
 @register_llm
-class GoogleLLMService(BaseLLMConfiguration):
+class GoogleLLMService(BaseChatLLMConfiguration):
     model_config = GOOGLE_PROVIDER_MODEL_CONFIG
     provider: Literal[ServiceProviders.GOOGLE] = ServiceProviders.GOOGLE
     model: str = Field(
@@ -440,7 +473,7 @@ class GoogleLLMService(BaseLLMConfiguration):
 
 
 @register_llm
-class GoogleVertexLLMConfiguration(BaseLLMConfiguration):
+class GoogleVertexLLMConfiguration(BaseChatLLMConfiguration):
     model_config = GOOGLE_VERTEX_PROVIDER_MODEL_CONFIG
     provider: Literal[ServiceProviders.GOOGLE_VERTEX] = ServiceProviders.GOOGLE_VERTEX
     model: str = Field(
@@ -474,7 +507,7 @@ class GoogleVertexLLMConfiguration(BaseLLMConfiguration):
 
 
 @register_llm
-class GroqLLMService(BaseLLMConfiguration):
+class GroqLLMService(BaseChatLLMConfiguration):
     model_config = GROQ_PROVIDER_MODEL_CONFIG
     provider: Literal[ServiceProviders.GROQ] = ServiceProviders.GROQ
     model: str = Field(
@@ -485,7 +518,7 @@ class GroqLLMService(BaseLLMConfiguration):
 
 
 @register_llm
-class OpenRouterLLMConfiguration(BaseLLMConfiguration):
+class OpenRouterLLMConfiguration(BaseChatLLMConfiguration):
     model_config = OPENROUTER_PROVIDER_MODEL_CONFIG
     provider: Literal[ServiceProviders.OPENROUTER] = ServiceProviders.OPENROUTER
     model: str = Field(
@@ -501,7 +534,7 @@ class OpenRouterLLMConfiguration(BaseLLMConfiguration):
 
 
 @register_llm
-class AzureLLMService(BaseLLMConfiguration):
+class AzureLLMService(BaseChatLLMConfiguration):
     model_config = AZURE_OPENAI_PROVIDER_MODEL_CONFIG
     provider: Literal[ServiceProviders.AZURE] = ServiceProviders.AZURE
     model: str = Field(
@@ -516,7 +549,7 @@ class AzureLLMService(BaseLLMConfiguration):
 
 
 @register_llm
-class RiltLLMService(BaseLLMConfiguration):
+class RiltLLMService(BaseChatLLMConfiguration):
     model_config = RILT_PROVIDER_MODEL_CONFIG
     provider: Literal[ServiceProviders.RILT] = ServiceProviders.RILT
     model: str = Field(
@@ -527,7 +560,7 @@ class RiltLLMService(BaseLLMConfiguration):
 
 
 @register_llm
-class AWSBedrockLLMConfiguration(BaseLLMConfiguration):
+class AWSBedrockLLMConfiguration(BaseChatLLMConfiguration):
     model_config = AWS_BEDROCK_PROVIDER_MODEL_CONFIG
     provider: Literal[ServiceProviders.AWS_BEDROCK] = ServiceProviders.AWS_BEDROCK
     model: str = Field(
@@ -557,7 +590,7 @@ SPEACHES_LLM_MODELS = ["llama3", "mistral", "phi3", "qwen2", "gemma2", "deepseek
 
 
 @register_llm
-class SpeachesLLMConfiguration(BaseLLMConfiguration):
+class SpeachesLLMConfiguration(BaseChatLLMConfiguration):
     model_config = SPEACHES_PROVIDER_MODEL_CONFIG
     provider: Literal[ServiceProviders.SPEACHES] = ServiceProviders.SPEACHES
     model: str = Field(
@@ -586,7 +619,7 @@ HUGGINGFACE_LLM_MODELS = [
 
 
 @register_llm
-class HuggingFaceLLMConfiguration(BaseLLMConfiguration):
+class HuggingFaceLLMConfiguration(BaseChatLLMConfiguration):
     model_config = HUGGINGFACE_PROVIDER_MODEL_CONFIG
     provider: Literal[ServiceProviders.HUGGINGFACE] = ServiceProviders.HUGGINGFACE
     model: str = Field(
@@ -615,7 +648,7 @@ MINIMAX_MODELS = [
 
 
 @register_llm
-class MiniMaxLLMConfiguration(BaseLLMConfiguration):
+class MiniMaxLLMConfiguration(BaseChatLLMConfiguration):
     provider: Literal[ServiceProviders.MINIMAX] = ServiceProviders.MINIMAX
     model: str = Field(
         default="MiniMax-M2.7",
@@ -635,7 +668,7 @@ class MiniMaxLLMConfiguration(BaseLLMConfiguration):
 
 
 @register_llm
-class SarvamLLMConfiguration(BaseLLMConfiguration):
+class SarvamLLMConfiguration(BaseChatLLMConfiguration):
     model_config = SARVAM_PROVIDER_MODEL_CONFIG
     provider: Literal[ServiceProviders.SARVAM] = ServiceProviders.SARVAM
     model: str = Field(
@@ -973,6 +1006,38 @@ class ElevenlabsTTSConfiguration(BaseServiceConfiguration):
         description="ElevenLabs voice ID from your Voice Library.",
     )
     speed: float = Field(default=1.0, ge=0.1, le=2.0, description="Speed of the voice.")
+    # These four were literals in service_factory. The defaults deliberately
+    # equal the literals they replaced, so an agent that never touches them
+    # sounds exactly as it did.
+    stability: float = Field(
+        default=0.8,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "How consistent the voice stays between generations. Lower is more "
+            "expressive and more variable."
+        ),
+    )
+    similarity_boost: float = Field(
+        default=0.75,
+        ge=0.0,
+        le=1.0,
+        description="How closely the output tracks the original voice.",
+    )
+    # None rather than a number: ElevenLabs treats these as unset, and picking
+    # a default here would change how every existing agent sounds.
+    style: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Style exaggeration. Costs latency, so leave empty unless you need it."
+        ),
+    )
+    use_speaker_boost: bool | None = Field(
+        default=None,
+        description="Boost similarity to the original speaker. Adds latency.",
+    )
     model: str = Field(
         default="eleven_flash_v2_5",
         description="ElevenLabs TTS model.",
