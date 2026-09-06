@@ -123,6 +123,12 @@ export type AwsBedrockLlmConfiguration = {
      */
     model?: string;
     /**
+     * Temperature
+     *
+     * Sampling temperature. Lower values give more deterministic replies and better tool-call accuracy. Leave empty to keep this provider's default. Ignored by OpenAI reasoning models (gpt-5*), which do not accept it.
+     */
+    temperature?: number | null;
+    /**
      * Aws Access Key
      *
      * AWS access key ID with bedrock:InvokeModel permission.
@@ -278,6 +284,12 @@ export type AtlasCloudLlmService = {
      */
     model?: string;
     /**
+     * Temperature
+     *
+     * Sampling temperature. Lower values give more deterministic replies and better tool-call accuracy. Leave empty to keep this provider's default. Ignored by OpenAI reasoning models (gpt-5*), which do not accept it.
+     */
+    temperature?: number | null;
+    /**
      * Base Url
      *
      * Atlas Cloud OpenAI-compatible API endpoint.
@@ -338,6 +350,12 @@ export type AzureLlmService = {
      * Azure deployment name (not the upstream OpenAI model id).
      */
     model?: string;
+    /**
+     * Temperature
+     *
+     * Sampling temperature. Lower values give more deterministic replies and better tool-call accuracy. Leave empty to keep this provider's default. Ignored by OpenAI reasoning models (gpt-5*), which do not accept it.
+     */
+    temperature?: number | null;
     /**
      * Endpoint
      *
@@ -2254,6 +2272,30 @@ export type ElevenlabsTtsConfiguration = {
      */
     speed?: number;
     /**
+     * Stability
+     *
+     * How consistent the voice stays between generations. Lower is more expressive and more variable.
+     */
+    stability?: number;
+    /**
+     * Similarity Boost
+     *
+     * How closely the output tracks the original voice.
+     */
+    similarity_boost?: number;
+    /**
+     * Style
+     *
+     * Style exaggeration. Costs latency, so leave empty unless you need it.
+     */
+    style?: number | null;
+    /**
+     * Use Speaker Boost
+     *
+     * Boost similarity to the original speaker. Adds latency.
+     */
+    use_speaker_boost?: boolean | null;
+    /**
      * Model
      *
      * ElevenLabs TTS model.
@@ -2582,6 +2624,12 @@ export type GoogleLlmService = {
      * Gemini model on Google AI Studio (not Vertex).
      */
     model?: string;
+    /**
+     * Temperature
+     *
+     * Sampling temperature. Lower values give more deterministic replies and better tool-call accuracy. Leave empty to keep this provider's default. Ignored by OpenAI reasoning models (gpt-5*), which do not accept it.
+     */
+    temperature?: number | null;
 };
 
 /**
@@ -2734,6 +2782,12 @@ export type GoogleVertexLlmConfiguration = {
      * Gemini model on Vertex AI.
      */
     model?: string;
+    /**
+     * Temperature
+     *
+     * Sampling temperature. Lower values give more deterministic replies and better tool-call accuracy. Leave empty to keep this provider's default. Ignored by OpenAI reasoning models (gpt-5*), which do not accept it.
+     */
+    temperature?: number | null;
     /**
      * Project Id
      *
@@ -2888,6 +2942,12 @@ export type GroqLlmService = {
      * Groq-hosted model identifier.
      */
     model?: string;
+    /**
+     * Temperature
+     *
+     * Sampling temperature. Lower values give more deterministic replies and better tool-call accuracy. Leave empty to keep this provider's default. Ignored by OpenAI reasoning models (gpt-5*), which do not accept it.
+     */
+    temperature?: number | null;
 };
 
 /**
@@ -3131,6 +3191,12 @@ export type HuggingFaceLlmConfiguration = {
      */
     model?: string;
     /**
+     * Temperature
+     *
+     * Sampling temperature. Lower values give more deterministic replies and better tool-call accuracy. Leave empty to keep this provider's default. Ignored by OpenAI reasoning models (gpt-5*), which do not accept it.
+     */
+    temperature?: number | null;
+    /**
      * Base Url
      *
      * Hugging Face OpenAI-compatible chat-completions router base URL.
@@ -3343,6 +3409,23 @@ export type InworldTtsConfiguration = {
  * ItemKind
  */
 export type ItemKind = 'node' | 'edge' | 'workflow';
+
+/**
+ * KnowledgeBaseConfigurationDefaults
+ *
+ * How much the agent pulls back from its documents, and how strictly.
+ */
+export type KnowledgeBaseConfigurationDefaults = {
+    /**
+     * Chunks To Retrieve
+     */
+    chunks_to_retrieve?: number;
+    /**
+     * Min Similarity
+     */
+    min_similarity?: number;
+    [key: string]: unknown;
+};
 
 /**
  * LangfuseCredentialsRequest
@@ -3728,17 +3811,17 @@ export type MiniMaxLlmConfiguration = {
      */
     model?: string;
     /**
-     * Base Url
-     *
-     * MiniMax OpenAI-compatible API endpoint.
-     */
-    base_url?: string;
-    /**
      * Temperature
      *
      * Sampling temperature. MiniMax requires > 0.
      */
     temperature?: number;
+    /**
+     * Base Url
+     *
+     * MiniMax OpenAI-compatible API endpoint.
+     */
+    base_url?: string;
 };
 
 /**
@@ -4054,6 +4137,12 @@ export type OpenAillmService = {
      */
     model?: string;
     /**
+     * Temperature
+     *
+     * Sampling temperature. Lower values give more deterministic replies and better tool-call accuracy. Leave empty to keep this provider's default. Ignored by OpenAI reasoning models (gpt-5*), which do not accept it.
+     */
+    temperature?: number | null;
+    /**
      * Base Url
      *
      * Override only if using an OpenAI-compatible API (e.g. local LLM, proxy).
@@ -4195,6 +4284,12 @@ export type OpenRouterLlmConfiguration = {
      * OpenRouter model slug in 'vendor/model' form.
      */
     model?: string;
+    /**
+     * Temperature
+     *
+     * Sampling temperature. Lower values give more deterministic replies and better tool-call accuracy. Leave empty to keep this provider's default. Ignored by OpenAI reasoning models (gpt-5*), which do not accept it.
+     */
+    temperature?: number | null;
     /**
      * Base Url
      *
@@ -5288,6 +5383,12 @@ export type RiltLlmService = {
      * Rilt-hosted model tier.
      */
     model?: string;
+    /**
+     * Temperature
+     *
+     * Sampling temperature. Lower values give more deterministic replies and better tool-call accuracy. Leave empty to keep this provider's default. Ignored by OpenAI reasoning models (gpt-5*), which do not accept it.
+     */
+    temperature?: number | null;
 };
 
 /**
@@ -5480,6 +5581,36 @@ export type SipTransportDetails = {
      * Uri
      */
     uri: string;
+};
+
+/**
+ * STTTurnConfigurationDefaults
+ *
+ * End-of-turn detection inside the transcriber.
+ *
+ * Provider-specific by nature: the three eot_* dials reach Deepgram Flux and
+ * the AICall managed transcriber, endpointing_ms reaches Deepgram Nova, and
+ * on any other provider they are accepted and ignored -- the same tolerance
+ * the Dictionary feature already has.
+ */
+export type SttTurnConfigurationDefaults = {
+    /**
+     * Endpointing Ms
+     */
+    endpointing_ms?: number;
+    /**
+     * Eot Threshold
+     */
+    eot_threshold?: number;
+    /**
+     * Eager Eot Threshold
+     */
+    eager_eot_threshold?: number;
+    /**
+     * Eot Timeout Ms
+     */
+    eot_timeout_ms?: number;
+    [key: string]: unknown;
 };
 
 /**
@@ -5794,6 +5925,12 @@ export type SpeachesLlmConfiguration = {
      * Model name as exposed by your OpenAI-compatible server.
      */
     model?: string;
+    /**
+     * Temperature
+     *
+     * Sampling temperature. Lower values give more deterministic replies and better tool-call accuracy. Leave empty to keep this provider's default. Ignored by OpenAI reasoning models (gpt-5*), which do not accept it.
+     */
+    temperature?: number | null;
     /**
      * Base Url
      *
@@ -7180,6 +7317,31 @@ export type UserResponse = {
 };
 
 /**
+ * VADConfigurationDefaults
+ *
+ * When the agent decides the caller has stopped talking.
+ *
+ * Mirrors pipecat's VADParams. min_volume is deliberately not exposed: it is
+ * the one parameter where a wrong value makes the agent deaf rather than
+ * merely eager or slow.
+ */
+export type VadConfigurationDefaults = {
+    /**
+     * Stop Secs
+     */
+    stop_secs?: number;
+    /**
+     * Confidence
+     */
+    confidence?: number;
+    /**
+     * Start Secs
+     */
+    start_secs?: number;
+    [key: string]: unknown;
+};
+
+/**
  * ValidateWorkflowResponse
  */
 export type ValidateWorkflowResponse = {
@@ -7544,6 +7706,9 @@ export type WidgetTexts = {
  */
 export type WorkflowConfigurationDefaults = {
     ambient_noise_configuration?: AmbientNoiseConfigurationDefaults;
+    vad_configuration?: VadConfigurationDefaults;
+    stt_turn_configuration?: SttTurnConfigurationDefaults;
+    knowledge_base_configuration?: KnowledgeBaseConfigurationDefaults;
     /**
      * Max Call Duration
      */
