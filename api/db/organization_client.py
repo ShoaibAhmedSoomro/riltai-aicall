@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import exists, func, update
+from sqlalchemy import delete, exists, func, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.future import select
 
@@ -228,3 +228,56 @@ class OrganizationClient(BaseDBClient):
             )
             await session.commit()
             return result.rowcount > 0
+
+    async def remove_user_from_organization(
+        self, user_id: int, organization_id: int
+    ) -> bool:
+        """Take a user out of an organization. False when they were not in it.
+
+        Deleting the association row is NOT on its own enough to remove access,
+        and doing only that would hand the removed user MORE power than they had:
+
+        * ``get_user_with_selected_organization`` only checks that
+          ``users.selected_organization_id`` is set. It never consults this
+          table, so every org-scoped handler would keep serving them.
+        * ``get_org_role`` resolves a missing row to ADMIN by design, because
+          API-key auth legitimately has no row. So a removed *member* would come
+          back as an *admin*.
+
+        Both are fixed by moving them off the org in the same transaction:
+        another org they still belong to if there is one, otherwise NULL, which
+        makes every org-scoped route 400 until they pick one.
+
+        Not fixed here, and worth knowing: API keys belong to the organization
+        rather than to the person who minted one, so a key this user has already
+        copied keeps working. Removing someone who had a key means rotating it.
+        """
+        async with self.async_session() as session:
+            deleted = await session.execute(
+                delete(organization_users_association).where(
+                    organization_users_association.c.user_id == user_id,
+                    organization_users_association.c.organization_id == organization_id,
+                )
+            )
+            if deleted.rowcount == 0:
+                return False
+
+            # Only touch the field when it points at the org they just left --
+            # a user removed from an org they were not currently working in
+            # must not be knocked out of the one they are.
+            fallback = await session.execute(
+                select(organization_users_association.c.organization_id)
+                .where(organization_users_association.c.user_id == user_id)
+                .order_by(organization_users_association.c.organization_id)
+                .limit(1)
+            )
+            await session.execute(
+                update(UserModel)
+                .where(
+                    UserModel.id == user_id,
+                    UserModel.selected_organization_id == organization_id,
+                )
+                .values(selected_organization_id=fallback.scalar_one_or_none())
+            )
+            await session.commit()
+            return True

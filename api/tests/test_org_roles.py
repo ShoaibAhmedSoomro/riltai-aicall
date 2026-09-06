@@ -182,3 +182,131 @@ async def test_a_user_from_another_org_is_not_found(monkeypatch):
 async def test_an_unknown_role_is_rejected_before_it_reaches_the_column():
     with pytest.raises(Exception):
         org_routes.MemberRoleUpdateRequest(role="superadmin")
+
+
+# ── removal, and the escalation it would be without the second write ────────
+
+
+def _patch_removal(monkeypatch, members, admins, removed=True):
+    monkeypatch.setattr(
+        org_routes.db_client,
+        "get_organization_members",
+        AsyncMock(return_value=members),
+    )
+    monkeypatch.setattr(
+        org_routes.db_client, "count_admins", AsyncMock(return_value=admins)
+    )
+    remover = AsyncMock(return_value=removed)
+    monkeypatch.setattr(org_routes.db_client, "remove_user_from_organization", remover)
+    return remover
+
+
+@pytest.mark.asyncio
+async def test_a_member_can_leave_without_an_admin(monkeypatch):
+    """Leaving is the one removal that must not need someone else's permission.
+
+    The route is not require_admin-gated for exactly this reason, so the role
+    lookup must not be reached at all when a member removes themselves.
+    """
+    me = _user(1)
+    role = AsyncMock(return_value=OrgRole.MEMBER.value)
+    monkeypatch.setattr(auth_depends.db_client, "get_user_role", role)
+    remover = _patch_removal(monkeypatch, [(me, OrgRole.MEMBER.value)], admins=1)
+
+    await org_routes.remove_member(me.id, me)
+
+    remover.assert_awaited_once_with(me.id, me.selected_organization_id)
+    role.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_a_member_cannot_remove_someone_else(monkeypatch):
+    me, other = _user(1), _user(2)
+    _role_returns(monkeypatch, OrgRole.MEMBER.value)
+    remover = _patch_removal(
+        monkeypatch,
+        [(me, OrgRole.MEMBER.value), (other, OrgRole.MEMBER.value)],
+        admins=1,
+    )
+    with pytest.raises(HTTPException) as exc:
+        await org_routes.remove_member(other.id, me)
+    assert exc.value.status_code == 403
+    remover.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_an_admin_can_remove_a_member(monkeypatch):
+    me, other = _user(1), _user(2)
+    _role_returns(monkeypatch, OrgRole.ADMIN.value)
+    remover = _patch_removal(
+        monkeypatch,
+        [(me, OrgRole.ADMIN.value), (other, OrgRole.MEMBER.value)],
+        admins=1,
+    )
+    await org_routes.remove_member(other.id, me)
+    remover.assert_awaited_once_with(other.id, me.selected_organization_id)
+
+
+@pytest.mark.asyncio
+async def test_the_only_admin_cannot_leave(monkeypatch):
+    """Same hole as self-demotion, reached by a different door.
+
+    An org whose last admin walks out has nobody who can invite, promote or
+    configure it, and no ownership transfer to recover with.
+    """
+    me = _user(1)
+    _role_returns(monkeypatch, OrgRole.ADMIN.value)
+    remover = _patch_removal(monkeypatch, [(me, OrgRole.ADMIN.value)], admins=1)
+    with pytest.raises(HTTPException) as exc:
+        await org_routes.remove_member(me.id, me)
+    assert exc.value.status_code == 400
+    remover.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_an_admin_can_leave_when_another_admin_remains(monkeypatch):
+    me, other = _user(1), _user(2)
+    _role_returns(monkeypatch, OrgRole.ADMIN.value)
+    remover = _patch_removal(
+        monkeypatch,
+        [(me, OrgRole.ADMIN.value), (other, OrgRole.ADMIN.value)],
+        admins=2,
+    )
+    await org_routes.remove_member(me.id, me)
+    remover.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_removing_the_last_member_of_a_member_only_org_is_allowed(monkeypatch):
+    # The guard is about admins, not headcount. A sole *member* leaving is not
+    # blocked -- there is no admin left to strand, because there was none.
+    me = _user(1)
+    remover = _patch_removal(monkeypatch, [(me, OrgRole.MEMBER.value)], admins=0)
+    await org_routes.remove_member(me.id, me)
+    remover.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_cannot_remove_a_user_from_another_org(monkeypatch):
+    me = _user(1)
+    _role_returns(monkeypatch, OrgRole.ADMIN.value)
+    remover = _patch_removal(monkeypatch, [(me, OrgRole.ADMIN.value)], admins=2)
+    with pytest.raises(HTTPException) as exc:
+        await org_routes.remove_member(999, me)
+    assert exc.value.status_code == 404
+    remover.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_a_superuser_removes_without_holding_the_org_role(monkeypatch):
+    me, other = _user(1, is_superuser=True), _user(2)
+    role = AsyncMock(return_value=OrgRole.MEMBER.value)
+    monkeypatch.setattr(auth_depends.db_client, "get_user_role", role)
+    remover = _patch_removal(
+        monkeypatch,
+        [(me, OrgRole.MEMBER.value), (other, OrgRole.MEMBER.value)],
+        admins=0,
+    )
+    await org_routes.remove_member(other.id, me)
+    remover.assert_awaited_once()
+    role.assert_not_awaited()

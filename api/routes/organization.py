@@ -63,6 +63,7 @@ from api.schemas.telephony_phone_number import (
     ProviderSyncStatus,
 )
 from api.services.auth.depends import (
+    get_org_role,
     get_user,
     get_user_with_selected_organization,
     require_admin,
@@ -1965,6 +1966,71 @@ async def update_member_role(
         role=new_role,
         is_superuser=bool(member.is_superuser),
         is_self=(member.id == user.id),
+    )
+
+
+@router.delete("/members/{user_id}", status_code=204)
+async def remove_member(
+    user_id: int,
+    user: UserModel = Depends(get_user_with_selected_organization),
+):
+    """Remove someone from this organization, or leave it yourself.
+
+    One endpoint for both because they are the same write with the same guards;
+    only who may ask differs. Deliberately NOT gated with `require_admin` at the
+    dependency level -- a member must be able to leave without needing an admin
+    to do it for them -- so the permission check is in the handler and pinned by
+    test_org_roles.py rather than by test_admin_gated_routes.py.
+
+    Nothing the person created is deleted. Agents, campaigns and runs belong to
+    the organization; `created_by` on most of them is NOT NULL, so removing the
+    row would either fail or orphan the org's own work. They lose access, the
+    work stays.
+    """
+    organization_id = user.selected_organization_id
+    is_self = user_id == user.id
+
+    # A member may remove exactly themselves. Anyone else is an admin action.
+    if not is_self and not user.is_superuser:
+        if await get_org_role(user) != OrgRole.ADMIN.value:
+            raise HTTPException(
+                status_code=403,
+                detail="Only an admin can remove another member.",
+            )
+
+    # Tenant isolation: user_id arrives from a URL and proves nothing about
+    # which org that user is in.
+    members = await db_client.get_organization_members(organization_id)
+    target = next(((m, r) for m, r in members if m.id == user_id), None)
+    if target is None:
+        raise HTTPException(
+            status_code=404, detail="No such member in this organization"
+        )
+    member, current_role = target
+
+    # Same reasoning as the demotion guard: an org with no admin cannot be
+    # administered again through the product, and there is no ownership-transfer
+    # path to recover with. Leaving is the likelier way to reach this by
+    # accident, so the message says what to do instead.
+    if (
+        current_role == OrgRole.ADMIN.value
+        and await db_client.count_admins(organization_id) <= 1
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "This is the organization's only admin. Promote someone else "
+                "first, or the organization is left with nobody who can "
+                "administer it."
+            ),
+        )
+
+    removed = await db_client.remove_user_from_organization(user_id, organization_id)
+    if not removed:
+        raise HTTPException(status_code=404, detail="Membership no longer exists")
+    logger.info(
+        f"Removed user {member.id} from organization {organization_id} "
+        f"(by user {user.id}, self={is_self})"
     )
 
 

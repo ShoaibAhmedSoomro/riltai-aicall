@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
@@ -9,18 +9,27 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
  * explain. And the only-admin row must not offer a change the server will
  * refuse — the guard exists because an org with no admin needs database
  * surgery to recover.
+ *
+ * Removal adds one more: leaving clears your selected organization server-side,
+ * so a session that stays open afterwards resolves no organization at all and
+ * every screen 400s. Signing out is part of the action, not a nicety.
  */
 
 const listMembers = vi.fn();
 const updateRole = vi.fn();
+const removeMember = vi.fn();
 const useAuth = vi.fn();
+const logout = vi.fn();
+const toastError = vi.fn();
+const toastSuccess = vi.fn();
 
 vi.mock('@/client/sdk.gen', () => ({
     listMembersApiV1OrganizationsMembersGet: (...a: unknown[]) => listMembers(...a),
     updateMemberRoleApiV1OrganizationsMembersUserIdPatch: (...a: unknown[]) => updateRole(...a),
+    removeMemberApiV1OrganizationsMembersUserIdDelete: (...a: unknown[]) => removeMember(...a),
 }));
 vi.mock('@/lib/auth', () => ({ useAuth: () => useAuth() }));
-vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('sonner', () => ({ toast: { success: (...a: unknown[]) => toastSuccess(...a), error: (...a: unknown[]) => toastError(...a) } }));
 
 import { OrganizationMembersSection } from './OrganizationMembersSection';
 
@@ -33,10 +42,16 @@ function mount(data: unknown[], error?: unknown) {
     return render(<OrganizationMembersSection />);
 }
 
+async function confirm(label: RegExp) {
+    fireEvent.click(await screen.findByLabelText(label));
+    fireEvent.click(await screen.findByRole('button', { name: /^Yes,/ }));
+}
+
 beforeEach(() => {
     vi.clearAllMocks();
-    useAuth.mockReturnValue({ user: { id: 1 }, loading: false });
+    useAuth.mockReturnValue({ user: { id: 1 }, loading: false, logout });
     updateRole.mockResolvedValue({ data: {} });
+    removeMember.mockResolvedValue({ data: null });
 });
 
 describe('OrganizationMembersSection', () => {
@@ -93,5 +108,78 @@ describe('OrganizationMembersSection', () => {
         mount([{ ...ADMIN, is_self: false }, OTHER_ADMIN, su]);
         await waitFor(() => expect(screen.getByText('Cleo')).toBeDefined());
         expect(screen.getAllByRole('combobox').length).toBeGreaterThan(0);
+    });
+
+    // ── removal ─────────────────────────────────────────────────────────────
+
+    it('lets an admin remove someone, and drops the row', async () => {
+        mount([ADMIN, OTHER_ADMIN, MEMBER]);
+        await confirm(/Remove Cleo/i);
+        await waitFor(() => expect(removeMember).toHaveBeenCalled());
+        expect(removeMember.mock.calls[0][0].path.user_id).toBe(MEMBER.user_id);
+        await waitFor(() => expect(screen.queryByText('Cleo')).toBeNull());
+    });
+
+    it('asks before removing rather than acting on the first click', async () => {
+        // Removal is not undoable from this screen -- the person has to be
+        // invited back -- so a mis-click must not be enough.
+        mount([ADMIN, OTHER_ADMIN, MEMBER]);
+        fireEvent.click(await screen.findByLabelText(/Remove Cleo/i));
+        expect(removeMember).not.toHaveBeenCalled();
+        expect(screen.getByText('Cleo')).toBeDefined();
+    });
+
+    it('lets a plain member leave but not remove anyone else', async () => {
+        // The endpoint is deliberately not admin-gated for exactly this: a
+        // member who cannot leave unaided is trapped in the organization.
+        mount([{ ...ADMIN, is_self: false }, { ...MEMBER, is_self: true }]);
+        await waitFor(() => expect(screen.getByText('Cleo')).toBeDefined());
+        expect(screen.getByLabelText(/Leave this organization/i)).toBeDefined();
+        expect(screen.queryByLabelText(/Remove Ada/i)).toBeNull();
+    });
+
+    it('signs you out after you leave, instead of leaving a session with no org', async () => {
+        // The server clears selected_organization_id, so staying signed in
+        // means every org-scoped screen 400s with no explanation.
+        mount([{ ...ADMIN, is_self: false }, OTHER_ADMIN, { ...MEMBER, is_self: true }]);
+        await confirm(/Leave this organization/i);
+        await waitFor(() => expect(logout).toHaveBeenCalled());
+    });
+
+    it('does not sign you out when removing somebody else', async () => {
+        mount([ADMIN, OTHER_ADMIN, MEMBER]);
+        await confirm(/Remove Cleo/i);
+        await waitFor(() => expect(screen.queryByText('Cleo')).toBeNull());
+        expect(logout).not.toHaveBeenCalled();
+    });
+
+    it('keeps the row and surfaces the reason when the server refuses', async () => {
+        // Dropping the row optimistically would show someone as removed while
+        // they still have full access.
+        removeMember.mockResolvedValue({
+            error: { detail: "This is the organization's only admin." },
+        });
+        mount([ADMIN, OTHER_ADMIN, MEMBER]);
+        await confirm(/Remove Cleo/i);
+        await waitFor(() =>
+            expect(toastError).toHaveBeenCalledWith("This is the organization's only admin."),
+        );
+        expect(screen.getByText('Cleo')).toBeDefined();
+    });
+
+    it('will not offer to remove the only admin', async () => {
+        mount([ADMIN, MEMBER]);
+        const own = await screen.findByLabelText(/Leave this organization/i);
+        expect(own.hasAttribute('disabled')).toBe(true);
+        fireEvent.click(own);
+        expect(removeMember).not.toHaveBeenCalled();
+    });
+
+    it('warns that an API key outlives the person who knew it', async () => {
+        // Keys belong to the organization, not to whoever minted one, so
+        // removal alone does not revoke what they already copied.
+        mount([ADMIN, OTHER_ADMIN, MEMBER]);
+        fireEvent.click(await screen.findByLabelText(/Remove Cleo/i));
+        expect(await screen.findByText(/until you rotate it/i)).toBeDefined();
     });
 });

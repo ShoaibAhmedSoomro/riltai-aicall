@@ -58,6 +58,12 @@ MUST_NOT_BE_ADMIN = [
     # Knowing who your teammates are is not privileged, and hiding it leaves a
     # member unable to work out who to ask for an admin action.
     ("GET", "/api/v1/organizations/members"),
+    # Removal is admin-only EXCEPT when you are removing yourself, and a member
+    # must be able to leave without an admin doing it for them. That rule cannot
+    # be expressed as a dependency, so the handler checks it and test_org_roles.py
+    # pins it. Listed here so nobody "fixes" the missing require_admin and
+    # silently traps every member in the organization.
+    ("DELETE", "/api/v1/organizations/members/{user_id}"),
 ]
 
 
