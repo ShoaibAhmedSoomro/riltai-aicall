@@ -40,6 +40,9 @@ MUST_BE_ADMIN = [
     ("POST", "/api/v1/workflow/{workflow_id}/embed-token"),
     ("DELETE", "/api/v1/workflow/{workflow_id}/embed-token"),
     ("PATCH", "/api/v1/organizations/members/{user_id}"),
+    # Sets the price per minute, so it decides every currency figure the
+    # organization sees.
+    ("PUT", "/api/v1/organizations/usage/rate-card"),
 ]
 
 # Ordinary work. Gating any of these locks real users out of a working product.
@@ -64,6 +67,9 @@ MUST_NOT_BE_ADMIN = [
     # pins it. Listed here so nobody "fixes" the missing require_admin and
     # silently traps every member in the organization.
     ("DELETE", "/api/v1/organizations/members/{user_id}"),
+    # What a call they placed cost is not privileged, and hiding the rate
+    # leaves every figure on the usage page unexplainable.
+    ("GET", "/api/v1/organizations/usage/rate-card"),
 ]
 
 

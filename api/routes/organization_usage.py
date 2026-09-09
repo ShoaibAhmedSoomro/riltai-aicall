@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from api.constants import DEPLOYMENT_MODE, UI_APP_URL
 from api.db import db_client
 from api.db.models import UserModel
+from api.enums import OrganizationConfigurationKey
 from api.services.auth.depends import (
     get_user,
     require_admin,
@@ -537,3 +538,102 @@ async def get_daily_usage_breakdown(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class UsageRateCardResponse(BaseModel):
+    """The org's local price per talk-minute, or nothing if unpriced.
+
+    `configured` is separate from a zero price on purpose. Everything that
+    reads cost has to distinguish "no price is set" from "calls cost nothing",
+    and a bare `price_per_minute_usd: 0.0` cannot express the first.
+    """
+
+    configured: bool
+    price_per_minute_usd: Optional[float] = None
+    currency: Optional[str] = None
+    # Hosted deployments are priced by MPS and ignore this entirely; the UI
+    # needs to know that so it does not offer an edit box that does nothing.
+    applies_to_this_deployment: bool
+
+
+class UsageRateCardRequest(BaseModel):
+    # Upper bound is a typo guard, not a business rule: a rate is per MINUTE,
+    # so a fat-fingered per-hour or per-thousand figure would otherwise price
+    # every historical-looking report at hundreds of dollars a call.
+    price_per_minute_usd: float = Field(gt=0, le=100)
+    # ISO 4217 is three letters. Rejected rather than coerced, so a stored
+    # currency always means something to whatever formats it later.
+    currency: str = Field(default="USD", pattern=r"^[A-Za-z]{3}$")
+
+
+def _rate_card_response(value: dict | None) -> UsageRateCardResponse:
+    applies = DEPLOYMENT_MODE == "oss"
+    rate = None
+    if value:
+        try:
+            rate = float(value.get("price_per_minute_usd"))
+        except (TypeError, ValueError):
+            rate = None
+    if rate is None or rate <= 0:
+        return UsageRateCardResponse(
+            configured=False, applies_to_this_deployment=applies
+        )
+    return UsageRateCardResponse(
+        configured=True,
+        price_per_minute_usd=rate,
+        currency=str((value or {}).get("currency") or "USD").upper(),
+        applies_to_this_deployment=applies,
+    )
+
+
+@router.get("/usage/rate-card", response_model=UsageRateCardResponse)
+async def get_usage_rate_card(user: UserModel = Depends(get_user)):
+    """The price per talk-minute used to cost self-hosted calls.
+
+    Readable by any member: the cost of a call they placed is not privileged,
+    and hiding the rate would make the figures on the usage page unexplainable.
+    Changing it is admin-only, below.
+    """
+    if not user.selected_organization_id:
+        raise HTTPException(status_code=400, detail="No organization selected")
+
+    config = await db_client.get_configuration(
+        user.selected_organization_id,
+        OrganizationConfigurationKey.USAGE_RATE_CARD.value,
+    )
+    return _rate_card_response(getattr(config, "value", None))
+
+
+@router.put("/usage/rate-card", response_model=UsageRateCardResponse)
+async def save_usage_rate_card(
+    request: UsageRateCardRequest,
+    user: UserModel = Depends(require_admin),
+):
+    """Set the price per talk-minute for self-hosted cost figures.
+
+    Admin-gated: it decides every currency number the organization sees.
+
+    Applies to runs completed AFTER it is set. Existing runs are not re-priced
+    -- backfilling would rewrite the recorded cost of calls that were already
+    reported, and a cost figure that changes retroactively is worse than one
+    that starts empty.
+    """
+    if not user.selected_organization_id:
+        raise HTTPException(status_code=400, detail="No organization selected")
+
+    value = {
+        "price_per_minute_usd": request.price_per_minute_usd,
+        "currency": request.currency.upper(),
+    }
+    await db_client.upsert_configuration(
+        user.selected_organization_id,
+        OrganizationConfigurationKey.USAGE_RATE_CARD.value,
+        value,
+    )
+    logger.info(
+        "Organization {} set its usage rate card to {} {}/min",
+        user.selected_organization_id,
+        request.price_per_minute_usd,
+        request.currency.upper(),
+    )
+    return _rate_card_response(value)

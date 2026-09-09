@@ -178,6 +178,10 @@ class OrganizationConfigurationKey(Enum):
     ORGANIZATION_BOOTSTRAP = (
         "ORGANIZATION_BOOTSTRAP"  # Single-winner lease for post-signup provisioning
     )
+    # Self-hosted price per talk-minute. MPS owns pricing on the hosted path
+    # and is unreachable in OSS, so without this every cost figure stays null.
+    # Unset means unpriced, which the money surfaces show as empty, not zero.
+    USAGE_RATE_CARD = "USAGE_RATE_CARD"
 
 
 class UserConfigurationKey(Enum):
