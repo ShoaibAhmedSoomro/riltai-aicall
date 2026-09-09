@@ -7175,8 +7175,16 @@ export type UsageHistoryResponse = {
     runs: Array<WorkflowRunUsageResponse>;
     /**
      * Total RiltAI Tokens
+     *
+     * Deprecated. Cost in cents; use total_charge_usd.
+     *
+     * @deprecated
      */
     total_rilt_tokens: number;
+    /**
+     * Total Charge Usd
+     */
+    total_charge_usd: number;
     /**
      * Total Duration Seconds
      */
