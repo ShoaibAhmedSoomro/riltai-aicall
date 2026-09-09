@@ -162,7 +162,7 @@ export default function OverviewPage() {
                     loading={data.loading && data.totalCalls === null}
                     unavailable={!data.loading && data.totalCalls === null ? 'Unavailable' : undefined}
                     value={(data.totalCalls ?? 0).toLocaleString()}
-                    hint="Runs with recorded usage"
+                    hint="All runs in the period"
                 />
                 <StatCard
                     label="Talk time"

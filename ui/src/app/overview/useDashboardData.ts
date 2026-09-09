@@ -37,11 +37,15 @@ import { getLocalTimezone } from '@/lib/dateTime';
  *                        rate limiter but no route exposes it.
  *   deltas vs last month there is no previous-period endpoint, so no stat card
  *                        claims a percentage change.
- *   transfers            the daily report's xfer_count matches the literal
- *                        "XFER", which nothing in the platform writes (the real
- *                        codes are call_transferred / transfer_call), so it is
- *                        structurally zero and is not surfaced.
- *   token usage          UsageHistoryResponse.total_rilt_tokens is hardcoded 0.
+ *   token usage          UsageHistoryResponse.total_rilt_tokens was hardcoded 0.
+ *                        Now deprecated and carries cost-in-cents; read
+ *                        total_charge_usd instead.
+ *
+ * FIXED since this note was written:
+ *   transfers            the daily report counted the literal "XFER", which
+ *                        nothing writes, so it was structurally zero. It now
+ *                        counts call_transferred / transfer_call and is emitted
+ *                        as metrics.transferred_count.
  *
  * Each fetch is independent and failure-isolated: one endpoint 4xx-ing degrades
  * its own widget to an empty state instead of blanking the page. The generated
@@ -178,9 +182,14 @@ export function useDashboardData(timezoneOverride?: string | null): DashboardDat
             }),
         );
 
-        // limit=1 because only total_count is wanted. NOTE: the response's
-        // total_duration_seconds sums the returned PAGE only, so it must never
-        // be read here — total_count is the real COUNT over the whole filter.
+        // limit=1 because only total_count is wanted.
+        //
+        // total_duration_seconds used to sum the RETURNED PAGE only, so this
+        // deliberately ignored it. That is fixed — the endpoint now aggregates
+        // in SQL over the whole filtered set, and also returns total_charge_usd
+        // — so this one call could supply talk time and spend directly. Left as
+        // a count-only read for now; switching the panels over is the dashboard
+        // rewire, not this change.
         jobs.push(
             guarded(async () => {
                 const r = await getUsageHistoryApiV1OrganizationsUsageRunsGet({ query: { limit: 1 } });

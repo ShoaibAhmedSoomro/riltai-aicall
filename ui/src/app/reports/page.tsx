@@ -34,7 +34,11 @@ interface DailyReport {
   workflow_id: number | null;
   metrics: {
     total_runs: number;
-    xfer_count: number;
+    // Real transfer count. xfer_count is the deprecated duplicate the API
+    // still emits for one release; both are optional so a response from
+    // either side of the change renders.
+    transferred_count?: number;
+    xfer_count?: number;
   };
   disposition_distribution: Array<{
     disposition: string;

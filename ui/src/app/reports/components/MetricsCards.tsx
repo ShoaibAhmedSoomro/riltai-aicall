@@ -5,7 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 interface MetricsCardsProps {
   metrics: {
     total_runs: number;
-    xfer_count: number;
+    // Real transfer count. xfer_count is the deprecated duplicate the API
+    // still emits for one release; both are optional so a response from
+    // either side of the change renders.
+    transferred_count?: number;
+    xfer_count?: number;
   };
 }
 
@@ -31,9 +35,11 @@ export function MetricsCards({ metrics }: MetricsCardsProps) {
           <PhoneForwarded className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{metrics.xfer_count.toLocaleString()}</div>
+          <div className="text-2xl font-bold">
+            {(metrics.transferred_count ?? metrics.xfer_count ?? 0).toLocaleString()}
+          </div>
           <p className="text-xs text-muted-foreground">
-            Calls transferred (XFER)
+            Calls handed off to a human
           </p>
         </CardContent>
       </Card>

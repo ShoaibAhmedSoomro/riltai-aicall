@@ -82,9 +82,10 @@ afterEach(() => vi.clearAllMocks());
 
 describe('dashboard accuracy guarantees', () => {
     it('takes the lifetime call count from total_count, never from the page sum', async () => {
-        // The trap: /usage/runs sums total_duration_seconds over the RETURNED
-        // PAGE only, while total_count is a real subquery COUNT. Reading the
-        // former as a period figure would understate it by orders of magnitude.
+        // total_duration_seconds was page-scoped when this was written, so the
+        // hook reads total_count instead. The endpoint aggregates properly now,
+        // but the decoy value below still proves the hook takes the count from
+        // total_count rather than inferring it from anything else.
         getUsageHistory.mockResolvedValue(
             ok({
                 runs: [],

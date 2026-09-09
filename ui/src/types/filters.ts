@@ -187,12 +187,16 @@ export const filterTemplates: FilterTemplate[] = [
   {
     id: "transferred-calls",
     name: "Transferred Calls",
-    description: "Calls with XFER disposition",
+    // Was codes: ["XFER"], which nothing in the platform writes -- so this
+    // saved filter always returned nothing, which reads as "no transfers"
+    // rather than as a broken filter. These are the two codes a real transfer
+    // actually writes; see api/services/workflow/disposition_codes.py.
+    description: "Calls handed off to a human",
     filters: [
       {
         attributeId: "dispositionCode",
         value: {
-          codes: ["XFER"],
+          codes: ["call_transferred", "transfer_call"],
         } as MultiSelectValue,
       },
     ],
