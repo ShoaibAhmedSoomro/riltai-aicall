@@ -14,6 +14,7 @@ from api.db.telephony_configuration_client import TelephonyConfigurationClient
 from api.db.telephony_phone_number_client import TelephonyPhoneNumberClient
 from api.db.telephony_trunk_client import TelephonyTrunkClient
 from api.db.tool_client import ToolClient
+from api.db.usage_aggregate_client import UsageAggregateClient
 from api.db.user_client import UserClient
 from api.db.webhook_credential_client import WebhookCredentialClient
 from api.db.webhook_delivery_client import WebhookDeliveryClient
@@ -33,6 +34,7 @@ class DBClient(
     OrganizationConfigurationClient,
     OrganizationInviteClient,
     OrganizationUsageClient,
+    UsageAggregateClient,
     IntegrationClient,
     WorkflowTemplateClient,
     CampaignClient,

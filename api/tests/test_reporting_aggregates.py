@@ -23,7 +23,7 @@ number it returns.
 """
 
 import itertools
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -35,6 +35,7 @@ from api.db.models import (
     WorkflowModel,
     WorkflowRunModel,
 )
+from api.enums import WorkflowRunMode
 from api.services.reports.daily_report import DailyReportService
 from api.services.workflow.disposition_codes import (
     SYSTEM_DISPOSITION_CODES,
@@ -268,3 +269,387 @@ async def test_an_organization_with_no_runs_totals_zero_rather_than_failing(
     # number rather than a null the response model would reject.
     assert charge == 0
     assert duration == 0
+
+
+# ── /usage/summary and /usage/series ────────────────────────────────────────
+#
+# These exist so the dashboard can stop inventing figures, which makes a wrong
+# figure here worse than no figure: it looks measured. Three things are easy to
+# get quietly wrong and are pinned below.
+#
+#   1. The answer rate's DENOMINATOR. A text chat cannot go unanswered, so
+#      including chats drags the rate down by a quantity with no meaning.
+#   2. The `previous` window. If it does not line up exactly with the requested
+#      window's length, every "vs last period" delta on the dashboard is wrong
+#      by however much the windows differ.
+#   3. Absence vs zero. No calls means answer_rate_pct is None, not 0% -- and
+#      nothing priced means total_charge_usd is None, not $0.00.
+
+
+async def _org_with_dispositioned_runs(async_session, rows):
+    """rows: (created_at, disposition, mode, duration, charge)."""
+    suffix = next(_suffix)
+    org = OrganizationModel(provider_id=f"sum-org-{suffix}")
+    async_session.add(org)
+    await async_session.flush()
+
+    user = UserModel(provider_id=f"sum-user-{suffix}", selected_organization_id=org.id)
+    async_session.add(user)
+    await async_session.flush()
+
+    workflow = WorkflowModel(name="sum", organization_id=org.id, user_id=user.id)
+    async_session.add(workflow)
+    await async_session.flush()
+
+    for created_at, disposition, mode, duration, charge in rows:
+        async_session.add(
+            WorkflowRunModel(
+                workflow_id=workflow.id,
+                name="r",
+                mode=mode,
+                is_completed=True,
+                created_at=created_at,
+                usage_info=(
+                    {} if duration is None else {"call_duration_seconds": duration}
+                ),
+                cost_info=({} if charge is None else {"charge_usd": charge}),
+                gathered_context=(
+                    {}
+                    if disposition is None
+                    else {"mapped_call_disposition": disposition}
+                ),
+            )
+        )
+    await async_session.flush()
+    return org
+
+
+NOW = datetime(2026, 9, 9, 12, 0, tzinfo=UTC)
+WINDOW_START = NOW - timedelta(days=7)
+PREV_START = WINDOW_START - timedelta(days=7)
+
+
+@pytest.mark.asyncio
+async def test_the_answer_rate_excludes_text_chats(db_session, async_session):
+    """THE definition that decides whether the headline number means anything.
+
+    Three calls, one of them no-answer, plus two chats. The rate is 2/3, not
+    2/5: a chat has no notion of going unanswered, so counting it in the
+    denominator would understate the rate for any org that uses chat at all.
+    """
+    inside = WINDOW_START + timedelta(days=1)
+    org = await _org_with_dispositioned_runs(
+        async_session,
+        [
+            (inside, "completed", "twilio", 60, None),
+            (inside, "user_hangup", "twilio", 30, None),
+            (inside, "no-answer", "twilio", 0, None),
+            (inside, "user_hangup", WorkflowRunMode.TEXTCHAT.value, 10, None),
+            # NOT "chat": the historical mode's value is uppercase "CHAT".
+            (inside, "user_hangup", WorkflowRunMode.CHAT.value, 10, None),
+        ],
+    )
+
+    summary = await db_session.get_usage_summary(org.id, WINDOW_START, NOW)
+
+    assert summary["total_runs"] == 5
+    assert summary["call_runs"] == 3
+    assert summary["answered_runs"] == 2
+    assert summary["unanswered_runs"] == 1
+    assert summary["answer_rate_pct"] == pytest.approx(66.67, abs=0.01)
+
+
+@pytest.mark.asyncio
+async def test_unanswered_is_split_by_reason(db_session, async_session):
+    inside = WINDOW_START + timedelta(days=1)
+    org = await _org_with_dispositioned_runs(
+        async_session,
+        [
+            (inside, "busy", "twilio", 0, None),
+            (inside, "busy", "twilio", 0, None),
+            (inside, "no-answer", "twilio", 0, None),
+            (inside, "failed", "twilio", 0, None),
+            (inside, "completed", "twilio", 60, None),
+        ],
+    )
+
+    summary = await db_session.get_usage_summary(org.id, WINDOW_START, NOW)
+
+    assert summary["unanswered_runs"] == 4
+    assert summary["unanswered_by_code"] == {"busy": 2, "no-answer": 1, "failed": 1}
+
+
+@pytest.mark.asyncio
+async def test_the_previous_window_is_the_same_length_and_immediately_before(
+    db_session, async_session
+):
+    """The delta on every dashboard stat card depends on this alignment.
+
+    Two runs in the requested week, one in the week before it, and one older
+    than both. The previous window must pick up exactly the middle one.
+    """
+    org = await _org_with_dispositioned_runs(
+        async_session,
+        [
+            (WINDOW_START + timedelta(days=1), "completed", "twilio", 60, None),
+            (WINDOW_START + timedelta(days=2), "completed", "twilio", 60, None),
+            (PREV_START + timedelta(days=1), "completed", "twilio", 30, None),
+            (PREV_START - timedelta(days=3), "completed", "twilio", 999, None),
+        ],
+    )
+
+    summary = await db_session.get_usage_summary(org.id, WINDOW_START, NOW)
+
+    assert summary["total_runs"] == 2
+    assert summary["total_duration_seconds"] == 120
+    assert summary["previous"]["total_runs"] == 1
+    assert summary["previous"]["total_duration_seconds"] == 30
+    # The run older than the previous window is in neither.
+    assert summary["previous"]["total_duration_seconds"] != 1029
+
+
+@pytest.mark.asyncio
+async def test_no_calls_reports_no_answer_rate_rather_than_zero_percent(
+    db_session, async_session
+):
+    """0% says calls were placed and none connected. None says none were placed."""
+    org = await _org_with_dispositioned_runs(
+        async_session,
+        [
+            (
+                WINDOW_START + timedelta(days=1),
+                "user_hangup",
+                WorkflowRunMode.TEXTCHAT.value,
+                10,
+                None,
+            )
+        ],
+    )
+
+    summary = await db_session.get_usage_summary(org.id, WINDOW_START, NOW)
+
+    assert summary["total_runs"] == 1
+    assert summary["call_runs"] == 0
+    assert summary["answer_rate_pct"] is None
+
+
+@pytest.mark.asyncio
+async def test_nothing_priced_reports_no_spend_rather_than_zero(
+    db_session, async_session
+):
+    org = await _org_with_dispositioned_runs(
+        async_session,
+        [(WINDOW_START + timedelta(days=1), "completed", "twilio", 60, None)],
+    )
+    summary = await db_session.get_usage_summary(org.id, WINDOW_START, NOW)
+    assert summary["total_charge_usd"] is None
+
+    org2 = await _org_with_dispositioned_runs(
+        async_session,
+        [(WINDOW_START + timedelta(days=1), "completed", "twilio", 60, 0.25)],
+    )
+    summary2 = await db_session.get_usage_summary(org2.id, WINDOW_START, NOW)
+    assert summary2["total_charge_usd"] == pytest.approx(0.25)
+
+
+@pytest.mark.asyncio
+async def test_duration_percentiles_come_from_sql(db_session, async_session):
+    inside = WINDOW_START + timedelta(days=1)
+    org = await _org_with_dispositioned_runs(
+        async_session,
+        [(inside, "completed", "twilio", d, None) for d in (10, 20, 30, 40, 100)],
+    )
+
+    summary = await db_session.get_usage_summary(org.id, WINDOW_START, NOW)
+
+    assert summary["total_duration_seconds"] == 200
+    assert summary["avg_duration_seconds"] == pytest.approx(40.0)
+    assert summary["p50_duration_seconds"] == pytest.approx(30.0)
+    # p95 sits between the top two, which is the point of having it next to the
+    # average: one long call moves the mean and not the median.
+    assert summary["p95_duration_seconds"] > summary["p50_duration_seconds"]
+
+
+@pytest.mark.asyncio
+async def test_transfers_and_voicemail_and_qualified_are_counted(
+    db_session, async_session
+):
+    inside = WINDOW_START + timedelta(days=1)
+    org = await _org_with_dispositioned_runs(
+        async_session,
+        [
+            (inside, "call_transferred", "twilio", 60, None),
+            (inside, "transfer_call", "twilio", 60, None),
+            (inside, "voicemail_detected", "twilio", 20, None),
+            (inside, "user_qualified", "twilio", 90, None),
+            (inside, "XFER", "twilio", 60, None),
+        ],
+    )
+
+    summary = await db_session.get_usage_summary(org.id, WINDOW_START, NOW)
+
+    # XFER is not a transfer -- nothing in the platform writes it, and a custom
+    # code means whatever the organization decided.
+    assert summary["transferred_runs"] == 2
+    assert summary["voicemail_runs"] == 1
+    assert summary["qualified_runs"] == 1
+
+
+@pytest.mark.asyncio
+async def test_the_summary_is_scoped_to_one_organization(db_session, async_session):
+    inside = WINDOW_START + timedelta(days=1)
+    mine = await _org_with_dispositioned_runs(
+        async_session, [(inside, "completed", "twilio", 60, 1.0)]
+    )
+    await _org_with_dispositioned_runs(
+        async_session, [(inside, "completed", "twilio", 600, 99.0)]
+    )
+
+    summary = await db_session.get_usage_summary(mine.id, WINDOW_START, NOW)
+
+    assert summary["total_runs"] == 1
+    assert summary["total_duration_seconds"] == 60
+    assert summary["total_charge_usd"] == pytest.approx(1.0)
+
+
+@pytest.mark.asyncio
+async def test_distinct_agents_counts_agents_not_runs(db_session, async_session):
+    inside = WINDOW_START + timedelta(days=1)
+    org = await _org_with_dispositioned_runs(
+        async_session,
+        [(inside, "completed", "twilio", 60, None) for _ in range(4)],
+    )
+    summary = await db_session.get_usage_summary(org.id, WINDOW_START, NOW)
+    # All four runs belong to the single workflow the helper creates.
+    assert summary["total_runs"] == 4
+    assert summary["distinct_agents"] == 1
+
+
+# ── the series ──────────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_the_series_buckets_by_day_and_omits_empty_days(
+    db_session, async_session
+):
+    org = await _org_with_dispositioned_runs(
+        async_session,
+        [
+            (WINDOW_START + timedelta(days=1), "completed", "twilio", 60, 0.10),
+            (
+                WINDOW_START + timedelta(days=1, hours=3),
+                "completed",
+                "twilio",
+                30,
+                0.05,
+            ),
+            (WINDOW_START + timedelta(days=3), "no-answer", "twilio", 0, None),
+        ],
+    )
+
+    series = await db_session.get_usage_series(org.id, WINDOW_START, NOW, bucket="day")
+
+    assert series["bucket"] == "day"
+    assert series["truncated"] is False
+    # Two days with data, not seven: a gap is absence of calls, and inventing a
+    # zero-valued point for it is the chart's job to render, not the API's to
+    # assert happened.
+    assert len(series["points"]) == 2
+    first, second = series["points"]
+    assert first["calls"] == 2
+    assert first["duration_seconds"] == 90
+    assert first["charge_usd"] == pytest.approx(0.15)
+    assert first["answer_rate_pct"] == pytest.approx(100.0)
+    assert second["calls"] == 1
+    assert second["answer_rate_pct"] == pytest.approx(0.0)
+
+
+@pytest.mark.asyncio
+async def test_the_series_accepts_every_bucket_and_rejects_nothing_silently(
+    db_session, async_session
+):
+    org = await _org_with_dispositioned_runs(
+        async_session,
+        [(WINDOW_START + timedelta(days=1), "completed", "twilio", 60, None)],
+    )
+    for bucket in ("hour", "day", "week", "month"):
+        series = await db_session.get_usage_series(
+            org.id, WINDOW_START, NOW, bucket=bucket
+        )
+        assert series["bucket"] == bucket
+        assert len(series["points"]) == 1
+
+    # An unknown unit falls back to day rather than reaching SQL: the value is
+    # interpolated into date_trunc, so it is allowlisted, not validated.
+    series = await db_session.get_usage_series(
+        org.id, WINDOW_START, NOW, bucket="'; drop table workflow_runs; --"
+    )
+    assert series["bucket"] == "day"
+
+
+@pytest.mark.asyncio
+async def test_the_series_reports_the_timezone_it_bucketed_in(
+    db_session, async_session
+):
+    org = await _org_with_dispositioned_runs(
+        async_session,
+        [(WINDOW_START + timedelta(days=1), "completed", "twilio", 60, None)],
+    )
+    series = await db_session.get_usage_series(org.id, WINDOW_START, NOW)
+    # UTC with no preference configured. Returned so a chart can label its axis
+    # without guessing, and so a day boundary can be explained.
+    assert series["timezone"] == "UTC"
+
+
+@pytest.mark.asyncio
+async def test_a_chat_with_a_not_connected_disposition_is_not_unanswered(
+    db_session, async_session
+):
+    """The guard that keeps `answered` from going negative.
+
+    answered is call_runs minus unanswered. If a chat could be counted as
+    unanswered while being excluded from call_runs, the subtraction underflows
+    and the dashboard shows a negative answered count.
+    """
+    inside = WINDOW_START + timedelta(days=1)
+    org = await _org_with_dispositioned_runs(
+        async_session,
+        [
+            (inside, "completed", "twilio", 60, None),
+            # A chat should never carry a telephony status, but nothing in the
+            # schema stops one, and a stray value must not corrupt the rate.
+            (inside, "no-answer", WorkflowRunMode.TEXTCHAT.value, 5, None),
+            (inside, "busy", WorkflowRunMode.CHAT.value, 5, None),
+        ],
+    )
+
+    summary = await db_session.get_usage_summary(org.id, WINDOW_START, NOW)
+
+    assert summary["call_runs"] == 1
+    assert summary["unanswered_runs"] == 0
+    assert summary["answered_runs"] == 1
+    assert summary["answer_rate_pct"] == pytest.approx(100.0)
+
+
+@pytest.mark.asyncio
+async def test_the_series_is_scoped_to_one_organization(db_session, async_session):
+    """Tenant isolation, asserted rather than assumed.
+
+    The aggregate builds its own subquery, so the org predicate has to be on
+    THAT query -- it is not inherited from anywhere. Without this test, an
+    aggregate over every organization's runs passes every other assertion here.
+    """
+    inside = WINDOW_START + timedelta(days=1)
+    mine = await _org_with_dispositioned_runs(
+        async_session, [(inside, "completed", "twilio", 60, 1.0)]
+    )
+    await _org_with_dispositioned_runs(
+        async_session, [(inside, "completed", "twilio", 600, 99.0)]
+    )
+
+    series = await db_session.get_usage_series(mine.id, WINDOW_START, NOW)
+
+    assert len(series["points"]) == 1
+    assert series["points"][0]["calls"] == 1
+    assert series["points"][0]["duration_seconds"] == 60
+    assert series["points"][0]["charge_usd"] == pytest.approx(1.0)

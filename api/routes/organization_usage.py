@@ -524,33 +524,63 @@ async def get_daily_usage_breakdown(
     days: int = Query(7, ge=1, le=30, description="Number of days to include"),
     user: UserModel = Depends(get_user),
 ):
-    """Get daily usage breakdown for the last N days. Only available for organizations with pricing."""
+    """Daily usage for the last N days.
+
+    Now a thin wrapper over /usage/series. It used to refuse with a 400 unless
+    `organizations.price_per_second_usd` was set -- a column nothing in the
+    codebase ever writes, so the endpoint returned 400 UNCONDITIONALLY and the
+    table that reads it has never rendered. The series does not need that
+    column: it reports the cost that was actually recorded on each run, and
+    leaves it null where nothing was priced.
+
+    The response model is unchanged so the generated client and
+    ui/src/components/DailyUsageTable.tsx keep working.
+    """
     if not user.selected_organization_id:
         raise HTTPException(status_code=400, detail="No organization selected")
 
     try:
-        # Get organization to check if it has pricing
-        org = await db_client.get_organization_by_id(user.selected_organization_id)
-        if not org or org.price_per_second_usd is None:
-            raise HTTPException(
-                status_code=400,
-                detail="Daily breakdown is only available for organizations with pricing configured",
-            )
-
-        # Calculate date range
         end_date = datetime.now()
-        start_date = end_date - timedelta(days=days - 1)
-        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
-
-        # Get daily breakdown
-        breakdown = await db_client.get_daily_usage_breakdown(
-            user.selected_organization_id,
-            start_date,
-            end_date,
-            org.price_per_second_usd,
+        start_date = (end_date - timedelta(days=days - 1)).replace(
+            hour=0, minute=0, second=0, microsecond=0
         )
 
-        return breakdown
+        series = await db_client.get_usage_series(
+            user.selected_organization_id,
+            start_date=start_date,
+            end_date=end_date,
+            bucket="day",
+        )
+
+        breakdown: List[DailyUsageItem] = []
+        total_minutes = 0.0
+        total_cost: Optional[float] = None
+        for point in series["points"]:
+            minutes = round(point["duration_seconds"] / 60, 2)
+            total_minutes += minutes
+            cost = point["charge_usd"]
+            if cost is not None:
+                total_cost = (total_cost or 0.0) + cost
+            breakdown.append(
+                DailyUsageItem(
+                    date=point["bucket"] or "",
+                    minutes=minutes,
+                    cost_usd=cost,
+                    # Cost in cents, the unit "rilt tokens" means elsewhere.
+                    rilt_tokens=round((cost or 0.0) * 100, 2),
+                    call_count=point["calls"],
+                )
+            )
+
+        return DailyUsageBreakdownResponse(
+            breakdown=breakdown,
+            total_minutes=round(total_minutes, 2),
+            # Stays None when nothing in the window was priced, rather than
+            # reporting the week as having cost nothing.
+            total_cost_usd=(round(total_cost, 6) if total_cost is not None else None),
+            total_rilt_tokens=round((total_cost or 0.0) * 100, 2),
+            currency="USD" if total_cost is not None else None,
+        )
     except HTTPException:
         raise
     except Exception as e:
@@ -654,3 +684,147 @@ async def save_usage_rate_card(
         request.currency.upper(),
     )
     return _rate_card_response(value)
+
+
+# ---------------------------------------------------------------------------
+# Aggregates. These exist so the dashboard can stop inventing figures: real
+# totals over the whole filtered window, and the same totals over the previous
+# window of equal length so a delta can be computed rather than made up.
+# ---------------------------------------------------------------------------
+
+
+class UsageSummaryWindow(BaseModel):
+    """Headline figures for one window."""
+
+    period_start: str
+    period_end: str
+    total_runs: int
+    # Runs that could meaningfully go unanswered, i.e. not text chats. The
+    # answer rate is a fraction of THIS, not of total_runs.
+    call_runs: int
+    answered_runs: int
+    unanswered_runs: int
+    # Split by reason, because one "unanswered" number cannot be acted on:
+    # busy and no-answer mean retry, failed and error mean check the config.
+    unanswered_by_code: Dict[str, int] = Field(default_factory=dict)
+    voicemail_runs: int
+    qualified_runs: int
+    transferred_runs: int
+    # None, never 0, when there were no calls to answer. A 0% answer rate is a
+    # claim that calls were placed and none of them connected.
+    answer_rate_pct: Optional[float] = None
+    total_duration_seconds: int
+    avg_duration_seconds: Optional[float] = None
+    p50_duration_seconds: Optional[float] = None
+    p95_duration_seconds: Optional[float] = None
+    # None when nothing in the window was priced -- see the rate card. 0.0 would
+    # report the window as having cost nothing.
+    total_charge_usd: Optional[float] = None
+    distinct_agents: int
+
+
+class UsageSummaryResponse(UsageSummaryWindow):
+    # The immediately preceding window of equal length, same filters. This is
+    # what a "vs previous period" figure is computed from.
+    previous: UsageSummaryWindow
+
+
+class UsageSeriesPoint(BaseModel):
+    bucket: Optional[str] = None
+    calls: int
+    duration_seconds: int
+    charge_usd: Optional[float] = None
+    answer_rate_pct: Optional[float] = None
+
+
+class UsageSeriesResponse(BaseModel):
+    bucket: str
+    # The organization's timezone, which the buckets are cut in. Returned so a
+    # chart can label an axis without guessing, and so a reader can tell why a
+    # day boundary falls where it does.
+    timezone: str
+    # True when the window produced more buckets than the cap. The points are
+    # the first N, not a sample -- ask for a coarser bucket.
+    truncated: bool
+    points: List[UsageSeriesPoint]
+
+
+def _parse_window(
+    start_date: Optional[str], end_date: Optional[str], default_days: int
+) -> tuple[datetime, datetime]:
+    """Resolve the requested window, defaulting to the last N days."""
+    try:
+        end_dt = datetime.fromisoformat(end_date) if end_date else datetime.now()
+        start_dt = (
+            datetime.fromisoformat(start_date)
+            if start_date
+            else end_dt - timedelta(days=default_days)
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=400, detail="start_date and end_date must be ISO-8601"
+        )
+    if start_dt >= end_dt:
+        raise HTTPException(status_code=400, detail="start_date must precede end_date")
+    return start_dt, end_dt
+
+
+def _parse_filters(filters: Optional[str]) -> Optional[list]:
+    if not filters:
+        return None
+    try:
+        return json.loads(filters)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid filters format")
+
+
+@router.get("/usage/summary", response_model=UsageSummaryResponse)
+async def get_usage_summary(
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    filters: Optional[str] = Query(None),
+    user: UserModel = Depends(get_user),
+):
+    """Headline usage figures for a window, and the same for the one before it.
+
+    Takes the same start_date/end_date/filters triple as /usage/runs and routes
+    them through the same allowlist, so this cannot answer a different question
+    from the table it sits above.
+    """
+    if not user.selected_organization_id:
+        raise HTTPException(status_code=400, detail="No organization selected")
+
+    start_dt, end_dt = _parse_window(start_date, end_date, default_days=30)
+    return await db_client.get_usage_summary(
+        user.selected_organization_id,
+        start_date=start_dt,
+        end_date=end_dt,
+        filters=_parse_filters(filters),
+    )
+
+
+@router.get("/usage/series", response_model=UsageSeriesResponse)
+async def get_usage_series(
+    bucket: str = Query("day", pattern="^(hour|day|week|month)$"),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    filters: Optional[str] = Query(None),
+    user: UserModel = Depends(get_user),
+):
+    """Calls, talk time, spend and answer rate per time bucket.
+
+    Buckets are cut in the organization's own timezone, not UTC: bucketing in
+    UTC puts calls in the wrong day for any operator east or west of it, which
+    shows up most obviously as a wrong figure for "today" all morning.
+    """
+    if not user.selected_organization_id:
+        raise HTTPException(status_code=400, detail="No organization selected")
+
+    start_dt, end_dt = _parse_window(start_date, end_date, default_days=30)
+    return await db_client.get_usage_series(
+        user.selected_organization_id,
+        start_date=start_dt,
+        end_date=end_dt,
+        bucket=bucket,
+        filters=_parse_filters(filters),
+    )
