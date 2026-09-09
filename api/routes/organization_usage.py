@@ -123,7 +123,21 @@ class WorkflowRunUsageResponse(BaseModel):
 
 class UsageHistoryResponse(BaseModel):
     runs: List[WorkflowRunUsageResponse]
-    total_rilt_tokens: float = Field(title="Total RiltAI Tokens")
+    # DEPRECATED: read total_charge_usd instead.
+    #
+    # This was hardcoded 0 while being titled as a measurement. It is now
+    # cost-in-cents, which is what "rilt tokens" already means everywhere else
+    # that computes it (see run_usage_response.format_public_cost_info). It is
+    # deliberately NOT filled with LLM token counts: those are a different unit,
+    # and putting them behind this name would make one field mean two things
+    # depending on which endpoint produced it.
+    total_rilt_tokens: float = Field(
+        title="Total RiltAI Tokens",
+        description="Deprecated. Cost in cents; use total_charge_usd.",
+        deprecated=True,
+    )
+    # Real money over the whole filtered set, not the page being returned.
+    total_charge_usd: float
     total_duration_seconds: int
     total_count: int
     page: int
@@ -412,7 +426,7 @@ async def get_usage_history(
         (
             runs,
             total_count,
-            total_tokens,
+            total_charge_usd,
             total_duration,
         ) = await db_client.get_usage_history(
             user.selected_organization_id,
@@ -447,7 +461,10 @@ async def get_usage_history(
 
         return {
             "runs": runs,
-            "total_rilt_tokens": total_tokens,
+            # Same figure in the two units the product uses, from one source,
+            # so they cannot disagree.
+            "total_charge_usd": total_charge_usd,
+            "total_rilt_tokens": round(total_charge_usd * 100, 2),
             "total_duration_seconds": total_duration,
             "total_count": total_count,
             "page": page,

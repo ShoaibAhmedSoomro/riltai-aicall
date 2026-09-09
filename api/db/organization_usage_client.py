@@ -3,8 +3,8 @@ from typing import Optional
 from zoneinfo import ZoneInfo
 
 from dateutil.relativedelta import relativedelta
-from sqlalchemy import Date, and_, cast, func, select
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import Date, Float, and_, cast, func, select
+from sqlalchemy.dialects.postgresql import JSONB, insert
 from sqlalchemy.orm import joinedload
 
 from api.db.base_client import BaseDBClient
@@ -155,6 +155,10 @@ class OrganizationUsageClient(BaseDBClient):
     ) -> tuple[list[dict], int, float, int]:
         """Get paginated workflow runs with usage for an organization.
 
+        Returns (runs, total_count, total_charge_usd, total_duration_seconds),
+        where the two totals span the whole filtered set rather than the page
+        being returned.
+
         Args:
             sort_by: Field to sort by ('duration', 'created_at'); defaults to created_at
             sort_order: 'asc' or 'desc'
@@ -163,11 +167,16 @@ class OrganizationUsageClient(BaseDBClient):
             query = (
                 select(WorkflowRunModel)
                 .join(WorkflowModel, WorkflowRunModel.workflow_id == WorkflowModel.id)
-                .where(
-                    WorkflowModel.organization_id == organization_id,
-                    WorkflowRunModel.usage_info.isnot(None),
-                )
+                .where(WorkflowModel.organization_id == organization_id)
             )
+
+            # NOT filtered on usage_info being present. It reads as though it
+            # were -- there used to be an `isnot(None)` here -- but usage_info
+            # was made NOT NULL by 0c1223cc266f, so that predicate excluded
+            # nothing and every run appeared regardless. Removing it changes no
+            # results; it just stops the query claiming a filter it never had.
+            # The UI hint that said "runs with recorded usage" was wrong for the
+            # same reason and is corrected alongside this.
 
             # Apply date filters if provided
             if start_date:
@@ -190,11 +199,50 @@ class OrganizationUsageClient(BaseDBClient):
             # Apply filters using the common filter function
             query = apply_workflow_run_filters(query, sanitized_filters)
 
-            # Get total count
-            count_result = await session.execute(
-                select(func.count()).select_from(query.subquery())
+            # Count and totals come from the SAME filtered subquery, before
+            # paging is applied. That is the whole fix: the totals used to be
+            # accumulated in the row loop below, which runs over ONE PAGE, so
+            # "total duration" was the duration of whatever 50 runs you happened
+            # to be looking at -- and it changed when you turned the page.
+            totals_source = query.subquery()
+            totals_result = await session.execute(
+                select(
+                    func.count(),
+                    # ->> yields text; cast per row rather than casting the
+                    # column, because these JSON blobs predate any schema and a
+                    # missing key must contribute nothing instead of raising.
+                    func.coalesce(
+                        func.sum(
+                            cast(
+                                cast(totals_source.c.usage_info, JSONB).op("->>")(
+                                    "call_duration_seconds"
+                                ),
+                                Float,
+                            )
+                        ),
+                        0.0,
+                    ),
+                    func.coalesce(
+                        func.sum(
+                            cast(
+                                cast(totals_source.c.cost_info, JSONB).op("->>")(
+                                    "charge_usd"
+                                ),
+                                Float,
+                            )
+                        ),
+                        0.0,
+                    ),
+                ).select_from(totals_source)
             )
-            total_count = count_result.scalar()
+            total_count, total_duration_float, total_charge_usd = totals_result.one()
+            # No `or 0.0` fallbacks here: SUM over no rows is NULL, and the
+            # coalesce above is what turns that into a number. Guarding it twice
+            # meant neither guard was load-bearing and either could be deleted
+            # without a test noticing.
+            total_count = int(total_count)
+            total_duration_seconds = int(round(float(total_duration_float)))
+            total_charge_usd = round(float(total_charge_usd), 6)
 
             # Tie-break on id so paging stays stable when many runs share the
             # same duration (or timestamp) — without it, rows can repeat or be
@@ -208,15 +256,20 @@ class OrganizationUsageClient(BaseDBClient):
             )
             runs = results.scalars().all()
 
-            # Format runs
+            # Format runs. The TOTALS are not accumulated here any more (see
+            # the SQL aggregate above), but each row still reports its own
+            # duration and cost.
             formatted_runs = []
-            total_tokens = 0
-            total_duration_seconds = 0
             for run in runs:
-                rilt_tokens = 0
                 call_duration = (run.usage_info or {}).get("call_duration_seconds", 0)
-                total_tokens += rilt_tokens
-                total_duration_seconds += int(round(call_duration))
+                # Per-run counterpart of total_rilt_tokens: cost in cents, the
+                # same unit run_usage_response uses. It was hardcoded 0 here as
+                # well, so every row in the usage table showed no token usage.
+                run_charge_usd = (run.cost_info or {}).get("charge_usd")
+                try:
+                    rilt_tokens = round(float(run_charge_usd) * 100, 2)
+                except (TypeError, ValueError):
+                    rilt_tokens = 0
 
                 ic = run.initial_context or {}
                 caller_number = ic.get("caller_number")
@@ -265,7 +318,12 @@ class OrganizationUsageClient(BaseDBClient):
 
                 formatted_runs.append(run_data)
 
-            return formatted_runs, total_count, total_tokens, total_duration_seconds
+            return (
+                formatted_runs,
+                total_count,
+                total_charge_usd,
+                total_duration_seconds,
+            )
 
     async def get_usage_runs_for_report(
         self,
@@ -295,10 +353,10 @@ class OrganizationUsageClient(BaseDBClient):
                     WorkflowRunModel.public_access_token,
                 )
                 .join(WorkflowModel, WorkflowRunModel.workflow_id == WorkflowModel.id)
-                .where(
-                    WorkflowModel.organization_id == organization_id,
-                    WorkflowRunModel.usage_info.isnot(None),
-                )
+                # See get_usage_history: the usage_info isnot(None) predicate
+                # that used to sit here filtered nothing, because the column is
+                # NOT NULL.
+                .where(WorkflowModel.organization_id == organization_id)
                 .order_by(WorkflowRunModel.created_at.desc())
             )
 

@@ -3,6 +3,9 @@ from typing import Any, Dict, List, Optional
 from zoneinfo import ZoneInfo
 
 from api.db import db_client
+from api.services.workflow.disposition_codes import (
+    TRANSFER_DISPOSITION_CODES,
+)
 
 
 class DailyReportService:
@@ -44,11 +47,12 @@ class DailyReportService:
 
         # Calculate metrics
         total_runs = len(runs)
-        xfer_count = sum(
+        transferred_count = sum(
             1
             for run in runs
             if run["gathered_context"]
-            and run["gathered_context"].get("mapped_call_disposition") == "XFER"
+            and run["gathered_context"].get("mapped_call_disposition")
+            in TRANSFER_DISPOSITION_CODES
         )
 
         # Calculate disposition distribution
@@ -151,7 +155,15 @@ class DailyReportService:
             "date": date,
             "timezone": timezone,
             "workflow_id": workflow_id,
-            "metrics": {"total_runs": total_runs, "xfer_count": xfer_count},
+            "metrics": {
+                "total_runs": total_runs,
+                "transferred_count": transferred_count,
+                # DEPRECATED duplicate, kept for one release because
+                # ui/src/app/reports/components/MetricsCards.tsx reads this key.
+                # It used to compare against the literal "XFER", which nothing
+                # writes, so it was always 0 -- it now carries the real count.
+                "xfer_count": transferred_count,
+            },
             "disposition_distribution": disposition_distribution,
             "call_duration_distribution": call_duration_distribution,
         }

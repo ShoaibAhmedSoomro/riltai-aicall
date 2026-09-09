@@ -42,3 +42,20 @@ _TELEPHONY_DISPOSITIONS: tuple[str, ...] = (
 SYSTEM_DISPOSITION_CODES: tuple[str, ...] = (
     END_TASK_REASON_DISPOSITION_CODES + _TELEPHONY_DISPOSITIONS
 )
+
+# The codes a transfer actually writes into
+# gathered_context.mapped_call_disposition. Two of them, because the pipeline
+# distinguishes asking for a transfer from completing one
+# (api/services/pipecat/event_handlers.py explains why it does not collapse
+# them), and a report that counts transfers has to count both.
+#
+# NOT "XFER". Nothing in the platform writes that string -- the daily report
+# compared against it, so its transfer count was structurally zero and the
+# dashboard never surfaced the number. An organization may still define XFER as
+# a custom code of its own, and it is deliberately not counted here: a custom
+# code means whatever that organization decided, which is not necessarily a
+# transfer.
+TRANSFER_DISPOSITION_CODES: tuple[str, ...] = (
+    EndTaskReason.CALL_TRANSFERRED.value,
+    EndTaskReason.TRANSFER_CALL.value,
+)
