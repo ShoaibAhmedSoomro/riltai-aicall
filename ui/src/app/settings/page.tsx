@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { UsageRateCardSection } from "@/components/UsageRateCardSection";
 import { MCP_DOC_URL, TRACING_DOC_URL } from "@/constants/documentation";
 
 export default function SettingsPage() {
@@ -64,6 +65,20 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent>
             <OrganizationInvitesSection />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Call Pricing</CardTitle>
+            <CardDescription>
+              What a minute of talk time costs, used to price every call this
+              organization makes. Without it, cost and spend figures have
+              nothing to report.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <UsageRateCardSection />
           </CardContent>
         </Card>
 
