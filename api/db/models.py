@@ -702,6 +702,16 @@ class WorkflowRunModel(Base):
         ),
         Index("idx_workflow_runs_workflow_id", "workflow_id"),
         Index("idx_workflow_runs_campaign_id", "campaign_id"),
+        # Agent-scoped reporting reads bound and sort on this pair; the
+        # workflow_id-only index above leaves the date work to a sort.
+        Index(
+            "idx_workflow_runs_workflow_created",
+            "workflow_id",
+            text("created_at DESC"),
+        ),
+        # The superadmin listing sorts by date with no workflow predicate, so
+        # the composite above cannot serve it.
+        Index("idx_workflow_runs_created_at", text("created_at DESC")),
     )
 
 
@@ -1273,6 +1283,9 @@ class WebhookDeliveryModel(Base):
             postgresql_where=text("status = 'pending'"),
         ),
         Index("idx_webhook_deliveries_run", "workflow_run_id"),
+        # The alerts feed counts failures per organization; this table had no
+        # index on organization_id at all.
+        Index("idx_webhook_deliveries_org_status", "organization_id", "status"),
         # Per-run/per-node idempotency: one delivery per webhook node per run.
         UniqueConstraint(
             "workflow_run_id",
