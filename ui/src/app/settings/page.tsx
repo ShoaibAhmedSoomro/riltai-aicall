@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { MCP_DOC_URL, TRACING_DOC_URL } from "@/constants/documentation";
 
 export default function SettingsPage() {
   return (
@@ -73,7 +74,7 @@ export default function SettingsPage() {
               Let AI agents access your AICall workspace and documentation via
               the Model Context Protocol.{" "}
               <a
-                href="https://docs.rilt.ai/integrations/mcp"
+                href={MCP_DOC_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-0.5 underline"
@@ -93,7 +94,7 @@ export default function SettingsPage() {
             <CardDescription>
               Configure Langfuse tracing for your voice agent calls.{" "}
               <a
-                href="https://docs.rilt.ai/configurations/tracing"
+                href={TRACING_DOC_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-0.5 underline"

@@ -61,6 +61,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TELEPHONY_INBOUND_DOC_URL } from "@/constants/documentation";
 import { useAppConfig } from "@/context/AppConfigContext";
 import { useOrgConfig } from "@/context/OrgConfigContext";
 import { useOrganizationTimezone } from "@/hooks/useOrganizationTimezone";
@@ -418,7 +419,7 @@ export default function TelephonyConfigurationDetailPage() {
               Numbers used as caller ID for outbound and accepted for inbound matching.
               SIP URIs and extensions are supported alongside PSTN numbers.{" "}
               <a
-                href="https://docs.rilt.ai/integrations/telephony/inbound"
+                href={TELEPHONY_INBOUND_DOC_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-0.5 underline"

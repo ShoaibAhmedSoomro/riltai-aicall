@@ -2,8 +2,9 @@ import { AlertCircle, CreditCard, ExternalLink, Key } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { docsUrl } from "@/constants/documentation";
 
-const SERVICE_KEYS_DOCS_URL = "https://docs.rilt.ai/configurations/api-keys#service-keys";
+const SERVICE_KEYS_DOCS_URL = docsUrl("configurations/api-keys#service-keys");
 
 interface ApiKeyErrorDialogProps {
     open: boolean;

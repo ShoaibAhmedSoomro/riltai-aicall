@@ -8,6 +8,7 @@ import React, { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { SidebarInset, SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { DOCS_BASE } from "@/constants/documentation";
 import { useAppConfig } from "@/context/AppConfigContext";
 import { LeadFormsProvider } from "@/context/LeadFormsContext";
 
@@ -36,7 +37,7 @@ function AppHeader() {
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" asChild>
               <a
-                href="https://docs.rilt.ai"
+                href={DOCS_BASE}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Open the AICall documentation"
