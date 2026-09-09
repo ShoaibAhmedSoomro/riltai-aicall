@@ -7200,6 +7200,48 @@ export type UsageHistoryResponse = {
 };
 
 /**
+ * UsageRateCardRequest
+ */
+export type UsageRateCardRequest = {
+    /**
+     * Price Per Minute Usd
+     */
+    price_per_minute_usd: number;
+    /**
+     * Currency
+     */
+    currency?: string;
+};
+
+/**
+ * UsageRateCardResponse
+ *
+ * The org's local price per talk-minute, or nothing if unpriced.
+ *
+ * `configured` is separate from a zero price on purpose. Everything that
+ * reads cost has to distinguish "no price is set" from "calls cost nothing",
+ * and a bare `price_per_minute_usd: 0.0` cannot express the first.
+ */
+export type UsageRateCardResponse = {
+    /**
+     * Configured
+     */
+    configured: boolean;
+    /**
+     * Price Per Minute Usd
+     */
+    price_per_minute_usd?: number | null;
+    /**
+     * Currency
+     */
+    currency?: string | null;
+    /**
+     * Applies To This Deployment
+     */
+    applies_to_this_deployment: boolean;
+};
+
+/**
  * UserConfigurationRequestResponseSchema
  */
 export type UserConfigurationRequestResponseSchema = {
@@ -14158,6 +14200,84 @@ export type GetDailyUsageBreakdownApiV1OrganizationsUsageDailyBreakdownGetRespon
 };
 
 export type GetDailyUsageBreakdownApiV1OrganizationsUsageDailyBreakdownGetResponse = GetDailyUsageBreakdownApiV1OrganizationsUsageDailyBreakdownGetResponses[keyof GetDailyUsageBreakdownApiV1OrganizationsUsageDailyBreakdownGetResponses];
+
+export type GetUsageRateCardApiV1OrganizationsUsageRateCardGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/organizations/usage/rate-card';
+};
+
+export type GetUsageRateCardApiV1OrganizationsUsageRateCardGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetUsageRateCardApiV1OrganizationsUsageRateCardGetError = GetUsageRateCardApiV1OrganizationsUsageRateCardGetErrors[keyof GetUsageRateCardApiV1OrganizationsUsageRateCardGetErrors];
+
+export type GetUsageRateCardApiV1OrganizationsUsageRateCardGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: UsageRateCardResponse;
+};
+
+export type GetUsageRateCardApiV1OrganizationsUsageRateCardGetResponse = GetUsageRateCardApiV1OrganizationsUsageRateCardGetResponses[keyof GetUsageRateCardApiV1OrganizationsUsageRateCardGetResponses];
+
+export type SaveUsageRateCardApiV1OrganizationsUsageRateCardPutData = {
+    body: UsageRateCardRequest;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/organizations/usage/rate-card';
+};
+
+export type SaveUsageRateCardApiV1OrganizationsUsageRateCardPutErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SaveUsageRateCardApiV1OrganizationsUsageRateCardPutError = SaveUsageRateCardApiV1OrganizationsUsageRateCardPutErrors[keyof SaveUsageRateCardApiV1OrganizationsUsageRateCardPutErrors];
+
+export type SaveUsageRateCardApiV1OrganizationsUsageRateCardPutResponses = {
+    /**
+     * Successful Response
+     */
+    200: UsageRateCardResponse;
+};
+
+export type SaveUsageRateCardApiV1OrganizationsUsageRateCardPutResponse = SaveUsageRateCardApiV1OrganizationsUsageRateCardPutResponses[keyof SaveUsageRateCardApiV1OrganizationsUsageRateCardPutResponses];
 
 export type GetDailyReportApiV1OrganizationsReportsDailyGetData = {
     body?: never;
