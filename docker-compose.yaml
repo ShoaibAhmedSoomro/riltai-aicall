@@ -103,6 +103,11 @@ services:
       ENVIRONMENT: "${ENVIRONMENT:-local}"
       SERVER_IP: "${SERVER_IP:-}"
       PUBLIC_HOST: "${PUBLIC_HOST:-}"
+      # Extra hostnames nginx should also answer for, space-separated.
+      # Set during a domain cutover so inbound telephony numbers still
+      # configured with the old host keep working. Empty on a normal
+      # install, where nginx answers for PUBLIC_HOST alone.
+      PUBLIC_HOST_ALIASES: "${PUBLIC_HOST_ALIASES:-}"
       PUBLIC_BASE_URL: "${PUBLIC_BASE_URL:-}"
       BACKEND_API_ENDPOINT: "${BACKEND_API_ENDPOINT:-http://localhost:8000}"
       MINIO_PUBLIC_ENDPOINT: "${MINIO_PUBLIC_ENDPOINT:-http://localhost:9000}"

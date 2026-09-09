@@ -295,6 +295,47 @@ rilt_require_init_compose_layout() {
     fi
 }
 
+rilt_is_hostname() {
+    local candidate=$1
+    local label='[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?'
+    [[ "$candidate" =~ ^${label}([.]${label})*$ ]]
+}
+
+# Every hostname this deployment answers for: the canonical PUBLIC_HOST first,
+# then any PUBLIC_HOST_ALIASES (space-separated, optional).
+#
+# Aliases exist for domain cutovers. Inbound telephony numbers carry a callback
+# URL configured inside the *provider's* console, which this deployment cannot
+# see or rewrite -- so dropping the old hostname the moment PUBLIC_HOST changes
+# silently breaks inbound calls on every number still pointing at it. Serving
+# both makes a cutover non-breaking and reversible.
+#
+# Deliberately ONE function feeding both nginx's server_name and certbot's -d
+# flags: a name nginx serves without a matching SAN is a certificate error, and
+# a SAN nginx does not serve is a wasted renewal. They cannot drift if there is
+# only one list.
+rilt_public_host_names() {
+    local -a names=()
+    local host_alias=""
+
+    [[ -n "${PUBLIC_HOST:-}" ]] || rilt_fail "PUBLIC_HOST is not set"
+    names+=("$PUBLIC_HOST")
+
+    # Validated rather than interpolated blindly: this value is substituted
+    # straight into nginx.conf, so a typo containing ';' or '}' would render a
+    # config that fails to start -- taking the site down on the next restart
+    # instead of failing here, at edit time.
+    for host_alias in ${PUBLIC_HOST_ALIASES:-}; do
+        if ! rilt_is_hostname "$host_alias"; then
+            rilt_fail "PUBLIC_HOST_ALIASES contains an invalid hostname: '$host_alias'"
+        fi
+        [[ "$host_alias" == "$PUBLIC_HOST" ]] && continue
+        names+=("$host_alias")
+    done
+
+    printf '%s\n' "${names[*]}"
+}
+
 rilt_render_remote_nginx_conf() {
     local project_dir=${1:-$(rilt_project_dir)}
     local destination=${2:-"$project_dir/nginx.conf"}
@@ -316,7 +357,7 @@ rilt_render_remote_nginx_conf() {
         echo "}"
     } > "$tmp_upstream"
 
-    awk -v public_host="$PUBLIC_HOST" -v upstream_file="$tmp_upstream" '
+    awk -v public_host="$(rilt_public_host_names)" -v upstream_file="$tmp_upstream" '
         BEGIN {
             while ((getline line < upstream_file) > 0) {
                 upstream = upstream line ORS
@@ -381,7 +422,7 @@ rilt_preflight_remote_init_render() {
     turn_conf="$tmp_root/coturn/turnserver.conf"
 
     (
-        export ENVIRONMENT SERVER_IP PUBLIC_HOST PUBLIC_BASE_URL BACKEND_API_ENDPOINT MINIO_PUBLIC_ENDPOINT TURN_HOST TURN_SECRET FASTAPI_WORKERS
+        export ENVIRONMENT SERVER_IP PUBLIC_HOST PUBLIC_HOST_ALIASES PUBLIC_BASE_URL BACKEND_API_ENDPOINT MINIO_PUBLIC_ENDPOINT TURN_HOST TURN_SECRET FASTAPI_WORKERS
         export RILT_INIT_WORKSPACE_DIR="$project_dir"
         export RILT_INIT_OUTPUT_ROOT="$tmp_root"
         export RILT_INIT_CERTS_DIR="$cert_dir"
@@ -518,6 +559,8 @@ rilt_issue_letsencrypt_webroot() {
     local webroot="$project_dir/certs"
     local live_dir="/etc/letsencrypt/live/$host"
     local -a email_args
+    local -a cert_args=()
+    local cert_host=""
 
     if [[ -n "$email" ]]; then
         email_args=(--email "$email")
@@ -525,12 +568,18 @@ rilt_issue_letsencrypt_webroot() {
         email_args=(--register-unsafely-without-email)
     fi
 
+    # One -d per hostname nginx serves, so the certificate covers all of them.
+    for cert_host in $(rilt_public_host_names); do
+        cert_args+=(-d "$cert_host")
+    done
+
     mkdir -p "$webroot/.well-known/acme-challenge"
 
     certbot certonly --webroot -w "$webroot" \
         --non-interactive --agree-tos --keep-until-expiring \
+        --cert-name "$host" \
         "${email_args[@]}" \
-        -d "$host" || return 1
+        "${cert_args[@]}" || return 1
 
     [[ -f "$live_dir/fullchain.pem" && -f "$live_dir/privkey.pem" ]] || return 1
 
