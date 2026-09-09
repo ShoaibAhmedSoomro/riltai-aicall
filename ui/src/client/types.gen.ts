@@ -7250,6 +7250,209 @@ export type UsageRateCardResponse = {
 };
 
 /**
+ * UsageSeriesPoint
+ */
+export type UsageSeriesPoint = {
+    /**
+     * Bucket
+     */
+    bucket?: string | null;
+    /**
+     * Calls
+     */
+    calls: number;
+    /**
+     * Duration Seconds
+     */
+    duration_seconds: number;
+    /**
+     * Charge Usd
+     */
+    charge_usd?: number | null;
+    /**
+     * Answer Rate Pct
+     */
+    answer_rate_pct?: number | null;
+};
+
+/**
+ * UsageSeriesResponse
+ */
+export type UsageSeriesResponse = {
+    /**
+     * Bucket
+     */
+    bucket: string;
+    /**
+     * Timezone
+     */
+    timezone: string;
+    /**
+     * Truncated
+     */
+    truncated: boolean;
+    /**
+     * Points
+     */
+    points: Array<UsageSeriesPoint>;
+};
+
+/**
+ * UsageSummaryResponse
+ */
+export type UsageSummaryResponse = {
+    /**
+     * Period Start
+     */
+    period_start: string;
+    /**
+     * Period End
+     */
+    period_end: string;
+    /**
+     * Total Runs
+     */
+    total_runs: number;
+    /**
+     * Call Runs
+     */
+    call_runs: number;
+    /**
+     * Answered Runs
+     */
+    answered_runs: number;
+    /**
+     * Unanswered Runs
+     */
+    unanswered_runs: number;
+    /**
+     * Unanswered By Code
+     */
+    unanswered_by_code?: {
+        [key: string]: number;
+    };
+    /**
+     * Voicemail Runs
+     */
+    voicemail_runs: number;
+    /**
+     * Qualified Runs
+     */
+    qualified_runs: number;
+    /**
+     * Transferred Runs
+     */
+    transferred_runs: number;
+    /**
+     * Answer Rate Pct
+     */
+    answer_rate_pct?: number | null;
+    /**
+     * Total Duration Seconds
+     */
+    total_duration_seconds: number;
+    /**
+     * Avg Duration Seconds
+     */
+    avg_duration_seconds?: number | null;
+    /**
+     * P50 Duration Seconds
+     */
+    p50_duration_seconds?: number | null;
+    /**
+     * P95 Duration Seconds
+     */
+    p95_duration_seconds?: number | null;
+    /**
+     * Total Charge Usd
+     */
+    total_charge_usd?: number | null;
+    /**
+     * Distinct Agents
+     */
+    distinct_agents: number;
+    previous: UsageSummaryWindow;
+};
+
+/**
+ * UsageSummaryWindow
+ *
+ * Headline figures for one window.
+ */
+export type UsageSummaryWindow = {
+    /**
+     * Period Start
+     */
+    period_start: string;
+    /**
+     * Period End
+     */
+    period_end: string;
+    /**
+     * Total Runs
+     */
+    total_runs: number;
+    /**
+     * Call Runs
+     */
+    call_runs: number;
+    /**
+     * Answered Runs
+     */
+    answered_runs: number;
+    /**
+     * Unanswered Runs
+     */
+    unanswered_runs: number;
+    /**
+     * Unanswered By Code
+     */
+    unanswered_by_code?: {
+        [key: string]: number;
+    };
+    /**
+     * Voicemail Runs
+     */
+    voicemail_runs: number;
+    /**
+     * Qualified Runs
+     */
+    qualified_runs: number;
+    /**
+     * Transferred Runs
+     */
+    transferred_runs: number;
+    /**
+     * Answer Rate Pct
+     */
+    answer_rate_pct?: number | null;
+    /**
+     * Total Duration Seconds
+     */
+    total_duration_seconds: number;
+    /**
+     * Avg Duration Seconds
+     */
+    avg_duration_seconds?: number | null;
+    /**
+     * P50 Duration Seconds
+     */
+    p50_duration_seconds?: number | null;
+    /**
+     * P95 Duration Seconds
+     */
+    p95_duration_seconds?: number | null;
+    /**
+     * Total Charge Usd
+     */
+    total_charge_usd?: number | null;
+    /**
+     * Distinct Agents
+     */
+    distinct_agents: number;
+};
+
+/**
  * UserConfigurationRequestResponseSchema
  */
 export type UserConfigurationRequestResponseSchema = {
@@ -14286,6 +14489,114 @@ export type SaveUsageRateCardApiV1OrganizationsUsageRateCardPutResponses = {
 };
 
 export type SaveUsageRateCardApiV1OrganizationsUsageRateCardPutResponse = SaveUsageRateCardApiV1OrganizationsUsageRateCardPutResponses[keyof SaveUsageRateCardApiV1OrganizationsUsageRateCardPutResponses];
+
+export type GetUsageSummaryApiV1OrganizationsUsageSummaryGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: {
+        /**
+         * Start Date
+         */
+        start_date?: string | null;
+        /**
+         * End Date
+         */
+        end_date?: string | null;
+        /**
+         * Filters
+         */
+        filters?: string | null;
+    };
+    url: '/api/v1/organizations/usage/summary';
+};
+
+export type GetUsageSummaryApiV1OrganizationsUsageSummaryGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetUsageSummaryApiV1OrganizationsUsageSummaryGetError = GetUsageSummaryApiV1OrganizationsUsageSummaryGetErrors[keyof GetUsageSummaryApiV1OrganizationsUsageSummaryGetErrors];
+
+export type GetUsageSummaryApiV1OrganizationsUsageSummaryGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: UsageSummaryResponse;
+};
+
+export type GetUsageSummaryApiV1OrganizationsUsageSummaryGetResponse = GetUsageSummaryApiV1OrganizationsUsageSummaryGetResponses[keyof GetUsageSummaryApiV1OrganizationsUsageSummaryGetResponses];
+
+export type GetUsageSeriesApiV1OrganizationsUsageSeriesGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: {
+        /**
+         * Bucket
+         */
+        bucket?: string;
+        /**
+         * Start Date
+         */
+        start_date?: string | null;
+        /**
+         * End Date
+         */
+        end_date?: string | null;
+        /**
+         * Filters
+         */
+        filters?: string | null;
+    };
+    url: '/api/v1/organizations/usage/series';
+};
+
+export type GetUsageSeriesApiV1OrganizationsUsageSeriesGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetUsageSeriesApiV1OrganizationsUsageSeriesGetError = GetUsageSeriesApiV1OrganizationsUsageSeriesGetErrors[keyof GetUsageSeriesApiV1OrganizationsUsageSeriesGetErrors];
+
+export type GetUsageSeriesApiV1OrganizationsUsageSeriesGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: UsageSeriesResponse;
+};
+
+export type GetUsageSeriesApiV1OrganizationsUsageSeriesGetResponse = GetUsageSeriesApiV1OrganizationsUsageSeriesGetResponses[keyof GetUsageSeriesApiV1OrganizationsUsageSeriesGetResponses];
 
 export type GetDailyReportApiV1OrganizationsReportsDailyGetData = {
     body?: never;
