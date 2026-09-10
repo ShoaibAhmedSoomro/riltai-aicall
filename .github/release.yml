@@ -2,8 +2,6 @@ changelog:
   exclude:
     labels:
       - chore
-      - "autorelease: pending"
-      - "autorelease: tagged"
   categories:
     - title: Features
       labels:
