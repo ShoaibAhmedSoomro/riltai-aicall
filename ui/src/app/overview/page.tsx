@@ -1,6 +1,6 @@
 'use client';
 
-import { Bot, Clock, FlaskConical, Megaphone, Phone, PhoneCall, RefreshCw } from 'lucide-react';
+import { Bot, Clock, FlaskConical, Megaphone, Phone, PhoneCall, Radio, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -163,6 +163,29 @@ export default function OverviewPage() {
                     unavailable={!data.loading && data.totalCalls === null ? 'Unavailable' : undefined}
                     value={(data.totalCalls ?? 0).toLocaleString()}
                     hint="All runs in the period"
+                />
+                <StatCard
+                    label="Live now"
+                    icon={Radio}
+                    href="/usage"
+                    loading={data.loading && data.live === null}
+                    // Two different absences. A failed request means the tile
+                    // has nothing; a successful one with active_calls null means
+                    // Redis could not answer. Neither is "0 calls", and showing
+                    // 0 for either would report an idle system.
+                    unavailable={
+                        !data.loading && data.live === null
+                            ? 'Unavailable'
+                            : !data.loading && data.live?.active_calls == null
+                              ? 'Unknown'
+                              : undefined
+                    }
+                    value={String(data.live?.active_calls ?? 0)}
+                    hint={
+                        data.live
+                            ? `of ${data.live.concurrent_call_limit} concurrent`
+                            : 'Calls in progress'
+                    }
                 />
                 <StatCard
                     label="Talk time"

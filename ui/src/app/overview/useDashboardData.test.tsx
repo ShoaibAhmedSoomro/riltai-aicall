@@ -8,6 +8,7 @@ const getDailyReport = vi.fn();
 const getCampaigns = vi.fn();
 const listTelephony = vi.fn();
 const getApiKeys = vi.fn();
+const getLiveUsage = vi.fn();
 const useAuth = vi.fn();
 
 vi.mock('@/client/sdk.gen', () => ({
@@ -20,6 +21,7 @@ vi.mock('@/client/sdk.gen', () => ({
     listTelephonyConfigurationsApiV1OrganizationsTelephonyConfigsGet: (...a: unknown[]) =>
         listTelephony(...a),
     getApiKeysApiV1UserApiKeysGet: (...a: unknown[]) => getApiKeys(...a),
+    getLiveUsageApiV1OrganizationsUsageLiveGet: (...a: unknown[]) => getLiveUsage(...a),
 }));
 vi.mock('@/lib/auth', () => ({ useAuth: () => useAuth() }));
 
@@ -40,6 +42,8 @@ function Probe({ tz }: { tz?: string }) {
             <span data-testid="agents">{d.busiestAgents?.map((a) => `${a.workflowName}:${a.calls}`).join('|')}</span>
             <span data-testid="truncated">{String(d.busiestAgentsTruncated)}</span>
             <span data-testid="keys">{String(d.apiKeyCount)}</span>
+            <span data-testid="live">{d.live ? String(d.live.active_calls) : 'null'}</span>
+            <span data-testid="limit">{d.live ? String(d.live.concurrent_call_limit) : 'null'}</span>
         </div>
     );
 }
@@ -71,6 +75,9 @@ beforeEach(() => {
     );
     getDailyReport.mockResolvedValue(
         ok({ metrics: { total_runs: 4 }, disposition_distribution: [], call_duration_distribution: [] }),
+    );
+    getLiveUsage.mockResolvedValue(
+        ok({ active_calls: 2, concurrent_call_limit: 10, running_runs: 2 }),
     );
     getCampaigns.mockResolvedValue(ok({ campaigns: [] }));
     listTelephony.mockResolvedValue(ok({ configurations: [] }));
@@ -223,5 +230,39 @@ describe('dashboard accuracy guarantees', () => {
 
         expect(getUsageHistory).not.toHaveBeenCalled();
         expect(getDailyReport).not.toHaveBeenCalled();
+    });
+});
+
+describe('live concurrency', () => {
+    it('exposes the live figures', async () => {
+        render(<Probe />);
+        await settle();
+        expect(screen.getByTestId('live').textContent).toBe('2');
+        expect(screen.getByTestId('limit').textContent).toBe('10');
+    });
+
+    it('keeps active_calls null when Redis could not answer', async () => {
+        // The endpoint answers 200 with a null count rather than 503, because
+        // this is a tile and not an autoscaling signal. null must survive to
+        // the UI: rendering it as 0 would report an idle system.
+        getLiveUsage.mockResolvedValue(
+            ok({ active_calls: null, concurrent_call_limit: 10, running_runs: 3 }),
+        );
+        render(<Probe />);
+        await settle();
+        expect(screen.getByTestId('live').textContent).toBe('null');
+        // The limit still came back, so the tile is not "unavailable" -- it is
+        // available and does not know the count.
+        expect(screen.getByTestId('limit').textContent).toBe('10');
+    });
+
+    it('degrades only its own tile when the request fails', async () => {
+        getLiveUsage.mockResolvedValue({ error: { detail: 'nope' } });
+        render(<Probe />);
+        await settle();
+        expect(screen.getByTestId('live').textContent).toBe('null');
+        // Every other figure still loaded: one endpoint failing must not blank
+        // the page.
+        expect(screen.getByTestId('total').textContent).not.toBe('null');
     });
 });

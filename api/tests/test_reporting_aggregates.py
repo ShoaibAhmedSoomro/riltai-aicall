@@ -35,7 +35,7 @@ from api.db.models import (
     WorkflowModel,
     WorkflowRunModel,
 )
-from api.enums import WorkflowRunMode
+from api.enums import WorkflowRunMode, WorkflowRunState
 from api.services.reports.daily_report import DailyReportService
 from api.services.workflow.disposition_codes import (
     SYSTEM_DISPOSITION_CODES,
@@ -653,3 +653,179 @@ async def test_the_series_is_scoped_to_one_organization(db_session, async_sessio
     assert series["points"][0]["calls"] == 1
     assert series["points"][0]["duration_seconds"] == 60
     assert series["points"][0]["charge_usd"] == pytest.approx(1.0)
+
+
+# ── the current-period meter ────────────────────────────────────────────────
+#
+# get_current_usage used to read organization_usage_cycles.used_dograh_tokens
+# and .total_duration_seconds. NOTHING has ever written either column -- there
+# is no accrual path in the codebase -- so both sat at 0 forever, and two
+# unbadged surfaces presented that zero as a measurement: the Talk time tile
+# and the header's period meter.
+
+
+@pytest.mark.asyncio
+async def test_the_period_meter_measures_instead_of_reading_a_dead_column(
+    db_session, async_session
+):
+    """The figure has to come from the runs, not from a column nothing fills.
+
+    A run placed inside the current period must move the number. Before this,
+    it could not: the value was read straight off the cycle row.
+    """
+    org = await _org_with_dispositioned_runs(
+        async_session,
+        [(datetime.now(UTC), "completed", "twilio", 120, 0.20)],
+    )
+
+    usage = await db_session.get_current_usage(org.id)
+
+    assert usage["total_duration_seconds"] == 120
+    assert usage["used_amount_usd"] == pytest.approx(0.20)
+    assert usage["currency"] == "USD"
+    # Cost in cents, the unit "rilt tokens" means everywhere else.
+    assert usage["used_dograh_tokens"] == pytest.approx(20.0)
+
+
+@pytest.mark.asyncio
+async def test_the_period_meter_omits_money_when_nothing_was_priced(
+    db_session, async_session
+):
+    """No cost source means no money keys, so the meter renders no spend.
+
+    Returning 0.0 would put "$0.00" in the header, which claims the period's
+    calls were free rather than unpriced.
+    """
+    org = await _org_with_dispositioned_runs(
+        async_session,
+        [(datetime.now(UTC), "completed", "twilio", 60, None)],
+    )
+
+    usage = await db_session.get_current_usage(org.id)
+
+    assert usage["total_duration_seconds"] == 60
+    assert "used_amount_usd" not in usage
+    assert "currency" not in usage
+
+
+@pytest.mark.asyncio
+async def test_the_period_meter_excludes_runs_outside_the_period(
+    db_session, async_session
+):
+    """The period bound has to be applied, or the meter reports all of history."""
+    now = datetime.now(UTC)
+    org = await _org_with_dispositioned_runs(
+        async_session,
+        [
+            (now, "completed", "twilio", 60, None),
+            # Comfortably outside any calendar-month period containing `now`.
+            (now - timedelta(days=90), "completed", "twilio", 9999, None),
+        ],
+    )
+
+    usage = await db_session.get_current_usage(org.id)
+
+    assert usage["total_duration_seconds"] == 60
+
+
+@pytest.mark.asyncio
+async def test_the_period_meter_still_reports_the_period_boundary(
+    db_session, async_session
+):
+    # The cycle row is kept and still creates on first read; only the three
+    # never-written usage columns stopped being consulted.
+    org = await _org_with_dispositioned_runs(async_session, [])
+    usage = await db_session.get_current_usage(org.id)
+    assert usage["period_start"] < usage["period_end"]
+    assert usage["total_duration_seconds"] == 0
+
+
+# ── live concurrency ────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_running_runs_counts_only_this_org_and_only_running(
+    db_session, async_session
+):
+    """The Redis-independent half of the live tile.
+
+    It has to be scoped AND state-filtered: without the state filter it reports
+    every run ever made as in progress.
+    """
+    suffix = next(_suffix)
+    org = OrganizationModel(provider_id=f"live-org-{suffix}")
+    other = OrganizationModel(provider_id=f"live-other-{suffix}")
+    async_session.add_all([org, other])
+    await async_session.flush()
+
+    user = UserModel(provider_id=f"live-user-{suffix}", selected_organization_id=org.id)
+    async_session.add(user)
+    await async_session.flush()
+
+    mine = WorkflowModel(name="live", organization_id=org.id, user_id=user.id)
+    theirs = WorkflowModel(name="live2", organization_id=other.id, user_id=user.id)
+    async_session.add_all([mine, theirs])
+    await async_session.flush()
+
+    for workflow, state in [
+        (mine, WorkflowRunState.RUNNING.value),
+        (mine, WorkflowRunState.RUNNING.value),
+        (mine, WorkflowRunState.COMPLETED.value),
+        (mine, WorkflowRunState.INITIALIZED.value),
+        (theirs, WorkflowRunState.RUNNING.value),
+    ]:
+        async_session.add(
+            WorkflowRunModel(
+                workflow_id=workflow.id, name="r", mode="twilio", state=state
+            )
+        )
+    await async_session.flush()
+
+    assert await db_session.count_running_runs(org.id) == 2
+    assert await db_session.count_running_runs(other.id) == 1
+
+
+@pytest.mark.asyncio
+async def test_a_redis_failure_reports_unknown_rather_than_idle(monkeypatch):
+    """THE rule for this tile.
+
+    rate_limiter.get_concurrent_count returns 0 when Redis is unreachable,
+    which is right for a limiter -- it must not block calls -- and wrong for a
+    dashboard, where 0 says "nothing is running". The reader used by the tile
+    has to be able to say "I do not know".
+    """
+    from api.services.call_concurrency.rate_limiter import RateLimiter
+
+    class _FailingCommands:
+        """Connects, then fails on the command -- a timeout or a MISCONF."""
+
+        async def zremrangebyscore(self, *a, **k):
+            raise RuntimeError("READONLY You can not write against a replica")
+
+        async def zcard(self, *a, **k):
+            raise RuntimeError("unreachable")
+
+    limiter = RateLimiter()
+
+    async def _connects_but_fails():
+        return _FailingCommands()
+
+    monkeypatch.setattr(limiter, "_get_redis", _connects_but_fails)
+    # The forgiving reader answers 0 here, because a limiter that cannot read
+    # the count must not stop a call from starting.
+    assert await limiter.get_concurrent_count(1) == 0
+    # The honest reader says it does not know.
+    assert await limiter.get_concurrent_count_or_none(1) is None
+
+    async def _cannot_connect():
+        raise ConnectionError("redis is down")
+
+    monkeypatch.setattr(limiter, "_get_redis", _cannot_connect)
+    # A CONNECTION failure is not caught by the forgiving reader at all -- its
+    # try block starts after _get_redis(), so this propagates. Worth pinning:
+    # it means the tile cannot simply call that method and hope.
+    with pytest.raises(ConnectionError):
+        await limiter.get_concurrent_count(1)
+    # The honest reader wraps the connection too, so the tile degrades to
+    # "unknown" instead of failing the request.
+    assert await limiter.get_concurrent_count_or_none(1) is None

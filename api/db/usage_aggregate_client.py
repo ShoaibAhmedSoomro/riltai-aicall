@@ -42,6 +42,7 @@ from api.enums import (
     OrganizationConfigurationKey,
     TelephonyCallStatus,
     WorkflowRunChannel,
+    WorkflowRunState,
 )
 from api.services.workflow.disposition_codes import TRANSFER_DISPOSITION_CODES
 
@@ -387,6 +388,25 @@ class UsageAggregateClient(BaseDBClient):
             "truncated": len(points) >= MAX_SERIES_BUCKETS,
             "points": points,
         }
+
+    async def count_running_runs(self, organization_id: int) -> int:
+        """Runs the database believes are in progress, for this organization.
+
+        A Redis-independent cross-check for the live tile: if Redis cannot
+        answer, this still can. The two can legitimately disagree for a few
+        seconds around call start and teardown -- they are separate sources,
+        not a checksum of each other.
+        """
+        rows = await self._session_execute(
+            select(func.count())
+            .select_from(WorkflowRunModel)
+            .join(WorkflowModel, WorkflowRunModel.workflow_id == WorkflowModel.id)
+            .where(
+                WorkflowModel.organization_id == organization_id,
+                WorkflowRunModel.state == WorkflowRunState.RUNNING.value,
+            )
+        )
+        return int(rows[0][0] or 0)
 
     async def _session_execute(self, statement):
         async with self.async_session() as session:

@@ -7,12 +7,14 @@ import {
     getCampaignsApiV1CampaignGet,
     getCurrentPeriodUsageApiV1OrganizationsUsageCurrentPeriodGet,
     getDailyReportApiV1OrganizationsReportsDailyGet,
+    getLiveUsageApiV1OrganizationsUsageLiveGet,
     getUsageHistoryApiV1OrganizationsUsageRunsGet,
     getWorkflowCountApiV1WorkflowCountGet,
     listTelephonyConfigurationsApiV1OrganizationsTelephonyConfigsGet,
 } from '@/client/sdk.gen';
 import type {
     CurrentUsageResponse,
+    LiveUsageResponse,
     TelephonyConfigurationListItem,
     WorkflowCountResponse,
     WorkflowRunUsageResponse,
@@ -27,21 +29,21 @@ import { getLocalTimezone } from '@/lib/dateTime';
  * that really returns it. Surveying the API turned up several things that LOOK
  * available and are not, so they are deliberately absent here:
  *
- *   money / spend        organizations.price_per_second_usd is a nullable column
- *                        that no application code ever writes, so every USD
- *                        field is absent and /usage/daily-breakdown answers 400
- *                        unconditionally. There is no cost widget.
- *   live / concurrent    /health/active-calls and /health/autoscale-metric both
- *                        verify the X-Rilt-Devops-Secret header, so a browser
- *                        session gets 403. get_concurrent_count() exists in the
- *                        rate limiter but no route exposes it.
- *   deltas vs last month there is no previous-period endpoint, so no stat card
- *                        claims a percentage change.
+ *   money / spend        per-card spend is not wired yet. The DATA exists now
+ *                        (cost is recorded per run, /usage/summary totals it);
+ *                        only the cards are outstanding, in the rewire.
+ *   deltas vs last month /usage/summary returns a `previous` block over an
+ *                        equal-length window, so a delta is computable. Also
+ *                        waiting on the rewire; no card claims one yet.
  *   token usage          UsageHistoryResponse.total_rilt_tokens was hardcoded 0.
  *                        Now deprecated and carries cost-in-cents; read
  *                        total_charge_usd instead.
  *
  * FIXED since this note was written:
+ *   live / concurrent    was 403 for a browser: only the devops-gated fleet
+ *                        health routes exposed it. /organizations/usage/live is
+ *                        per-org and session-authenticated. Its active_calls is
+ *                        null when Redis cannot answer -- which is NOT zero.
  *   transfers            the daily report counted the literal "XFER", which
  *                        nothing writes, so it was structurally zero. It now
  *                        counts call_transferred / transfer_call and is emitted
@@ -92,6 +94,12 @@ export interface DashboardData {
     /** Calls today, from the daily report. Counts every run row, see labelling. */
     callsToday: number | null;
     period: CurrentUsageResponse | null;
+    /**
+     * Live concurrency. `active_calls` is itself nullable INSIDE this:
+     * null means Redis could not answer, which is not the same as zero
+     * calls and must not be rendered as an idle system.
+     */
+    live: LiveUsageResponse | null;
     campaigns: { total: number; byState: Record<string, number>; activeRows: number } | null;
     telephony: TelephonyConfigurationListItem[] | null;
     apiKeyCount: number | null;
@@ -142,6 +150,7 @@ export function useDashboardData(timezoneOverride?: string | null): DashboardDat
     const [totalCalls, setTotalCalls] = useState<number | null>(null);
     const [callsToday, setCallsToday] = useState<number | null>(null);
     const [period, setPeriod] = useState<CurrentUsageResponse | null>(null);
+    const [live, setLive] = useState<LiveUsageResponse | null>(null);
     const [campaigns, setCampaigns] = useState<DashboardData['campaigns']>(null);
     const [telephony, setTelephony] = useState<TelephonyConfigurationListItem[] | null>(null);
     const [apiKeyCount, setApiKeyCount] = useState<number | null>(null);
@@ -194,6 +203,14 @@ export function useDashboardData(timezoneOverride?: string | null): DashboardDat
             guarded(async () => {
                 const r = await getUsageHistoryApiV1OrganizationsUsageRunsGet({ query: { limit: 1 } });
                 if (!cancelled && !r.error && r.data) setTotalCalls(r.data.total_count);
+                return null;
+            }),
+        );
+
+        jobs.push(
+            guarded(async () => {
+                const r = await getLiveUsageApiV1OrganizationsUsageLiveGet();
+                if (!cancelled && !r.error && r.data) setLive(r.data);
                 return null;
             }),
         );
@@ -355,6 +372,7 @@ export function useDashboardData(timezoneOverride?: string | null): DashboardDat
         totalCalls,
         callsToday,
         period,
+        live,
         campaigns,
         telephony,
         apiKeyCount,

@@ -828,3 +828,51 @@ async def get_usage_series(
         bucket=bucket,
         filters=_parse_filters(filters),
     )
+
+
+class LiveUsageResponse(BaseModel):
+    """What is happening right now, for a dashboard tile.
+
+    Explicitly NOT live monitoring: no listen-in, no live transcript. Those
+    need a pipecat-layer change, because the realtime observer's sender
+    registry is a one-slot map registered from the browser participant's own
+    socket -- there is nowhere for a supervisor to attach.
+    """
+
+    # None means "could not be read", NOT zero. The two are different answers
+    # and a tile that shows 0 during a Redis outage is reporting an idle system.
+    active_calls: Optional[int] = None
+    concurrent_call_limit: int
+    # Counted from the database, so it still answers when Redis cannot. The two
+    # can legitimately differ for a few seconds around call start and end --
+    # they are different sources, not a checksum.
+    running_runs: int
+
+
+@router.get("/usage/live", response_model=LiveUsageResponse)
+async def get_live_usage(user: UserModel = Depends(get_user)):
+    """Live concurrency for the caller's organization.
+
+    The number already existed but only behind the devops-secret health
+    routes, which are fleet-wide and unscoped, so a browser session got a 403 —
+    which is why the dashboard documented live concurrency as unobtainable.
+
+    Returns 200 with active_calls=null when Redis cannot answer, rather than
+    503. This is a dashboard tile, not an autoscaling signal: a Redis blip must
+    degrade one tile, not fail the page. The autoscale endpoint still 503s,
+    deliberately, because there a successful scrape of 0 would tell the
+    autoscaler to scale down.
+    """
+    if not user.selected_organization_id:
+        raise HTTPException(status_code=400, detail="No organization selected")
+
+    from api.services.call_concurrency import call_concurrency
+
+    organization_id = user.selected_organization_id
+    return LiveUsageResponse(
+        active_calls=await call_concurrency.get_org_concurrent_count(organization_id),
+        concurrent_call_limit=await call_concurrency.get_org_concurrent_limit(
+            organization_id
+        ),
+        running_runs=await db_client.count_running_runs(organization_id),
+    )

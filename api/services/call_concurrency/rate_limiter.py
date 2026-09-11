@@ -266,6 +266,33 @@ class RateLimiter:
             logger.error(f"Error releasing concurrent slot: {e}")
             return None
 
+    async def get_concurrent_count_or_none(self, organization_id: int) -> int | None:
+        """The live count, or None when Redis could not answer.
+
+        get_concurrent_count below returns 0 on a Redis failure, which is the
+        right call for its own callers -- a limiter that cannot read the count
+        should not block a call from starting. It is the WRONG answer for a
+        dashboard, where 0 reads as "no calls in progress" and is
+        indistinguishable from the truth.
+
+        So this one does not swallow it. A reader that needs to tell "none" from
+        "cannot tell" uses this; everything enforcing a limit keeps using the
+        forgiving one.
+        """
+        try:
+            redis_client = await self._get_redis()
+            concurrent_key = f"concurrent_calls:{organization_id}"
+            stale_cutoff = time.time() - self.stale_call_timeout
+            await redis_client.zremrangebyscore(concurrent_key, 0, stale_cutoff)
+            return await redis_client.zcard(concurrent_key)
+        except Exception as e:
+            logger.warning(
+                "Could not read the concurrent count for organization {}: {}",
+                organization_id,
+                e,
+            )
+            return None
+
     async def get_concurrent_count(self, organization_id: int) -> int:
         """
         Get current number of active concurrent calls for an organization.

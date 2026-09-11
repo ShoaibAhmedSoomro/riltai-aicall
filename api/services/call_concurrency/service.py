@@ -55,6 +55,16 @@ class CallConcurrencyService:
     def __init__(self):
         self.default_concurrent_limit = int(DEFAULT_ORG_CONCURRENCY_LIMIT)
 
+    async def get_org_concurrent_count(self, organization_id: int) -> int | None:
+        """Live calls for one organization, or None when Redis cannot answer.
+
+        None rather than 0 on failure: this feeds a dashboard tile, where 0
+        reads as "nothing is running" and is indistinguishable from the truth.
+        Callers enforcing a limit keep using rate_limiter.get_concurrent_count,
+        which returns 0 so a Redis blip cannot block a call from starting.
+        """
+        return await rate_limiter.get_concurrent_count_or_none(organization_id)
+
     async def get_org_concurrent_limit(self, organization_id: int) -> int:
         """Get the concurrent call limit for an organization."""
         try:
