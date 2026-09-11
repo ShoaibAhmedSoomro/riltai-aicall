@@ -3489,6 +3489,31 @@ export type LastCampaignSettingsResponse = {
 };
 
 /**
+ * LiveUsageResponse
+ *
+ * What is happening right now, for a dashboard tile.
+ *
+ * Explicitly NOT live monitoring: no listen-in, no live transcript. Those
+ * need a pipecat-layer change, because the realtime observer's sender
+ * registry is a one-slot map registered from the browser participant's own
+ * socket -- there is nowhere for a supervisor to attach.
+ */
+export type LiveUsageResponse = {
+    /**
+     * Active Calls
+     */
+    active_calls?: number | null;
+    /**
+     * Concurrent Call Limit
+     */
+    concurrent_call_limit: number;
+    /**
+     * Running Runs
+     */
+    running_runs: number;
+};
+
+/**
  * LMNT
  */
 export type LmntTtsConfiguration = {
@@ -14597,6 +14622,45 @@ export type GetUsageSeriesApiV1OrganizationsUsageSeriesGetResponses = {
 };
 
 export type GetUsageSeriesApiV1OrganizationsUsageSeriesGetResponse = GetUsageSeriesApiV1OrganizationsUsageSeriesGetResponses[keyof GetUsageSeriesApiV1OrganizationsUsageSeriesGetResponses];
+
+export type GetLiveUsageApiV1OrganizationsUsageLiveGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/organizations/usage/live';
+};
+
+export type GetLiveUsageApiV1OrganizationsUsageLiveGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetLiveUsageApiV1OrganizationsUsageLiveGetError = GetLiveUsageApiV1OrganizationsUsageLiveGetErrors[keyof GetLiveUsageApiV1OrganizationsUsageLiveGetErrors];
+
+export type GetLiveUsageApiV1OrganizationsUsageLiveGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: LiveUsageResponse;
+};
+
+export type GetLiveUsageApiV1OrganizationsUsageLiveGetResponse = GetLiveUsageApiV1OrganizationsUsageLiveGetResponses[keyof GetLiveUsageApiV1OrganizationsUsageLiveGetResponses];
 
 export type GetDailyReportApiV1OrganizationsReportsDailyGetData = {
     body?: never;
