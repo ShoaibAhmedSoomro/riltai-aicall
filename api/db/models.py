@@ -771,12 +771,34 @@ class OrganizationUsageCycleModel(Base):
         comment="Deprecated. MPS owns quota and credit ledger state.",
         info={"deprecated": True},
     )
-    used_dograh_tokens = Column(Float, nullable=False, default=0)
-    total_duration_seconds = Column(
-        Integer, nullable=False, default=0, server_default=text("0")
+    # DEPRECATED, all three. Nothing has ever written them -- there is no
+    # accrual path anywhere in the codebase, so they sit at their defaults
+    # forever. get_current_usage used to READ them, which is how the Talk time
+    # tile and the period meter came to present a hardcoded 0 as a measurement.
+    # Period usage is now aggregated from workflow_runs on read. The cycle row
+    # itself is kept: it is the period-boundary record.
+    used_dograh_tokens = Column(
+        Float,
+        nullable=False,
+        default=0,
+        comment="Deprecated. Never written; usage is aggregated from workflow_runs.",
+        info={"deprecated": True},
     )
-    # New USD tracking fields
-    used_amount_usd = Column(Float, nullable=True, default=0)
+    total_duration_seconds = Column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default=text("0"),
+        comment="Deprecated. Never written; usage is aggregated from workflow_runs.",
+        info={"deprecated": True},
+    )
+    used_amount_usd = Column(
+        Float,
+        nullable=True,
+        default=0,
+        comment="Deprecated. Never written; spend is aggregated from cost_info.",
+        info={"deprecated": True},
+    )
     quota_amount_usd = Column(
         Float,
         nullable=True,

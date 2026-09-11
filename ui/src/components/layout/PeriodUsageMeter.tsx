@@ -66,8 +66,11 @@ export function formatPeriod(start: string, end: string): string | null {
  * visible by navigating to Agent Runs.
  *
  * `/usage/current-period` already existed, was already typed into the generated
- * client, and had no caller — so this surfaces data the backend was already
- * computing rather than adding an endpoint.
+ * client, and had no caller. This docstring used to claim the backend was
+ * "already computing" these figures. It was not: the endpoint read
+ * organization_usage_cycles columns that NOTHING has ever written, so it
+ * returned a hardcoded 0 and this meter presented that as a measurement. The
+ * endpoint now aggregates the period's runs on read.
  *
  * It renders NOTHING on any failure. A self-hosted install with no organization
  * selected gets a 400 here, and BYOK installs have no priced amount at all; a
@@ -150,11 +153,11 @@ export function PeriodUsageMeter({ className }: { className?: string }) {
                 <p className="font-medium">Usage this period</p>
                 {period && <p className="text-xs opacity-80">{period}</p>}
                 <p className="text-xs opacity-80">
+                    {/* No token count alongside the spend: used_dograh_tokens is
+                        cost in cents, so printing both showed one figure twice
+                        in two units. */}
                     {duration} of calls
                     {spend ? ` · ${spend}` : ""}
-                    {usage.used_dograh_tokens > 0
-                        ? ` · ${Math.round(usage.used_dograh_tokens).toLocaleString()} RiltAI Tokens`
-                        : ""}
                 </p>
             </TooltipContent>
         </Tooltip>

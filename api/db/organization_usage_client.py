@@ -14,7 +14,6 @@ from api.db.filters import (
 )
 from api.db.models import (
     OrganizationConfigurationModel,
-    OrganizationModel,
     OrganizationUsageCycleModel,
     WorkflowModel,
     WorkflowRunModel,
@@ -115,32 +114,54 @@ class OrganizationUsageClient(BaseDBClient):
         return cycle_result.scalar_one()
 
     async def get_current_usage(self, organization_id: int) -> dict:
-        """Get current reporting-period usage information."""
+        """Current reporting-period usage, MEASURED from the period's runs.
+
+        This used to read organization_usage_cycles.used_dograh_tokens and
+        .total_duration_seconds. Nothing has ever written either column -- there
+        is no accrual path in the codebase -- so both were permanently 0, and
+        two unbadged surfaces presented that zero as a measurement: the Talk
+        time tile on the overview and PeriodUsageMeter, whose own docstring
+        claimed the backend was computing it.
+
+        Fixed by deletion rather than by building an accrual path: the figures
+        are aggregated from workflow_runs on read, by the same query that backs
+        /usage/summary, bounded to the period. One source for the period meter
+        and the usage page means they cannot disagree.
+
+        The cycle ROW is still created and returned -- it is the record of where
+        the period boundary falls, and that part was never wrong.
+        """
         async with self.async_session() as session:
-            org_result = await session.execute(
-                select(OrganizationModel).where(OrganizationModel.id == organization_id)
-            )
-            org = org_result.scalar_one()
-
-            # Get or create current cycle within the same session
+            # Creates the cycle row if this is the first read of the period.
             cycle = await self._get_or_create_current_cycle_impl(
-                organization_id, session, commit=False
+                organization_id, session, commit=True
             )
+            period_start = cycle.period_start
+            period_end = cycle.period_end
 
-            result = {
-                "period_start": cycle.period_start.isoformat(),
-                "period_end": cycle.period_end.isoformat(),
-                "used_dograh_tokens": cycle.used_dograh_tokens,
-                "total_duration_seconds": cycle.total_duration_seconds,
-            }
+        summary = await self.get_usage_summary(
+            organization_id, start_date=period_start, end_date=period_end
+        )
 
-            # Add USD fields if organization has pricing
-            if org.price_per_second_usd is not None:
-                result["used_amount_usd"] = cycle.used_amount_usd or 0
-                result["currency"] = "USD"
-                result["price_per_second_usd"] = org.price_per_second_usd
+        total_charge_usd = summary["total_charge_usd"]
+        result = {
+            "period_start": period_start.isoformat(),
+            "period_end": period_end.isoformat(),
+            # Cost in cents, the unit "rilt tokens" means everywhere else that
+            # computes it. 0.0 when nothing in the period was priced -- which is
+            # a real total of a priced-at-nothing period, not a placeholder.
+            "used_dograh_tokens": round((total_charge_usd or 0.0) * 100, 2),
+            "total_duration_seconds": summary["total_duration_seconds"],
+        }
 
-            return result
+        # Money only when there IS money. None would break the response model's
+        # float contract downstream; omitting the keys is what the UI already
+        # treats as "no cost source", and it renders nothing rather than $0.00.
+        if total_charge_usd is not None:
+            result["used_amount_usd"] = total_charge_usd
+            result["currency"] = "USD"
+
+        return result
 
     async def get_usage_history(
         self,
