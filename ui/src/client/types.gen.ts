@@ -7388,6 +7388,14 @@ export type UsageSeriesPoint = {
      * Answer Rate Pct
      */
     answer_rate_pct?: number | null;
+    /**
+     * Qualified Runs
+     */
+    qualified_runs?: number;
+    /**
+     * Transferred Runs
+     */
+    transferred_runs?: number;
 };
 
 /**
