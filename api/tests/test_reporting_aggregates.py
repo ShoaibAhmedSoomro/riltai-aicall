@@ -1253,3 +1253,37 @@ def test_the_csv_carries_the_cost_and_leaves_it_blank_when_unpriced():
     )
     cost = rows[0].index("Cost (USD)")
     assert [r[cost] for r in rows[1:]] == ["0.1", "", ""]
+
+
+@pytest.mark.asyncio
+async def test_the_series_carries_outcomes_per_bucket_not_just_volume(
+    db_session, async_session
+):
+    """Same expressions as the summary, over the same subquery.
+
+    Without these, a per-period outcome trend is unobtainable and the panel
+    that wants one has to invent it; with them, a bucketed total and a windowed
+    one cannot disagree, which is what the second half asserts.
+    """
+    day_one = NOW - timedelta(days=1)
+    org = await _org_with_dispositioned_runs(
+        async_session,
+        [
+            (day_one, "user_qualified", "twilio", 60, None),
+            (day_one, "user_qualified", "twilio", 60, None),
+            (day_one, "call_transferred", "twilio", 60, None),
+            (NOW, "user_qualified", "twilio", 60, None),
+        ],
+    )
+
+    window = {
+        "start_date": NOW - timedelta(days=3),
+        "end_date": NOW + timedelta(minutes=1),
+    }
+    series = await db_session.get_usage_series(org.id, bucket="day", **window)
+    counts = [(p["qualified_runs"], p["transferred_runs"]) for p in series["points"]]
+    assert counts == [(2, 1), (1, 0)]
+
+    summary = await db_session.get_usage_summary(org.id, **window)
+    assert summary["qualified_runs"] == sum(q for q, _ in counts)
+    assert summary["transferred_runs"] == sum(t for _, t in counts)

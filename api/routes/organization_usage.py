@@ -735,6 +735,8 @@ class UsageSeriesPoint(BaseModel):
     duration_seconds: int
     charge_usd: Optional[float] = None
     answer_rate_pct: Optional[float] = None
+    qualified_runs: int = 0
+    transferred_runs: int = 0
 
 
 class UsageSeriesResponse(BaseModel):

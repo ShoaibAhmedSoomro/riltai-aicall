@@ -319,7 +319,11 @@ class UsageAggregateClient(BaseDBClient):
         bucket: str = "day",
         filters: Optional[list[dict]] = None,
     ) -> dict:
-        """Calls, talk time, spend and answer rate per time bucket."""
+        """Calls, talk time, spend, answer rate and outcomes per time bucket.
+
+        The outcome counts are the same expressions the summary uses, over the
+        same subquery, so a bucketed total and a windowed one cannot disagree.
+        """
         unit = SERIES_BUCKETS.get(bucket, "day")
 
         async with self.async_session() as session:
@@ -355,6 +359,12 @@ class UsageAggregateClient(BaseDBClient):
                 func.count().label("calls"),
                 func.count().filter(~s_is_chat).label("call_runs"),
                 func.count().filter(s_unanswered).label("unanswered"),
+                func.count()
+                .filter(source.c.code == QUALIFIED_DISPOSITION)
+                .label("qualified"),
+                func.count()
+                .filter(source.c.code.in_(TRANSFER_DISPOSITION_CODES))
+                .label("transferred"),
                 func.coalesce(func.sum(s_duration), 0.0).label("duration"),
                 func.sum(s_charge).label("charge"),
             )
@@ -379,6 +389,8 @@ class UsageAggregateClient(BaseDBClient):
                     "answer_rate_pct": (
                         round(answered / call_runs * 100, 2) if call_runs else None
                     ),
+                    "qualified_runs": int(row.qualified or 0),
+                    "transferred_runs": int(row.transferred or 0),
                 }
             )
 
