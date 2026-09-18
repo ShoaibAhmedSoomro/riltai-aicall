@@ -3,19 +3,27 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
+    getAlertsApiV1OrganizationsReportsAlertsGet,
     getApiKeysApiV1UserApiKeysGet,
     getCampaignsApiV1CampaignGet,
     getCurrentPeriodUsageApiV1OrganizationsUsageCurrentPeriodGet,
     getDailyReportApiV1OrganizationsReportsDailyGet,
     getLiveUsageApiV1OrganizationsUsageLiveGet,
+    getQueueSummaryApiV1CampaignQueueSummaryGet,
     getUsageHistoryApiV1OrganizationsUsageRunsGet,
+    getUsageSeriesApiV1OrganizationsUsageSeriesGet,
+    getUsageSummaryApiV1OrganizationsUsageSummaryGet,
     getWorkflowCountApiV1WorkflowCountGet,
     listTelephonyConfigurationsApiV1OrganizationsTelephonyConfigsGet,
 } from '@/client/sdk.gen';
 import type {
+    AlertItem,
     CurrentUsageResponse,
     LiveUsageResponse,
+    QueueSummaryResponse,
     TelephonyConfigurationListItem,
+    UsageSeriesResponse,
+    UsageSummaryResponse,
     WorkflowCountResponse,
     WorkflowRunUsageResponse,
 } from '@/client/types.gen';
@@ -26,28 +34,31 @@ import { getLocalTimezone } from '@/lib/dateTime';
  * Every number the dashboard renders, and nothing it cannot prove.
  *
  * The constraint that shaped this file: each figure has to come from an endpoint
- * that really returns it. Surveying the API turned up several things that LOOK
- * available and are not, so they are deliberately absent here:
+ * that really returns it. An earlier version of this note listed money, deltas,
+ * live concurrency and transfers as structurally unobtainable. None of that is
+ * true any more, so the list is gone rather than left to mislead.
  *
- *   money / spend        per-card spend is not wired yet. The DATA exists now
- *                        (cost is recorded per run, /usage/summary totals it);
- *                        only the cards are outstanding, in the rewire.
- *   deltas vs last month /usage/summary returns a `previous` block over an
- *                        equal-length window, so a delta is computable. Also
- *                        waiting on the rewire; no card claims one yet.
- *   token usage          UsageHistoryResponse.total_rilt_tokens was hardcoded 0.
- *                        Now deprecated and carries cost-in-cents; read
- *                        total_charge_usd instead.
+ * What each source is good for, and what it is NOT:
  *
- * FIXED since this note was written:
- *   live / concurrent    was 403 for a browser: only the devops-gated fleet
- *                        health routes exposed it. /organizations/usage/live is
- *                        per-org and session-authenticated. Its active_calls is
- *                        null when Redis cannot answer -- which is NOT zero.
- *   transfers            the daily report counted the literal "XFER", which
- *                        nothing writes, so it was structurally zero. It now
- *                        counts call_transferred / transfer_call and is emitted
- *                        as metrics.transferred_count.
+ *   /usage/summary     a 30-day window plus `previous`, an equal-length window
+ *                      immediately before it. That is what makes a delta
+ *                      honest -- both halves come from one query over one
+ *                      filter set, so they cannot disagree. Read the previous
+ *                      window through `summary.previous`; it is not lifted to
+ *                      a separate field, because two copies of one number is
+ *                      how they drift apart.
+ *   /usage/series      per-bucket calls, duration, charge and answer rate.
+ *                      It OMITS empty buckets, so a trend line has to fill its
+ *                      own gaps -- see `dayVolume`.
+ *   /usage/runs        rows. Still the only source for the activity list and
+ *                      the per-agent tally, and the only lifetime count.
+ *   /campaign/queue-summary, /organizations/reports/alerts
+ *                      queued work and current problems, both org-wide.
+ *
+ * Nullable means unknown, everywhere in here. `summary.total_charge_usd` is
+ * null when nothing was priced, `series` points carry a null charge for the
+ * same reason, and `live.active_calls` is null when Redis could not answer.
+ * None of those are zero, and a panel that renders them as zero is lying.
  *
  * Each fetch is independent and failure-isolated: one endpoint 4xx-ing degrades
  * its own widget to an empty state instead of blanking the page. The generated
@@ -55,7 +66,7 @@ import { getLocalTimezone } from '@/lib/dateTime';
  * explicitly on every call.
  */
 
-/** One day of call volume, from a COUNT over a single day's range. */
+/** One day of call volume, from the day buckets of /usage/series. */
 export interface DayVolume {
     /** ISO date, YYYY-MM-DD, in the report timezone. */
     date: string;
@@ -101,6 +112,17 @@ export interface DashboardData {
      */
     live: LiveUsageResponse | null;
     campaigns: { total: number; byState: Record<string, number>; activeRows: number } | null;
+    /**
+     * 30-day headline figures, with the equal-length window before them under
+     * `.previous`. Money and answer rate inside are nullable: unknown, not zero.
+     */
+    summary: UsageSummaryResponse | null;
+    /** Day buckets over the same 30 days. Empty days are absent from `points`. */
+    series: UsageSeriesResponse | null;
+    /** Queued work across every campaign in the org. */
+    queue: QueueSummaryResponse | null;
+    /** Current problems. An empty array means nothing is wrong -- a real answer. */
+    alerts: AlertItem[] | null;
     telephony: TelephonyConfigurationListItem[] | null;
     apiKeyCount: number | null;
 
@@ -116,6 +138,8 @@ export interface DashboardData {
 }
 
 const TREND_DAYS = 7;
+/** The window /usage/summary and /usage/series are asked for. */
+const SUMMARY_DAYS = 30;
 /** /usage/runs caps limit at 100 (api/routes/organization_usage.py). */
 const RUNS_PAGE_MAX = 100;
 
@@ -160,6 +184,10 @@ export function useDashboardData(timezoneOverride?: string | null): DashboardDat
     const [recentCalls, setRecentCalls] = useState<WorkflowRunUsageResponse[] | null>(null);
     const [busiestAgents, setBusiestAgents] = useState<AgentActivity[] | null>(null);
     const [busiestTruncated, setBusiestTruncated] = useState(false);
+    const [summary, setSummary] = useState<UsageSummaryResponse | null>(null);
+    const [series, setSeries] = useState<UsageSeriesResponse | null>(null);
+    const [queue, setQueue] = useState<QueueSummaryResponse | null>(null);
+    const [alerts, setAlerts] = useState<AlertItem[] | null>(null);
 
     const today = useMemo(() => isoDateInZone(timezone, 0, now), [timezone, now]);
 
@@ -191,14 +219,8 @@ export function useDashboardData(timezoneOverride?: string | null): DashboardDat
             }),
         );
 
-        // limit=1 because only total_count is wanted.
-        //
-        // total_duration_seconds used to sum the RETURNED PAGE only, so this
-        // deliberately ignored it. That is fixed — the endpoint now aggregates
-        // in SQL over the whole filtered set, and also returns total_charge_usd
-        // — so this one call could supply talk time and spend directly. Left as
-        // a count-only read for now; switching the panels over is the dashboard
-        // rewire, not this change.
+        // limit=1 because only total_count is wanted, and this is the LIFETIME
+        // count -- /usage/summary is windowed, so it cannot answer this.
         jobs.push(
             guarded(async () => {
                 const r = await getUsageHistoryApiV1OrganizationsUsageRunsGet({ query: { limit: 1 } });
@@ -290,33 +312,66 @@ export function useDashboardData(timezoneOverride?: string | null): DashboardDat
             }),
         );
 
-        // Per-day volume. There is no server-side daily aggregate available on a
-        // self-hosted install (/usage/daily-breakdown requires pricing, which is
-        // never configured), so this is one COUNT per day over a date range.
-        //
-        // ponytail: TREND_DAYS count-only requests rather than one aggregate.
-        // Each is a subquery COUNT with no row hydration, but workflow_runs has
-        // no index on created_at, so the ceiling is a table scan per day. If this
-        // ever matters, the fix is a backend GROUP BY endpoint, not more requests.
+        // Headline figures and the equal-length window before them, for deltas.
         jobs.push(
             guarded(async () => {
-                const days = Array.from({ length: TREND_DAYS }, (_, i) =>
-                    isoDateInZone(timezone, i - (TREND_DAYS - 1), now),
+                const r = await getUsageSummaryApiV1OrganizationsUsageSummaryGet({
+                    query: {
+                        start_date: `${isoDateInZone(timezone, -(SUMMARY_DAYS - 1), now)}T00:00:00Z`,
+                        end_date: `${today}T23:59:59Z`,
+                    },
+                });
+                if (!cancelled && !r.error && r.data) setSummary(r.data);
+                return null;
+            }),
+        );
+
+        // One GROUP BY, where this used to issue TREND_DAYS count-only requests
+        // -- each a subquery COUNT over a column with no index, so seven table
+        // scans to draw one sparkline. The same call also carries duration,
+        // charge and answer rate per bucket, which the count-only reads could
+        // not have supplied at any price.
+        jobs.push(
+            guarded(async () => {
+                const r = await getUsageSeriesApiV1OrganizationsUsageSeriesGet({
+                    query: {
+                        bucket: 'day',
+                        start_date: `${isoDateInZone(timezone, -(SUMMARY_DAYS - 1), now)}T00:00:00Z`,
+                        end_date: `${today}T23:59:59Z`,
+                    },
+                });
+                if (cancelled || r.error || !r.data) return null;
+                setSeries(r.data);
+
+                // The series OMITS empty buckets, so reading points straight
+                // into a trend line silently shortens the week and shifts every
+                // bar left. Lay the points over a fixed run of days instead: a
+                // day with no calls is a real zero, unlike a null charge.
+                const byDate = new Map(
+                    r.data.points.map((p) => [String(p.bucket ?? '').slice(0, 10), p.calls]),
                 );
-                const counts = await Promise.all(
-                    days.map(async (date) => {
-                        const r = await getUsageHistoryApiV1OrganizationsUsageRunsGet({
-                            query: {
-                                limit: 1,
-                                start_date: `${date}T00:00:00Z`,
-                                end_date: `${date}T23:59:59Z`,
-                            },
-                        });
-                        return r.error || !r.data ? null : r.data.total_count;
+                setDayVolume(
+                    Array.from({ length: TREND_DAYS }, (_, i) => {
+                        const date = isoDateInZone(timezone, i - (TREND_DAYS - 1), now);
+                        return { date, calls: byDate.get(date) ?? 0 };
                     }),
                 );
-                if (cancelled || counts.some((c) => c === null)) return null;
-                setDayVolume(days.map((date, i) => ({ date, calls: counts[i] as number })));
+                return null;
+            }),
+        );
+
+        jobs.push(
+            guarded(async () => {
+                const r = await getQueueSummaryApiV1CampaignQueueSummaryGet();
+                if (!cancelled && !r.error && r.data) setQueue(r.data);
+                return null;
+            }),
+        );
+
+        jobs.push(
+            guarded(async () => {
+                const r = await getAlertsApiV1OrganizationsReportsAlertsGet();
+                if (!cancelled && !r.error && r.data) setAlerts(r.data.items);
                 return null;
             }),
         );
@@ -374,6 +429,10 @@ export function useDashboardData(timezoneOverride?: string | null): DashboardDat
         period,
         live,
         campaigns,
+        summary,
+        series,
+        queue,
+        alerts,
         telephony,
         apiKeyCount,
         dayVolume,
