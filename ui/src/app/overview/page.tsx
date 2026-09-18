@@ -14,22 +14,17 @@ import { DurationHistogram } from './components/DurationHistogram';
 import { OutcomeDonut } from './components/OutcomeDonut';
 import { Panel } from './components/Panel';
 import { QuickActionsPanel } from './components/QuickActionsPanel';
-import { RecentCallsPanel } from './components/RecentCallsPanel';
 import {
-    AgentHealthPanel,
     AlertsPanel,
     AnswerRatePanel,
-    CompliancePanel,
-    ContactsPanel,
-    ConversionPanel,
-    CostVsMarginPanel,
+    ContactRatePanel,
     PerformancePanel,
     PipelinePanel,
-    RegionsPanel,
-    RevenuePanel,
-    SampleKpiTiles,
+    SpendPanel,
     UnitEconomicsPanel,
-} from './components/SamplePanels';
+} from './components/RealPanels';
+import { RecentCallsPanel } from './components/RecentCallsPanel';
+import { CompliancePanel, ContactsPanel, RegionsPanel } from './components/SamplePanels';
 import { SetupHealthPanel } from './components/SetupHealthPanel';
 import { StatCard } from './components/StatCard';
 import { SAMPLE_PANEL_IDS } from './sampleData';
@@ -112,9 +107,9 @@ export default function OverviewPage() {
                     <span className="font-medium text-foreground">
                         {SAMPLE_PANEL_IDS.length} panels show sample figures.
                     </span>{' '}
-                    Revenue, answer rate, contact rate, compliance and geography are not
-                    measured by the platform yet, so those are placeholders for layout and
-                    are not from your account. Anything without a{' '}
+                    Contacts, compliance and geography are not measured by the platform
+                    yet, so those are placeholders for layout and are not from your
+                    account. Anything without a{' '}
                     <span className="font-medium text-foreground">Sample</span> badge is
                     read live from your data.
                 </p>
@@ -209,7 +204,6 @@ export default function OverviewPage() {
                             : 'None running'
                     }
                 />
-                <SampleKpiTiles />
             </div>
 
             {/* ── Charts */}
@@ -330,35 +324,31 @@ export default function OverviewPage() {
                 </div>
             </div>
 
-            {/* ── Illustrative rows. Everything below carries a Sample badge:
-                these mirror the reference layout for panels the platform does
-                not measure. Delete a panel here and its export in sampleData.ts
-                once a real source exists. */}
+            {/* ── Measured rows. Each panel below reads an endpoint, and says
+                what would fill it rather than drawing a zero when it has
+                nothing. Margin and agent health used to sit here as samples;
+                sampleData.ts records why they were deleted rather than wired. */}
             <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-3">
-                <RevenuePanel />
-                <CostVsMarginPanel />
-                <AnswerRatePanel />
+                <SpendPanel summary={data.summary} series={data.series} loading={data.loading} />
+                <AnswerRatePanel summary={data.summary} series={data.series} loading={data.loading} />
+                <UnitEconomicsPanel summary={data.summary} series={data.series} loading={data.loading} />
             </div>
 
             <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-3">
-                <PerformancePanel />
-                <PipelinePanel />
-                <ConversionPanel />
-            </div>
-
-            <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-2">
-                <AgentHealthPanel />
-                <ContactsPanel />
-            </div>
-
-            <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-3">
-                <CompliancePanel />
-                <UnitEconomicsPanel />
-                <RegionsPanel />
+                <PerformancePanel summary={data.summary} series={data.series} loading={data.loading} />
+                <PipelinePanel queue={data.queue} loading={data.loading} />
+                <ContactRatePanel queue={data.queue} loading={data.loading} />
             </div>
 
             <div className="mt-3">
-                <AlertsPanel />
+                <AlertsPanel alerts={data.alerts} loading={data.loading} />
+            </div>
+
+            {/* ── Illustrative row. Everything below carries a Sample badge. */}
+            <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-3">
+                <ContactsPanel />
+                <CompliancePanel />
+                <RegionsPanel />
             </div>
         </div>
     );

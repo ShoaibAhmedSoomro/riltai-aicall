@@ -35,10 +35,16 @@ const EXPORTED = Object.entries(SamplePanels).filter(
 ) as [string, () => React.ReactElement][];
 
 describe('sample panels', () => {
-    it('exports something for every declared sample panel id', () => {
+    it('exports exactly one component per declared sample panel id', () => {
         // SAMPLE_PANEL_IDS drives the count in the page banner, so it drifting
         // from reality would understate or overstate what is illustrative.
-        expect(EXPORTED.length).toBeGreaterThanOrEqual(SAMPLE_PANEL_IDS.length);
+        //
+        // This was >= while SampleKpiTiles existed as a 13th export with no id
+        // of its own. The retirement removed it, so there is no slack left and
+        // the assertion can be exact -- which is what makes a half-retirement
+        // (a component deleted without its id, or the reverse) fail loudly in
+        // both directions instead of only one.
+        expect(EXPORTED.length).toBe(SAMPLE_PANEL_IDS.length);
     });
 
     it.each(EXPORTED)('%s is labelled as sample', (_name, Component) => {

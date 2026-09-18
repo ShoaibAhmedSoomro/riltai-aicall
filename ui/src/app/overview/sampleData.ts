@@ -1,145 +1,48 @@
 /**
- * Illustrative figures for the dashboard panels that have no data source.
+ * Illustrative figures for the three dashboard panels that still have no data
+ * source. Nothing in this file is real.
  *
- * READ THIS BEFORE USING ANY VALUE HERE.
+ * Nine panels used to be fed from here. They are gone, replaced by
+ * components/RealPanels.tsx reading /usage/summary, /usage/series,
+ * /campaign/queue-summary and /organizations/reports/alerts. Two were deleted
+ * outright rather than replaced:
  *
- * Nothing in this file is real. It exists because several panels on the
- * reference dashboard this layout follows describe things the platform does not
- * measure, and the alternative to sample numbers was leaving those slots empty:
+ *   margin vs cost   AICall never learns what an operator bills their own
+ *                    end-customer, so margin is unknowable IN PRINCIPLE, not
+ *                    merely unmeasured. A badged invention of it should not
+ *                    persist just because the slot exists.
+ *   agent health     open / in review / resolved / overdue describes an issue
+ *                    tracker. No such thing is in the schema or in any planned
+ *                    workstream.
  *
- *   revenue, cost, margin      organizations.price_per_second_usd is a nullable
- *                              column no application code ever writes, so every
- *                              money field the API can return is absent and
- *                              /usage/daily-breakdown answers 400 always
- *   answer rate, conversion    the daily report exposes only total_runs and
- *                              xfer_count; there is no answered/connected count
- *   live concurrency           /health/active-calls is gated on a devops header
- *   period-over-period deltas  there is no previous-period endpoint anywhere
- *   contact and agent health   no such domain objects exist
- *   geography                  nothing stores a region for a call
+ * The three that remain, and why each is still sample rather than lazy:
+ *
+ *   contacts     no contacts table exists -- verified by enumerating every
+ *                __tablename__ in api/db/models.py. That domain is separate
+ *                work, not a query someone forgot to write.
+ *   compliance   retention and PII settings belong to the data-governance
+ *                workstream, which owns the fields this would read.
+ *   regions      nothing stores a region per call. The only geo data in the
+ *                tree is COUNTRY_CODES, 21 ISO-to-dial-prefix entries with an
+ *                ambiguous reverse lookup; a real panel needs a
+ *                number-to-country dataset, i.e. a new dependency.
  *
  * Every panel fed from here renders a "Sample" badge, and the dashboard shows
  * one banner saying so. Real and sample numbers are never mixed inside a single
- * panel: a tile that shows a real count shows no invented delta or sparkline
- * beside it.
+ * panel.
  *
- * When a real source appears, delete the corresponding export and the panel's
- * `sample` prop. `SAMPLE_PANEL_IDS` lists what is still illustrative, so the
- * banner and the count in it cannot fall out of step with reality.
+ * SAMPLE_PANEL_IDS now has exactly as many entries as SamplePanels.tsx has
+ * component exports, so sampleData.test.tsx passes at 3 >= 3 with no slack.
+ * That is the point: from here on, deleting a component without removing its id
+ * -- or the reverse -- fails the suite loudly instead of quietly overstating or
+ * understating what is measured.
  */
 
-export const SAMPLE_PANEL_IDS = [
-    'revenue',
-    'cost-vs-margin',
-    'answer-rate',
-    'performance',
-    'pipeline',
-    'conversion',
-    'agent-health',
-    'contacts',
-    'compliance',
-    'unit-economics',
-    'regions',
-    'alerts',
-] as const;
+export const SAMPLE_PANEL_IDS = ['contacts', 'compliance', 'regions'] as const;
 
 export type SamplePanelId = (typeof SAMPLE_PANEL_IDS)[number];
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-
-/** Monthly revenue with a projection footer. */
-export const SAMPLE_REVENUE = {
-    total: 187_400,
-    currency: 'USD',
-    deltaPct: 8.6,
-    ytd: 984_200,
-    projected: 2_246_000,
-    projectedDeltaPct: 9.3,
-    series: MONTHS.map((month, i) => ({
-        month,
-        revenue: [96_000, 118_000, 132_000, 151_000, 168_000, 187_400][i],
-    })),
-};
-
-/** Platform cost against gross margin, the two-series bar panel. */
-export const SAMPLE_COST_VS_MARGIN = {
-    series: MONTHS.map((month, i) => ({
-        month,
-        margin: [58_000, 71_000, 79_000, 94_000, 104_000, 116_000][i],
-        cost: [38_000, 47_000, 53_000, 57_000, 64_000, 71_400][i],
-    })),
-    ytdMargin: 522_000,
-    ytdMarginDeltaPct: 12.4,
-    ytdCost: 462_200,
-    ytdCostDeltaPct: 8.7,
-};
-
-/** The radial gauge and its legend. */
-export const SAMPLE_ANSWER_RATE = {
-    ratePct: 92.4,
-    answered: 1_152,
-    unanswered: 96,
-    voicemail: 87,
-    trendPct: 2.7,
-    trend: [88, 89, 90, 89, 91, 92, 92.4],
-};
-
-/** Three-series performance line chart. */
-export const SAMPLE_PERFORMANCE = {
-    series: [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ].map((month, i) => ({
-        month,
-        calls: [1200, 1450, 1610, 1520, 1780, 1910, 2050, 1980, 2140, 2260, 2180, 2340][i],
-        qualified: [420, 510, 590, 560, 660, 720, 780, 750, 820, 880, 840, 910][i],
-        transferred: [180, 210, 240, 230, 280, 300, 330, 320, 350, 380, 360, 400][i],
-    })),
-    totalCalls: 23_420,
-    qualifiedRate: 38.9,
-    transferRate: 16.2,
-};
-
-/** Campaign pipeline donut. */
-export const SAMPLE_PIPELINE = {
-    total: 312,
-    segments: [
-        { label: 'Queued', count: 148, pct: 48, tone: 'neutral' as const },
-        { label: 'In progress', count: 68, pct: 22, tone: 'positive' as const },
-        { label: 'Retrying', count: 54, pct: 17, tone: 'neutral' as const },
-        { label: 'Exhausted', count: 42, pct: 13, tone: 'negative' as const },
-    ],
-    dueToday: 42,
-    atRisk: 12,
-};
-
-/** Conversion donut with the three stat columns beside it. */
-export const SAMPLE_CONVERSION = {
-    ratePct: 92.3,
-    reached: 17_200,
-    pending: 1_500,
-    failed: 2_100,
-    ytdRatePct: 94.1,
-    ytdDeltaPct: 3.2,
-    noContact: 23,
-    noContactDeltaPct: 4,
-};
-
-/** Four-stat operational panels. */
-export const SAMPLE_AGENT_HEALTH = {
-    stats: [
-        { label: 'Open issues', value: '128' },
-        { label: 'In review', value: '76' },
-        { label: 'Resolved (MTD)', value: '142' },
-        { label: 'Overdue', value: '18' },
-    ],
-    footer: [
-        { label: 'Cost (MTD)', value: '$620K' },
-        { label: 'Planned work', value: '$1.2M' },
-        { label: 'Avg resolution', value: '3.6 days' },
-        { label: 'Satisfaction', value: '92%' },
-    ],
-};
-
+/** Four-stat operational panel. */
 export const SAMPLE_CONTACTS = {
     stats: [
         { label: 'Total contacts', value: '1,084' },
@@ -164,14 +67,6 @@ export const SAMPLE_COMPLIANCE = [
     { item: 'Script review', ok: 16, dueSoon: 5, overdue: 3 },
 ];
 
-/** Label, value and a sparkline per row. */
-export const SAMPLE_UNIT_ECONOMICS = [
-    { label: 'Cost per call', value: '$0.42', trend: [52, 49, 47, 45, 44, 43, 42], good: true },
-    { label: 'Cost per qualified lead', value: '$11.20', trend: [14, 13.4, 12.8, 12.1, 11.8, 11.4, 11.2], good: true },
-    { label: 'Avg handle time', value: '2m 18s', trend: [155, 150, 146, 142, 140, 139, 138], good: true },
-    { label: 'Gross margin', value: '36.4%', trend: [29, 30, 32, 33, 34, 36, 36.4], good: true },
-];
-
 /** Where calls are landing, standing in for the reference's map. */
 export const SAMPLE_REGIONS = {
     rows: [
@@ -186,10 +81,3 @@ export const SAMPLE_REGIONS = {
 };
 
 /** Severity-tagged alert list. */
-export const SAMPLE_ALERTS = [
-    { severity: 'high' as const, text: 'Campaign "Q3 Renewals" retry budget nearly exhausted', meta: '7 lists', when: '10m ago' },
-    { severity: 'high' as const, text: 'Carrier rejected 3 caller IDs on outbound trunk', meta: '3 numbers', when: '38m ago' },
-    { severity: 'medium' as const, text: 'Answer rate down 6% versus the trailing week', meta: '2 agents', when: '1h ago' },
-    { severity: 'medium' as const, text: 'Average handle time above target on "Support Triage"', meta: '1 agent', when: '3h ago' },
-    { severity: 'low' as const, text: 'Recording retention window expires in 15 days', meta: '128 files', when: '5h ago' },
-];
