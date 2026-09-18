@@ -53,7 +53,7 @@ export const NODE_DOCUMENTATION_URLS: Record<string, string> = {
     global: docsUrl("voice-agent/global"),
     apiTrigger: docsUrl("voice-agent/api-trigger"),
     webhook: docsUrl("voice-agent/webhook"),
-    qaAnalysis: docsUrl("getting-started/index"),
+    qaAnalysis: docsUrl("voice-agent/qa"),
 };
 
 export const CONTEXT_VARIABLES_DOC_URL = docsUrl(

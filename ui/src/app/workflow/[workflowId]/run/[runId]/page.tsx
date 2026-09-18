@@ -40,6 +40,8 @@ import { formatDateTime } from '@/lib/dateTime';
 import { downloadFile, getSignedUrl } from '@/lib/files';
 import { cn } from '@/lib/utils';
 
+import { AnalysisResults } from './AnalysisResults';
+
 interface WorkflowRunResponse {
     mode: string;
     created_at: string | null;
@@ -848,6 +850,8 @@ export default function WorkflowRunPage() {
                             gatheredContext={workflowRun?.gathered_context ?? null}
                         />
 
+                        <AnalysisResults annotations={workflowRun?.annotations ?? null} />
+
                         {!isTextChatRun && hasSplitTracks && (
                             <SplitTracksSection
                                 userRecordingUrl={userSplitRecordingUrl as string}
@@ -868,7 +872,7 @@ export default function WorkflowRunPage() {
 
                         {workflowRun?.annotations && Object.keys(workflowRun.annotations).length > 0 && (
                             <ContextDisplay
-                                title="QA Results"
+                                title="Annotations"
                                 context={workflowRun.annotations as Record<string, string | number | boolean | object>}
                             />
                         )}

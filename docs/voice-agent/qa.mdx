@@ -83,6 +83,46 @@ Open a run and scroll to the **QA Analysis** section. The result shows the full 
 
 **Not specifying output format.** The LLM follows your instructions, but if you do not specify a return format, the output may be inconsistent across calls. Always describe the exact JSON structure in the System Prompt.
 
+## Extracting fields and running checks
+
+The System Prompt above produces prose. **Extract Fields** and **Checks** ask the
+same finished call named questions instead, so the answers can be filtered,
+exported and counted rather than only read.
+
+### Extract Fields
+
+Each field has a name, a type (string, number or boolean) and an optional hint.
+After the call, the values land in `gathered_context.extracted_variables`, which
+means:
+
+- each one gets **its own column in the CSV export**, named after the field;
+- webhook templates address them as
+  `{{gathered_context.extracted_variables.<name>}}` — note the nested path. The
+  flat `{{gathered_context.<name>}}` form only works for in-call extraction
+  configured on an Agent node.
+
+The declared type is enforced. A value that will not convert to it is **left
+out** rather than stored as a zero or an empty string, so an absent field means
+"the call did not establish this", never "the answer was nothing".
+
+### Checks
+
+Each check has a name and a criterion — what must be true for it to pass.
+A failed check adds `check_failed:<name>` to the call's **Call Tags**, so you
+can filter for it on any runs table and it appears in the CSV's Call Tags
+column. A check the model could not assess is recorded as unassessed, not as a
+failure.
+
+Both appear on the run's detail page, with anything the model did not return
+shown as "Not analysed".
+
+<Note>
+Fields and checks cost **one extra LLM call per call**, over the whole
+transcript, and only when at least one of them is configured. They obey the same
+Sample Rate, Minimum Call Duration and voicemail settings as the rest of the QA
+node.
+</Note>
+
 ## Next Steps
 
 <CardGroup cols={2}>
