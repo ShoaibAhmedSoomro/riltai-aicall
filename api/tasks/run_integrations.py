@@ -130,47 +130,6 @@ async def _run_qa_nodes(
     return results
 
 
-async def _update_usage_info_with_qa_tokens(
-    workflow_run_id: int,
-    workflow_run: WorkflowRunModel,
-    qa_results: Dict[str, Any],
-) -> None:
-    """Add QA analysis LLM token usage to the workflow run's usage_info."""
-    try:
-        usage_info = dict(workflow_run.usage_info or {})
-        llm_usage = dict(usage_info.get("llm", {}))
-
-        for _node_key, result in qa_results.items():
-            token_usage = result.get("token_usage")
-            model = result.get("model")
-            if not token_usage or not model:
-                continue
-
-            key = f"QAAnalysis|||{model}"
-            if key in llm_usage:
-                # Aggregate if multiple QA nodes use the same model
-                existing = llm_usage[key]
-                for field in (
-                    "prompt_tokens",
-                    "completion_tokens",
-                    "total_tokens",
-                    "cache_read_input_tokens",
-                ):
-                    existing[field] = (existing.get(field) or 0) + (
-                        token_usage.get(field) or 0
-                    )
-            else:
-                llm_usage[key] = token_usage
-
-        usage_info["llm"] = llm_usage
-        await db_client.update_workflow_run(
-            run_id=workflow_run_id, usage_info=usage_info
-        )
-        logger.info(f"Updated usage_info with QA token usage for run {workflow_run_id}")
-    except Exception as e:
-        logger.error(f"Failed to update usage_info with QA tokens: {e}")
-
-
 async def run_integrations_post_workflow_run(_ctx, workflow_run_id: int):
     """
     Run integrations after a workflow run completes.
@@ -254,12 +213,16 @@ async def run_integrations_post_workflow_run(_ctx, workflow_run_id: int):
             )
 
             if qa_results:
-                # Add QA token usage to workflow run's usage_info
-                await _update_usage_info_with_qa_tokens(
-                    workflow_run_id, workflow_run, qa_results
-                )
-
-                # Collect unique tags across all QA node results for top-level filtering
+                # Collect unique tags across all QA node results, plus one per
+                # failed check.
+                #
+                # These used to be written to annotations["tags"] under a
+                # comment saying "for top-level filtering" -- but the callTags
+                # filter reads gathered_context.call_tags (api/db/filters.py),
+                # and so does the CSV "Call Tags" column, so nothing could ever
+                # read them. Writing them where the filter looks is what makes
+                # a QA tag actually filterable; no new filter attribute, no
+                # allowlist entry and no index are needed.
                 all_tags: set[str] = set()
                 for qa_key, qa_result in qa_results.items():
                     for node_result in qa_result.get("node_results", {}).values():
@@ -268,14 +231,52 @@ async def run_integrations_post_workflow_run(_ctx, workflow_run_id: int):
                                 all_tags.add(tag)
                             elif isinstance(tag, dict) and "tag" in tag:
                                 all_tags.add(tag["tag"])
+                    for check in qa_result.get("analysis", {}).get("checks", []):
+                        # `is False` and not `not passed`: a check with no
+                        # verdict is omitted upstream, and a missing verdict
+                        # must not tag the call as having failed one.
+                        if check.get("passed") is False:
+                            all_tags.add(f"check_failed:{check['name']}")
+
+                # Union the extracted values into the nested key the in-call
+                # extractor already owns. update_workflow_run merges
+                # gathered_context only one level deep, so writing
+                # {"extracted_variables": {...}} without reading first would
+                # REPLACE whatever the in-call extraction wrote. Nested only --
+                # the flat mirror the in-call path also does would let a field
+                # named e.g. call_disposition overwrite the run's disposition.
+                existing_context = workflow_run.gathered_context or {}
+                qa_extracted: Dict[str, Any] = {}
+                for qa_result in qa_results.values():
+                    qa_extracted.update(
+                        qa_result.get("analysis", {}).get("extracted", {})
+                    )
+
+                context_update: Dict[str, Any] = {}
+                # Only when QA actually extracted something. Writing back a copy
+                # of what was already there is not harmless: it is a stale
+                # read-modify-write that would clobber anything another writer
+                # changed in between, to achieve nothing.
+                if qa_extracted:
+                    context_update["extracted_variables"] = {
+                        **(existing_context.get("extracted_variables") or {}),
+                        **qa_extracted,
+                    }
                 if all_tags:
-                    qa_results["tags"] = sorted(all_tags)
+                    context_update["call_tags"] = sorted(
+                        set(existing_context.get("call_tags") or []) | all_tags
+                    )
 
                 await db_client.update_workflow_run(
-                    workflow_run_id, annotations=qa_results
+                    workflow_run_id,
+                    annotations=qa_results,
+                    **({"gathered_context": context_update} if context_update else {}),
                 )
 
-                # Re-fetch workflow_run to get updated annotations
+                # Re-fetch workflow_run to get updated annotations. Everything
+                # above must land BEFORE this: the webhook render context is
+                # built once from the re-fetched row, so a later write would
+                # never reach a webhook and a re-run would not resend it.
                 workflow_run, _ = await db_client.get_workflow_run_with_context(
                     workflow_run_id
                 )

@@ -3,12 +3,17 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from api.services.workflow.dto import QANodeData
 from api.services.workflow.qa import analysis, node_summary
 
 
 @pytest.mark.asyncio
 async def test_per_node_qa_uses_centralized_qa_llm_service():
-    qa_data = SimpleNamespace(qa_system_prompt="Review the call")
+    # A real QANodeData rather than a stand-in: production always reaches this
+    # through QARFNode.model_validate, so the DTO's defaults are part of the
+    # contract this test is meant to pin. A SimpleNamespace silently diverges
+    # from it the moment a field is added.
+    qa_data = QANodeData(name="QA", qa_system_prompt="Review the call")
     workflow_run = SimpleNamespace(
         logs={"realtime_feedback_events": [{"type": "transcript"}]},
         initial_context={},
@@ -41,7 +46,7 @@ async def test_per_node_qa_uses_centralized_qa_llm_service():
         ),
         patch.object(
             analysis,
-            "_run_llm_inference",
+            "run_llm_inference",
             new=AsyncMock(return_value='{"tags": [], "summary": "ok"}'),
         ),
         patch.object(analysis, "setup_langfuse_parent_context", return_value=None),

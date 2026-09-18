@@ -347,6 +347,8 @@ def test_all_registered_node_models_inherit_base_node_data():
                 "name",
                 "qa_enabled",
                 "qa_system_prompt",
+                "qa_extraction_fields",
+                "qa_checks",
                 "qa_min_call_duration",
                 "qa_voicemail_calls",
                 "qa_sample_rate",

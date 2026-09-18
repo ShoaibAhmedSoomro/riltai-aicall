@@ -11,7 +11,7 @@ from api.errors.failure import (
     annotate_failure_metadata,
     failure_already_reported,
 )
-from api.services.workflow.qa.analysis import _run_llm_inference
+from api.services.workflow.qa.llm_config import run_llm_inference
 
 
 class _CapacityError(Exception):
@@ -60,7 +60,7 @@ async def test_transient_failure_is_retried_to_success(monkeypatch):
     records, handler_id = _capture()
 
     try:
-        result = await _run_llm_inference(llm, [], "prompt", workflow_run_id=620156)
+        result = await run_llm_inference(llm, [], "prompt", workflow_run_id=620156)
     finally:
         loguru.logger.remove(handler_id)
 
@@ -78,7 +78,7 @@ async def test_persistent_transient_failure_reports_after_exhausting_retries(
 
     try:
         with pytest.raises(_CapacityError):
-            await _run_llm_inference(llm, [], "prompt", workflow_run_id=620156)
+            await run_llm_inference(llm, [], "prompt", workflow_run_id=620156)
     finally:
         loguru.logger.remove(handler_id)
 
@@ -95,7 +95,7 @@ async def test_non_retryable_failure_raises_immediately_and_is_marked():
 
     try:
         with pytest.raises(ValueError) as excinfo:
-            await _run_llm_inference(llm, [], "prompt", workflow_run_id=620156)
+            await run_llm_inference(llm, [], "prompt", workflow_run_id=620156)
     finally:
         loguru.logger.remove(handler_id)
 
@@ -112,7 +112,7 @@ async def test_failure_severity_follows_the_caller(monkeypatch):
 
     try:
         with pytest.raises(ValueError):
-            await _run_llm_inference(llm, [], "prompt", failure_log_level="WARNING")
+            await run_llm_inference(llm, [], "prompt", failure_log_level="WARNING")
     finally:
         loguru.logger.remove(handler_id)
 

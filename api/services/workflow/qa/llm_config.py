@@ -1,6 +1,21 @@
-"""QA LLM service creation and token usage accumulation."""
+"""QA LLM service creation and one-shot inference.
 
+run_llm_inference lives here rather than in analysis.py because both the QA
+review pass and the field-analysis pass need it, and analysis.py imports
+fields.py -- keeping it there would make that a cycle.
+"""
+
+import asyncio
 from typing import Any
+
+from pipecat.processors.aggregators.llm_context import LLMContext
+
+from api.errors.failure import (
+    classify_exception,
+    failure_metadata_for_processor,
+    log_failure,
+    mark_failure_reported,
+)
 
 from api.db.models import WorkflowRunModel
 from api.services.configuration.ai_model_configuration import (
@@ -79,24 +94,45 @@ async def create_qa_llm_service(
     return llm, model
 
 
-def accumulate_token_usage(total: dict, response) -> None:
-    """Add token counts from an LLM response to the running total dict."""
-    if not response.usage:
-        return
-    total["prompt_tokens"] = total.get("prompt_tokens", 0) + (
-        response.usage.prompt_tokens or 0
-    )
-    total["completion_tokens"] = total.get("completion_tokens", 0) + (
-        response.usage.completion_tokens or 0
-    )
-    total["total_tokens"] = total.get("total_tokens", 0) + (
-        response.usage.total_tokens or 0
-    )
-    total["cache_read_input_tokens"] = total.get("cache_read_input_tokens", 0) + (
-        getattr(response.usage, "cache_read_input_tokens", 0) or 0
-    )
-    cache_creation = getattr(response.usage, "cache_creation_input_tokens", None)
-    if cache_creation is not None:
-        total["cache_creation_input_tokens"] = (
-            total.get("cache_creation_input_tokens") or 0
-        ) + cache_creation
+_QA_LLM_ATTEMPTS = 3
+
+
+async def run_llm_inference(
+    llm,
+    messages: list[dict],
+    system_prompt: str,
+    *,
+    workflow_run_id: int | None = None,
+    failure_log_level: str = "ERROR",
+) -> str | None:
+    """Run a one-shot LLM inference using the pipecat service.
+
+    Transient provider failures (capacity 503s, timeouts) are retried with
+    backoff — QA runs post-call, so latency is cheap and a retry usually
+    erases the failure entirely. The final failure is classified and reported
+    here, once, so callers only note how they degraded.
+    """
+    context = LLMContext()
+    context.set_messages(messages)
+    for attempt in range(1, _QA_LLM_ATTEMPTS + 1):
+        try:
+            return await llm.run_inference(context, system_instruction=system_prompt)
+        except Exception as exc:
+            metadata = failure_metadata_for_processor(llm)
+            failure = classify_exception(
+                exc,
+                source=metadata.source,
+                provider=metadata.provider,
+                error_owner=metadata.error_owner,
+            )
+            if failure.retryable and attempt < _QA_LLM_ATTEMPTS:
+                await asyncio.sleep(2**attempt)
+                continue
+            log_failure(
+                failure,
+                level=failure_log_level,
+                workflow_run_id=workflow_run_id,
+                qa_attempts=attempt,
+            )
+            mark_failure_reported(exc)
+            raise

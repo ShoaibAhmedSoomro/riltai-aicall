@@ -80,6 +80,34 @@ class ExtractionVariableDTO(BaseModel):
     )
 
 
+class QACheckDTO(BaseModel):
+    """One pass/fail question asked of a finished call."""
+
+    name: str = spec_field(
+        ...,
+        min_length=1,
+        ui_type=PropertyType.string,
+        display_name="Check Name",
+        description="snake_case identifier. A failure tags the call `check_failed:<name>`.",
+        required=True,
+    )
+    criterion: str = spec_field(
+        ...,
+        min_length=1,
+        ui_type=PropertyType.string,
+        display_name="Criterion",
+        description="What must be true for this check to pass.",
+        editor="textarea",
+        required=True,
+    )
+    scored: bool = spec_field(
+        default=False,
+        ui_type=PropertyType.boolean,
+        display_name="Also Score 0-100",
+        description="Ask for a 0-100 score alongside the verdict.",
+    )
+
+
 class CustomHeaderDTO(BaseModel):
     key: str = spec_field(
         ...,
@@ -821,6 +849,8 @@ class WebhookNodeData(BaseNodeData):
         "name",
         "qa_enabled",
         "qa_system_prompt",
+        "qa_extraction_fields",
+        "qa_checks",
         "qa_min_call_duration",
         "qa_voicemail_calls",
         "qa_sample_rate",
@@ -848,6 +878,22 @@ class WebhookNodeData(BaseNodeData):
             ),
             "spec_default": DEFAULT_QA_SYSTEM_PROMPT,
             "editor": "textarea",
+        },
+        "qa_extraction_fields": {
+            "display_name": "Extract Fields",
+            "description": (
+                "Named values to pull out of the finished call. They land in "
+                "`gathered_context.extracted_variables` and get one column each "
+                "in the CSV export. A field the model does not return is left "
+                "out rather than defaulted."
+            ),
+        },
+        "qa_checks": {
+            "display_name": "Checks",
+            "description": (
+                "Pass/fail questions asked of the call. A failure tags the call "
+                "`check_failed:<name>`, which is filterable."
+            ),
         },
         "qa_min_call_duration": {
             "display_name": "Minimum Call Duration (seconds)",
@@ -922,6 +968,10 @@ class QANodeData(BaseNodeData):
     qa_min_call_duration: int = spec_field(default=15, ui_type=PropertyType.number)
     qa_voicemail_calls: bool = spec_field(default=False, ui_type=PropertyType.boolean)
     qa_sample_rate: int = spec_field(default=100, ui_type=PropertyType.number)
+    qa_extraction_fields: Optional[list[ExtractionVariableDTO]] = spec_field(
+        default=None
+    )
+    qa_checks: Optional[list[QACheckDTO]] = spec_field(default=None)
 
 
 # Union of every per-type data class — useful as a type annotation on

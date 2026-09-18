@@ -13,13 +13,14 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
+from api.services.workflow.dto import QANodeData
 from api.services.workflow.qa import analysis as qa_analysis
 
 
 @pytest.mark.asyncio
 async def test_whole_call_qa_tolerates_array_llm_response():
     """A top-level JSON array from the QA LLM degrades to empty results."""
-    qa_data = SimpleNamespace(qa_system_prompt="Summarize: {transcript}")
+    qa_data = QANodeData(name="QA", qa_system_prompt="Summarize: {transcript}")
     workflow_run = SimpleNamespace(
         logs={
             "realtime_feedback_events": [
@@ -45,7 +46,7 @@ async def test_whole_call_qa_tolerates_array_llm_response():
         ),
         patch.object(
             qa_analysis,
-            "_run_llm_inference",
+            "run_llm_inference",
             new=AsyncMock(return_value='["tag1", "tag2"]'),
         ),
         patch.object(qa_analysis, "setup_langfuse_parent_context", return_value=None),

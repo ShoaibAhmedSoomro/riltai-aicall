@@ -1,27 +1,23 @@
 """Main QA analysis orchestrator — per-node and whole-call fallback."""
 
-import asyncio
 import json
 from typing import Any
 
 from loguru import logger
-from pipecat.processors.aggregators.llm_context import LLMContext
 
 from api.db.models import WorkflowRunModel
-from api.errors.failure import (
-    classify_exception,
-    failure_metadata_for_processor,
-    log_failure,
-    mark_failure_reported,
-)
 from api.services.gen_ai.json_parser import parse_llm_json
 from api.services.workflow.dto import QANodeData
+from api.services.workflow.qa.fields import run_field_analysis
 from api.services.workflow.qa.conversation import (
     build_conversation_structure,
     format_transcript,
     split_events_by_node,
 )
-from api.services.workflow.qa.llm_config import create_qa_llm_service
+from api.services.workflow.qa.llm_config import (
+    create_qa_llm_service,
+    run_llm_inference,
+)
 from api.services.workflow.qa.metrics import compute_call_metrics
 from api.services.workflow.qa.node_summary import (
     CONVERSATION_SUMMARY_SYSTEM_PROMPT,
@@ -33,49 +29,6 @@ from api.services.workflow.qa.tracing import (
     setup_langfuse_parent_context,
 )
 from api.utils.template_renderer import render_template
-
-_QA_LLM_ATTEMPTS = 3
-
-
-async def _run_llm_inference(
-    llm,
-    messages: list[dict],
-    system_prompt: str,
-    *,
-    workflow_run_id: int | None = None,
-    failure_log_level: str = "ERROR",
-) -> str | None:
-    """Run a one-shot LLM inference using the pipecat service.
-
-    Transient provider failures (capacity 503s, timeouts) are retried with
-    backoff — QA runs post-call, so latency is cheap and a retry usually
-    erases the failure entirely. The final failure is classified and reported
-    here, once, so callers only note how they degraded.
-    """
-    context = LLMContext()
-    context.set_messages(messages)
-    for attempt in range(1, _QA_LLM_ATTEMPTS + 1):
-        try:
-            return await llm.run_inference(context, system_instruction=system_prompt)
-        except Exception as exc:
-            metadata = failure_metadata_for_processor(llm)
-            failure = classify_exception(
-                exc,
-                source=metadata.source,
-                provider=metadata.provider,
-                error_owner=metadata.error_owner,
-            )
-            if failure.retryable and attempt < _QA_LLM_ATTEMPTS:
-                await asyncio.sleep(2**attempt)
-                continue
-            log_failure(
-                failure,
-                level=failure_log_level,
-                workflow_run_id=workflow_run_id,
-                qa_attempts=attempt,
-            )
-            mark_failure_reported(exc)
-            raise
 
 
 async def _generate_conversation_summary(
@@ -97,7 +50,7 @@ async def _generate_conversation_summary(
         summary = (
             # A missing summary only degrades QA context for later nodes, so
             # its failure is reported at WARNING rather than ERROR.
-            await _run_llm_inference(
+            await run_llm_inference(
                 llm,
                 messages,
                 CONVERSATION_SUMMARY_SYSTEM_PROMPT,
@@ -220,7 +173,7 @@ async def run_per_node_qa_analysis(
 
         # Call QA LLM
         try:
-            raw_response = await _run_llm_inference(
+            raw_response = await run_llm_inference(
                 llm, messages, system_content, workflow_run_id=workflow_run_id
             )
         except Exception as e:
@@ -274,9 +227,20 @@ async def run_per_node_qa_analysis(
         # Append this node's conversation to running total
         prior_conversation.extend(node_conversation)
 
+    # Field analysis is a WHOLE-CALL question, so it runs once over the full
+    # transcript rather than per node -- asking each segment for the caller's
+    # email produces N conflicting answers and a merge rule nobody wanted.
+    analysis = await run_field_analysis(
+        qa_data,
+        workflow_run_id,
+        llm,
+        format_transcript(build_conversation_structure(rtf_events)),
+    )
+
     return {
         "node_results": node_results,
         "model": model,
+        "analysis": analysis,
     }
 
 
@@ -333,7 +297,7 @@ async def _run_whole_call_qa_analysis(
     ]
 
     try:
-        raw_response = await _run_llm_inference(
+        raw_response = await run_llm_inference(
             llm, messages, system_content, workflow_run_id=workflow_run_id
         )
     except Exception as e:
@@ -375,4 +339,8 @@ async def _run_whole_call_qa_analysis(
     return {
         "node_results": {"whole_call": node_result},
         "model": model,
+        # Every text-chat run reaches QA through this fallback, because its
+        # events carry no node_id. Wiring only the per-node path above would
+        # silently skip all of them.
+        "analysis": await run_field_analysis(qa_data, workflow_run_id, llm, transcript),
     }
