@@ -10,7 +10,7 @@ from datetime import UTC, datetime, timedelta
 from typing import List, Optional, Tuple
 
 from loguru import logger
-from sqlalchemy import or_, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 
 from api.db.base_client import BaseDBClient
@@ -215,6 +215,24 @@ class WebhookDeliveryClient(BaseDBClient):
                 f"Webhook delivery {delivery_id} dead-lettered after "
                 f"{attempt_count} attempts: {last_error}"
             )
+
+    async def count_dead_letter_deliveries(self, organization_id: int) -> int:
+        """Deliveries parked as dead_letter for this organization.
+
+        These are webhooks that exhausted their retries, so the receiving system
+        never got the event and nothing will send it again. Nothing in the
+        product surfaced them before this.
+        """
+        async with self.async_session() as session:
+            result = await session.execute(
+                select(func.count())
+                .select_from(WebhookDeliveryModel)
+                .where(
+                    WebhookDeliveryModel.organization_id == organization_id,
+                    WebhookDeliveryModel.status == "dead_letter",
+                )
+            )
+            return int(result.scalar() or 0)
 
     async def get_due_webhook_deliveries(
         self, now: Optional[datetime] = None, limit: int = 100, after_id: int = 0

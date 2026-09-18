@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
+from api.db import db_client
 from api.db.models import UserModel
 from api.services.auth.depends import get_user
 from api.services.reports import DailyReportService
@@ -130,3 +131,82 @@ async def get_daily_runs_detail(
         return [WorkflowRunDetail(**run) for run in runs]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class AlertItem(BaseModel):
+    severity: str
+    text: str
+    href: str
+    count: int
+    occurred_at: Optional[str] = None
+
+
+class AlertsResponse(BaseModel):
+    """Things worth acting on, composed from signals that already exist.
+
+    Deliberately NOT an alerting domain: no new table, no sweeper, no rules
+    engine. Three conditions the system already records are read on request.
+    An empty list means nothing is wrong, which is a real answer -- the panel
+    this replaces showed invented alerts.
+    """
+
+    items: List[AlertItem]
+
+
+@router.get("/alerts", response_model=AlertsResponse)
+async def get_alerts(user: UserModel = Depends(get_user)):
+    """Current problems for the caller's organization."""
+    if not user.selected_organization_id:
+        raise HTTPException(status_code=400, detail="No organization selected")
+
+    organization_id = user.selected_organization_id
+    items: List[AlertItem] = []
+
+    # 1. Webhooks that exhausted their retries. The receiving system never got
+    #    the event and nothing will send it again.
+    dead_letters = await db_client.count_dead_letter_deliveries(organization_id)
+    if dead_letters:
+        items.append(
+            AlertItem(
+                severity="error",
+                text=f"{dead_letters} webhook {'delivery' if dead_letters == 1 else 'deliveries'} gave up after retrying",
+                href="/usage",
+                count=dead_letters,
+            )
+        )
+
+    # 2. Campaigns the circuit breaker paused. Still-paused only: one somebody
+    #    has already resumed is history, not something to act on.
+    for campaign in await db_client.get_circuit_breaker_tripped_campaigns(
+        organization_id
+    ):
+        items.append(
+            AlertItem(
+                severity="warning",
+                text=f'Campaign "{campaign["name"]}" was paused by the failure circuit breaker',
+                href=f"/campaigns/{campaign['campaign_id']}",
+                count=1,
+                occurred_at=campaign["occurred_at"],
+            )
+        )
+
+    # 3. Telephony configs missing webhook verification. Same counts the
+    #    existing warnings banner uses, so the two cannot disagree.
+    telnyx = await db_client.count_telnyx_configs_missing_webhook_public_key(
+        organization_id
+    )
+    vonage = await db_client.count_vonage_configs_missing_signature_secret(
+        organization_id
+    )
+    for count, provider in ((telnyx, "Telnyx"), (vonage, "Vonage")):
+        if count:
+            items.append(
+                AlertItem(
+                    severity="warning",
+                    text=f"{count} {provider} configuration{'' if count == 1 else 's'} cannot verify incoming webhooks",
+                    href="/telephony-configurations",
+                    count=count,
+                )
+            )
+
+    return AlertsResponse(items=items)

@@ -1029,3 +1029,55 @@ async def download_campaign_report(
         media_type="text/csv",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+class QueueSummaryResponse(BaseModel):
+    """Org-wide queued-run counts, for the dashboard's queue panel.
+
+    The sample panel this replaces had segments labelled "Retrying" and
+    "Exhausted" with no counterpart in the data. The state enum is exactly
+    (queued, processing, processed, failed), so "Exhausted" is failed, and
+    "retrying" is queued runs that have already failed at least once --
+    a subset of queued rather than a state of its own, which is why the
+    segments do not sum to total.
+    """
+
+    total: int
+    queued: int
+    processing: int
+    processed: int
+    failed: int
+    # Overlapping views of `queued`, not additional states.
+    retrying: int
+    scheduled: int
+    campaigns: int
+
+
+@router.get("/queue-summary", response_model=QueueSummaryResponse)
+async def get_queue_summary(user: UserModel = Depends(get_user)):
+    """Queued work across every campaign in the caller's organization."""
+    if not user.selected_organization_id:
+        raise HTTPException(status_code=400, detail="No organization selected")
+
+    campaigns = await db_client.get_campaigns(user.selected_organization_id)
+    stats = await db_client.get_queued_runs_stats_for_campaigns(
+        [campaign.id for campaign in campaigns]
+    )
+
+    totals = {
+        key: 0
+        for key in (
+            "total",
+            "queued",
+            "processing",
+            "processed",
+            "failed",
+            "retrying",
+            "scheduled",
+        )
+    }
+    for row in stats.values():
+        for key in totals:
+            totals[key] += row.get(key, 0)
+
+    return QueueSummaryResponse(**totals, campaigns=len(campaigns))

@@ -2,7 +2,8 @@ import json
 from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import func, text, update
+from sqlalchemy import cast, func, text, update
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.future import select
 
 from api.db.base_client import BaseDBClient
@@ -597,31 +598,108 @@ class CampaignClient(BaseDBClient):
     async def get_queued_runs_stats_for_campaigns(
         self, campaign_ids: List[int]
     ) -> Dict[int, Dict[str, int]]:
-        """Return {campaign_id: {"total": N, "executed": M}} for given campaigns.
+        """Queued-run counts per campaign, by state.
 
-        "executed" means queued runs in the "processed" state.
+        Returns {campaign_id: {total, executed, queued, processing, processed,
+        failed, retrying, scheduled}}. "executed" is kept as an alias for
+        "processed" because two callers already read it.
+
+        "retrying" is queued runs that have failed at least once, and
+        "scheduled" is those with a future slot. Neither is a state -- the enum
+        is exactly (queued, processed, processing, failed) -- so they overlap
+        "queued" rather than partitioning it.
         """
         if not campaign_ids:
             return {}
+
+        states = ("queued", "processing", "processed", "failed")
+
         async with self.async_session() as session:
-            query = (
+            result = await session.execute(
                 select(
                     QueuedRunModel.campaign_id,
                     QueuedRunModel.state,
                     func.count(QueuedRunModel.id),
+                    func.count(QueuedRunModel.id).filter(
+                        QueuedRunModel.retry_count > 0
+                    ),
+                    func.count(QueuedRunModel.id).filter(
+                        QueuedRunModel.scheduled_for.isnot(None)
+                    ),
                 )
                 .where(QueuedRunModel.campaign_id.in_(campaign_ids))
                 .group_by(QueuedRunModel.campaign_id, QueuedRunModel.state)
             )
-            result = await session.execute(query)
             stats: Dict[int, Dict[str, int]] = {
-                cid: {"total": 0, "executed": 0} for cid in campaign_ids
+                cid: {
+                    "total": 0,
+                    "executed": 0,
+                    "retrying": 0,
+                    "scheduled": 0,
+                    **{state: 0 for state in states},
+                }
+                for cid in campaign_ids
             }
-            for campaign_id, state, count in result.all():
-                stats[campaign_id]["total"] += count
+            for campaign_id, state, count, retrying, scheduled in result.all():
+                row = stats[campaign_id]
+                row["total"] += count
+                if state in row:
+                    row[state] += count
                 if state == "processed":
-                    stats[campaign_id]["executed"] += count
+                    row["executed"] += count
+                if state == "queued":
+                    row["retrying"] += retrying
+                    row["scheduled"] += scheduled
             return stats
+
+    async def get_circuit_breaker_tripped_campaigns(
+        self, organization_id: int
+    ) -> list[dict]:
+        """Campaigns still paused by a circuit-breaker trip.
+
+        The trip is NOT in orchestrator_metadata -- that holds the breaker's
+        CONFIG. It is appended to the campaigns.logs JSONB array by
+        circuit_breaker.record_and_evaluate, which also pauses the campaign.
+
+        Filtered to still-paused ones: a campaign someone has already resumed is
+        history, not something to act on.
+
+        ponytail: occurred_at is the campaign's updated_at, not the log entry's
+        own timestamp. The pause is what set it, so the two agree unless the
+        campaign was edited afterwards. Pull the entry with jsonb_path_query_first
+        if that ever matters.
+        """
+        async with self.async_session() as session:
+            result = await session.execute(
+                select(
+                    CampaignModel.id,
+                    CampaignModel.name,
+                    CampaignModel.updated_at,
+                )
+                .where(
+                    CampaignModel.organization_id == organization_id,
+                    CampaignModel.state == "paused",
+                    # .contains() rather than a hand-built @> with a string
+                    # literal: the literal goes out as a bound parameter, which
+                    # asyncpg encodes as a JSON *string* rather than an array,
+                    # and containment of a string in an array is always false.
+                    cast(CampaignModel.logs, JSONB).contains(
+                        [{"event": "circuit_breaker_tripped"}]
+                    ),
+                )
+                .order_by(CampaignModel.updated_at.desc())
+                .limit(20)
+            )
+            return [
+                {
+                    "campaign_id": row.id,
+                    "name": row.name,
+                    "occurred_at": row.updated_at.isoformat()
+                    if row.updated_at
+                    else None,
+                }
+                for row in result.all()
+            ]
 
     async def get_workflow_runs_by_campaign(
         self, campaign_id: int

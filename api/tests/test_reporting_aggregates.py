@@ -829,3 +829,233 @@ async def test_a_redis_failure_reports_unknown_rather_than_idle(monkeypatch):
     # The honest reader wraps the connection too, so the tile degrades to
     # "unknown" instead of failing the request.
     assert await limiter.get_concurrent_count_or_none(1) is None
+
+
+# ── queue summary and alerts ────────────────────────────────────────────────
+
+
+async def _campaign_with_queued(async_session, rows):
+    """rows: (state, retry_count, scheduled) tuples."""
+    from api.db.models import CampaignModel, QueuedRunModel
+
+    suffix = next(_suffix)
+    org = OrganizationModel(provider_id=f"q-org-{suffix}")
+    async_session.add(org)
+    await async_session.flush()
+    user = UserModel(provider_id=f"q-user-{suffix}", selected_organization_id=org.id)
+    async_session.add(user)
+    await async_session.flush()
+    workflow = WorkflowModel(name="q", organization_id=org.id, user_id=user.id)
+    async_session.add(workflow)
+    await async_session.flush()
+    campaign = CampaignModel(
+        name="c",
+        organization_id=org.id,
+        workflow_id=workflow.id,
+        created_by=user.id,
+        source_id="test",
+    )
+    async_session.add(campaign)
+    await async_session.flush()
+
+    for state, retry_count, scheduled in rows:
+        async_session.add(
+            QueuedRunModel(
+                campaign_id=campaign.id,
+                source_uuid=str(next(_suffix)),
+                state=state,
+                retry_count=retry_count,
+                scheduled_for=datetime.now(UTC) if scheduled else None,
+                context_variables={},
+            )
+        )
+    await async_session.flush()
+    return org, campaign
+
+
+@pytest.mark.asyncio
+async def test_queue_stats_break_down_by_state(db_session, async_session):
+    _, campaign = await _campaign_with_queued(
+        async_session,
+        [
+            ("queued", 0, False),
+            ("queued", 2, False),
+            ("queued", 0, True),
+            ("processing", 0, False),
+            ("processed", 0, False),
+            ("processed", 0, False),
+            ("failed", 3, False),
+        ],
+    )
+
+    stats = (await db_session.get_queued_runs_stats_for_campaigns([campaign.id]))[
+        campaign.id
+    ]
+
+    assert stats["total"] == 7
+    assert stats["queued"] == 3
+    assert stats["processing"] == 1
+    assert stats["processed"] == 2
+    assert stats["failed"] == 1
+    # retrying and scheduled are views OVER queued, not states beside it, so
+    # the segments deliberately do not sum to total.
+    assert stats["retrying"] == 1
+    assert stats["scheduled"] == 1
+    assert stats["queued"] + stats["retrying"] + stats["scheduled"] != stats["total"]
+
+
+@pytest.mark.asyncio
+async def test_the_two_existing_callers_keep_their_keys(db_session, async_session):
+    """total/executed are read by two routes already; widening must not move them."""
+    _, campaign = await _campaign_with_queued(
+        async_session, [("processed", 0, False), ("queued", 0, False)]
+    )
+    stats = (await db_session.get_queued_runs_stats_for_campaigns([campaign.id]))[
+        campaign.id
+    ]
+    assert stats["total"] == 2
+    assert stats["executed"] == 1
+    assert stats["executed"] == stats["processed"]
+
+
+@pytest.mark.asyncio
+async def test_a_campaign_with_no_queued_runs_reports_zeros(db_session, async_session):
+    _, campaign = await _campaign_with_queued(async_session, [])
+    stats = (await db_session.get_queued_runs_stats_for_campaigns([campaign.id]))[
+        campaign.id
+    ]
+    assert stats["total"] == 0
+    assert stats["failed"] == 0
+
+
+@pytest.mark.asyncio
+async def test_a_tripped_breaker_is_found_from_the_campaign_log(
+    db_session, async_session
+):
+    """The trip lives in campaigns.logs, NOT in orchestrator_metadata.
+
+    orchestrator_metadata.circuit_breaker is the breaker's CONFIG. Looking
+    there for a trip finds the threshold and reports every configured campaign
+    as tripped.
+    """
+    from api.db.models import CampaignModel
+
+    suffix = next(_suffix)
+    org = OrganizationModel(provider_id=f"cb-org-{suffix}")
+    async_session.add(org)
+    await async_session.flush()
+    user = UserModel(provider_id=f"cb-user-{suffix}", selected_organization_id=org.id)
+    async_session.add(user)
+    await async_session.flush()
+    workflow = WorkflowModel(name="cb", organization_id=org.id, user_id=user.id)
+    async_session.add(workflow)
+    await async_session.flush()
+
+    tripped = CampaignModel(
+        name="tripped",
+        source_id="test",
+        organization_id=org.id,
+        workflow_id=workflow.id,
+        created_by=user.id,
+        state="paused",
+        logs=[{"event": "circuit_breaker_tripped", "message": "paused"}],
+        # Configured, which is what orchestrator_metadata actually holds.
+        orchestrator_metadata={"circuit_breaker": {"threshold": 0.5}},
+    )
+    # Paused by hand, not by the breaker.
+    paused_by_hand = CampaignModel(
+        name="manual",
+        source_id="test",
+        organization_id=org.id,
+        workflow_id=workflow.id,
+        created_by=user.id,
+        state="paused",
+        logs=[{"event": "paused", "message": "user paused"}],
+        orchestrator_metadata={"circuit_breaker": {"threshold": 0.5}},
+    )
+    # Tripped once, since resumed -- history, not something to act on.
+    resumed = CampaignModel(
+        name="resumed",
+        source_id="test",
+        organization_id=org.id,
+        workflow_id=workflow.id,
+        created_by=user.id,
+        state="running",
+        logs=[{"event": "circuit_breaker_tripped", "message": "paused"}],
+    )
+    async_session.add_all([tripped, paused_by_hand, resumed])
+    await async_session.flush()
+
+    # Another tenant, tripped and paused exactly the same way. Leaking this one
+    # would put another organization's campaign name on the caller's alerts.
+    other_org = OrganizationModel(provider_id=f"cb-org2-{suffix}")
+    async_session.add(other_org)
+    await async_session.flush()
+    other_workflow = WorkflowModel(
+        name="cb2", organization_id=other_org.id, user_id=user.id
+    )
+    async_session.add(other_workflow)
+    await async_session.flush()
+    async_session.add(
+        CampaignModel(
+            name="other-tenant",
+            source_id="test",
+            organization_id=other_org.id,
+            workflow_id=other_workflow.id,
+            created_by=user.id,
+            state="paused",
+            logs=[{"event": "circuit_breaker_tripped", "message": "paused"}],
+        )
+    )
+    await async_session.flush()
+
+    found = await db_session.get_circuit_breaker_tripped_campaigns(org.id)
+
+    assert [c["name"] for c in found] == ["tripped"]
+
+
+@pytest.mark.asyncio
+async def test_dead_letter_deliveries_are_counted_per_org(db_session, async_session):
+    """Nothing in the product surfaced these before: a dead letter means the
+    receiving system never got the event and nothing will resend it."""
+    from api.db.models import WebhookDeliveryModel
+
+    suffix = next(_suffix)
+    org = OrganizationModel(provider_id=f"dl-org-{suffix}")
+    other = OrganizationModel(provider_id=f"dl-other-{suffix}")
+    async_session.add_all([org, other])
+    await async_session.flush()
+    user = UserModel(provider_id=f"dl-user-{suffix}", selected_organization_id=org.id)
+    async_session.add(user)
+    await async_session.flush()
+    workflow = WorkflowModel(name="dl", organization_id=org.id, user_id=user.id)
+    async_session.add(workflow)
+    await async_session.flush()
+    run = WorkflowRunModel(workflow_id=workflow.id, name="r", mode="twilio")
+    async_session.add(run)
+    await async_session.flush()
+
+    for node, (organization, status) in enumerate(
+        [
+            (org, "dead_letter"),
+            (org, "dead_letter"),
+            (org, "succeeded"),
+            (org, "pending"),
+            (other, "dead_letter"),
+        ]
+    ):
+        async_session.add(
+            WebhookDeliveryModel(
+                workflow_run_id=run.id,
+                organization_id=organization.id,
+                endpoint_url="https://example.invalid/hook",
+                # Distinct per row: there is a unique constraint on
+                # (workflow_run_id, webhook_node_id).
+                webhook_node_id=f"node-{node}",
+                status=status,
+            )
+        )
+    await async_session.flush()
+
+    assert await db_session.count_dead_letter_deliveries(org.id) == 2
+    assert await db_session.count_dead_letter_deliveries(other.id) == 1
