@@ -23,7 +23,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { useUserConfig } from '@/context/UserConfigContext';
 import { useDispositionCodes } from '@/hooks/useDispositionCodes';
 import { detailFromError } from '@/lib/apiError';
 import { useAuth } from '@/lib/auth';
@@ -64,7 +63,6 @@ const buildUsageFilterAttributes = (
 export default function UsagePage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { organizationPricing } = useUserConfig();
     const auth = useAuth();
 
     // Usage history state
@@ -184,7 +182,7 @@ export default function UsagePage() {
 
     // Fetch daily usage breakdown
     const fetchDailyUsage = useCallback(async () => {
-        if (!auth.isAuthenticated || !organizationPricing?.price_per_second_usd) return;
+        if (!auth.isAuthenticated) return;
 
         setIsLoadingDaily(true);
         try {
@@ -200,7 +198,7 @@ export default function UsagePage() {
         } finally {
             setIsLoadingDaily(false);
         }
-    }, [auth.isAuthenticated, organizationPricing]);
+    }, [auth.isAuthenticated]);
 
     const fetchAgentFilterOptions = useCallback(async () => {
         if (!auth.isAuthenticated) return;
@@ -353,12 +351,11 @@ export default function UsagePage() {
         }
     }, [auth.isAuthenticated, currentPage, appliedFilters, sortBy, sortOrder, fetchUsageHistory]);
 
-    // Fetch daily usage when organizationPricing becomes available
     useEffect(() => {
-        if (auth.isAuthenticated && organizationPricing?.price_per_second_usd) {
+        if (auth.isAuthenticated) {
             fetchDailyUsage();
         }
-    }, [auth.isAuthenticated, organizationPricing, fetchDailyUsage]);
+    }, [auth.isAuthenticated, fetchDailyUsage]);
 
     // Update URL with query parameters
     const updateUrlParams = useCallback((params: {
@@ -448,6 +445,23 @@ export default function UsagePage() {
         return `${minutes}m ${remainingSeconds}s`;
     };
 
+    // Two decimals rounds a short call at a per-minute rate down to $0.00, so
+    // allow four and let Intl drop the ones it doesn't need.
+    const usd = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 4,
+    });
+    const formatUsd = (amount: number) => usd.format(amount);
+
+    // The Cost column used to follow organizations.price_per_second_usd, a
+    // column no code path writes, so it never appeared. Follow the data: if a
+    // run on this page carries a charge, there is a cost to show.
+    const showCostColumn = usageHistory?.runs.some(
+        (run) => run.charge_usd !== undefined && run.charge_usd !== null
+    ) ?? false;
+
     return (
         <div className="container mx-auto p-6 space-y-6">
             <div>
@@ -532,15 +546,12 @@ export default function UsagePage() {
                     </div>
                 </div>
 
-                {/* Daily Usage Table - Only for paid organizations */}
-                {organizationPricing?.price_per_second_usd && (
-                    <div className="mb-6">
-                        <DailyUsageTable
-                            data={dailyUsage}
-                            isLoading={isLoadingDaily}
-                        />
-                    </div>
-                )}
+                <div className="mb-6">
+                    <DailyUsageTable
+                        data={dailyUsage}
+                        isLoading={isLoadingDaily}
+                    />
+                </div>
 
                 {/* Filter Builder */}
                 <div className="mb-6 space-y-3">
@@ -611,7 +622,7 @@ export default function UsagePage() {
                                                         )}
                                                     </div>
                                                 </TableHead>
-                                                {organizationPricing?.price_per_second_usd && (
+                                                {showCostColumn && (
                                                     <TableHead className="font-semibold text-right">Cost (USD)</TableHead>
                                                 )}
                                                 <TableHead className="font-semibold">Actions</TableHead>
@@ -650,10 +661,10 @@ export default function UsagePage() {
                                                     <TableCell className="text-right">
                                                         {formatDuration(run.call_duration_seconds)}
                                                     </TableCell>
-                                                    {organizationPricing?.price_per_second_usd && (
+                                                    {showCostColumn && (
                                                         <TableCell className="text-right font-medium">
                                                             {run.charge_usd !== undefined && run.charge_usd !== null
-                                                                ? `$${run.charge_usd.toFixed(2)}`
+                                                                ? formatUsd(run.charge_usd)
                                                                 : '-'
                                                             }
                                                         </TableCell>
@@ -677,12 +688,20 @@ export default function UsagePage() {
                                     <div className="mt-4 p-3 bg-muted rounded-md">
                                         <p className="text-sm text-muted-foreground">
                                             Total for filtered period: <span className="font-semibold text-foreground">
-                                                {usageHistory.total_rilt_tokens.toLocaleString()} RiltAI Tokens
+                                                {formatDuration(usageHistory.total_duration_seconds)}
                                             </span>
                                             {' • '}
                                             <span className="font-semibold text-foreground">
-                                                {formatDuration(usageHistory.total_duration_seconds)}
+                                                {usageHistory.total_count.toLocaleString()} {usageHistory.total_count === 1 ? 'call' : 'calls'}
                                             </span>
+                                            {showCostColumn && (
+                                                <>
+                                                    {' • '}
+                                                    <span className="font-semibold text-foreground">
+                                                        {formatUsd(usageHistory.total_charge_usd)}
+                                                    </span>
+                                                </>
+                                            )}
                                         </p>
                                     </div>
                                 )}

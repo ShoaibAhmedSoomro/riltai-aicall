@@ -35,6 +35,13 @@ USAGE_ALLOWED_FILTERS = frozenset(
         "campaignId",
         "callDirection",
         "callChannel",
+        # All four are mapped in ATTRIBUTE_FIELD_MAPPING and defined in the UI's
+        # attribute catalog, but were missing here, so the org-wide page sent
+        # them and the backend dropped them without a word.
+        "status",
+        "callTags",
+        "tokenUsage",
+        "hasRecording",
     }
 )
 

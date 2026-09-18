@@ -1059,3 +1059,197 @@ async def test_dead_letter_deliveries_are_counted_per_org(db_session, async_sess
 
     assert await db_session.count_dead_letter_deliveries(org.id) == 2
     assert await db_session.count_dead_letter_deliveries(other.id) == 1
+
+
+# ── call-history filters and the CSV cost column ────────────────────────────
+#
+# Four attributes were mapped in ATTRIBUTE_FIELD_MAPPING and offered by the UI's
+# catalog but missing from USAGE_ALLOWED_FILTERS, so the org-wide page sent them
+# and the backend dropped them silently -- the worst failure mode a filter has,
+# because the unfiltered list looks like a result.
+
+
+async def _org_with_filterable_runs(async_session, rows):
+    """One org, one workflow, one run per row.
+
+    Each row is (is_completed, recording_url, total_cost_usd, call_tags).
+    """
+    suffix = next(_suffix)
+    org = OrganizationModel(provider_id=f"filt-org-{suffix}")
+    async_session.add(org)
+    await async_session.flush()
+    user = UserModel(provider_id=f"filt-user-{suffix}", selected_organization_id=org.id)
+    async_session.add(user)
+    await async_session.flush()
+    workflow = WorkflowModel(name="filt", organization_id=org.id, user_id=user.id)
+    async_session.add(workflow)
+    await async_session.flush()
+
+    for is_completed, recording_url, cost, tags in rows:
+        async_session.add(
+            WorkflowRunModel(
+                workflow_id=workflow.id,
+                name="r",
+                mode=WorkflowRunMode.TWILIO.value,
+                is_completed=is_completed,
+                recording_url=recording_url,
+                usage_info={"call_duration_seconds": 60},
+                cost_info={} if cost is None else {"total_cost_usd": cost},
+                gathered_context={} if tags is None else {"call_tags": tags},
+            )
+        )
+    await async_session.flush()
+    return org
+
+
+async def _filtered_ids(db_session, org, filters):
+    runs, _, _, _ = await db_session.get_usage_history(org.id, filters=filters)
+    return {run["id"] for run in runs}
+
+
+@pytest.mark.asyncio
+async def test_the_completion_filter_reaches_the_org_wide_listing(
+    db_session, async_session
+):
+    """`status` was in the mapping and in the UI, but not in the allowlist."""
+    org = await _org_with_filterable_runs(
+        async_session, [(True, None, None, None), (False, None, None, None)]
+    )
+    all_ids = await _filtered_ids(db_session, org, None)
+    assert len(all_ids) == 2
+
+    completed = await _filtered_ids(
+        db_session,
+        org,
+        [{"attribute": "status", "type": "radio", "value": {"status": "completed"}}],
+    )
+    in_progress = await _filtered_ids(
+        db_session,
+        org,
+        [{"attribute": "status", "type": "radio", "value": {"status": "in_progress"}}],
+    )
+    assert len(completed) == 1
+    assert len(in_progress) == 1
+    assert completed != in_progress
+
+
+@pytest.mark.asyncio
+async def test_the_recording_filter_splits_runs_by_whether_one_exists(
+    db_session, async_session
+):
+    """recording_url is a plain nullable column, so "has one" is NOT NULL."""
+    org = await _org_with_filterable_runs(
+        async_session,
+        [(True, "s3://bucket/a.wav", None, None), (True, None, None, None)],
+    )
+    with_rec = await _filtered_ids(
+        db_session,
+        org,
+        [{"attribute": "hasRecording", "type": "radio", "value": {"status": "yes"}}],
+    )
+    without = await _filtered_ids(
+        db_session,
+        org,
+        [{"attribute": "hasRecording", "type": "radio", "value": {"status": "no"}}],
+    )
+    assert len(with_rec) == 1
+    assert len(without) == 1
+    assert with_rec.isdisjoint(without)
+
+    # "All" must not narrow anything -- the radio's default.
+    everything = await _filtered_ids(
+        db_session,
+        org,
+        [{"attribute": "hasRecording", "type": "radio", "value": {"status": "all"}}],
+    )
+    assert everything == with_rec | without
+
+
+@pytest.mark.asyncio
+async def test_the_cost_filter_ranges_over_money_despite_its_name(
+    db_session, async_session
+):
+    """`tokenUsage` has always pointed at cost_info.total_cost_usd.
+
+    Nothing wrote that key until runs started being priced, so the filter
+    matched nothing and the "Token Usage" label was never contradicted.
+    """
+    org = await _org_with_filterable_runs(
+        async_session,
+        [(True, None, 0.05, None), (True, None, 0.50, None), (True, None, None, None)],
+    )
+    cheap = await _filtered_ids(
+        db_session,
+        org,
+        [
+            {
+                "attribute": "tokenUsage",
+                "type": "numberRange",
+                "value": {"min": 0, "max": 0.1},
+            }
+        ],
+    )
+    dear = await _filtered_ids(
+        db_session,
+        org,
+        [
+            {
+                "attribute": "tokenUsage",
+                "type": "numberRange",
+                "value": {"min": 0.1, "max": 10},
+            }
+        ],
+    )
+    assert len(cheap) == 1
+    assert len(dear) == 1
+    # The unpriced run is in neither: absent is not zero.
+    assert len(cheap | dear) == 2
+
+
+@pytest.mark.asyncio
+async def test_the_tags_filter_reaches_the_org_wide_listing(db_session, async_session):
+    org = await _org_with_filterable_runs(
+        async_session,
+        [
+            (True, None, None, ["vip"]),
+            (True, None, None, ["other"]),
+            (True, None, None, None),
+        ],
+    )
+    vip = await _filtered_ids(
+        db_session,
+        org,
+        [{"attribute": "callTags", "type": "tags", "value": {"codes": ["vip"]}}],
+    )
+    assert len(vip) == 1
+
+
+def test_the_csv_carries_the_cost_and_leaves_it_blank_when_unpriced():
+    """A zero here would read as a free call rather than an unknown one."""
+    import csv as _csv
+
+    from api.services.reports.run_report import build_run_report_csv
+
+    def _row(cost_info):
+        return SimpleNamespace(
+            id=1,
+            campaign_id=None,
+            workflow_id=2,
+            definition_id=None,
+            created_at=datetime(2026, 1, 1, tzinfo=UTC),
+            initial_context={},
+            gathered_context={},
+            usage_info={"call_duration_seconds": 60},
+            cost_info=cost_info,
+            public_access_token=None,
+        )
+
+    rows = list(
+        _csv.reader(
+            build_run_report_csv([_row({"charge_usd": 0.1}), _row({}), _row(None)])
+            .getvalue()
+            .splitlines()
+        )
+    )
+    cost = rows[0].index("Cost (USD)")
+    assert [r[cost] for r in rows[1:]] == ["0.1", "", ""]

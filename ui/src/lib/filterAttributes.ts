@@ -56,14 +56,35 @@ export const baseFilterAttributes: Record<string, Omit<FilterAttribute, "id">> =
       placeholder: "Enter tags",
     },
   },
+  // Filters cost_info.total_cost_usd, and always has -- the id is kept
+  // because it travels in saved filter state. Nothing wrote that key until
+  // runs started being priced, so the filter matched nothing and the "Token
+  // Usage" label was never contradicted by a result.
   tokenUsage: {
     type: "numberRange",
-    label: "Token Usage",
+    label: "Cost (USD)",
     config: {
       min: 0,
-      max: 10000,
+      max: 100,
       step: 0.01,
-      unit: "tokens",
+      unit: "USD",
+      numberPresets: [
+        { label: "< $0.10", min: 0, max: 0.1 },
+        { label: "$0.10-$1", min: 0.1, max: 1 },
+        { label: "> $1", min: 1, max: 100 },
+      ],
+    },
+  },
+  hasRecording: {
+    type: "radio",
+    label: "Recording",
+    config: {
+      radioOptions: [
+        { label: "Has recording", value: "yes" },
+        { label: "No recording", value: "no" },
+        { label: "All", value: "all" },
+      ],
+      defaultValue: "all",
     },
   },
   runId: {
@@ -217,6 +238,10 @@ export const usageFilterAttributes = createFilterAttributes(
     "runId",
     "workflowId",
     "campaignId",
+    "status",
+    "callTags",
+    "tokenUsage",
+    "hasRecording",
   ],
   {
     runId: {

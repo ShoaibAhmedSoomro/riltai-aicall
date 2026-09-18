@@ -46,6 +46,10 @@ ATTRIBUTE_FIELD_MAPPING = {
     "dispositionCode": "gathered_context.mapped_call_disposition",
     "duration": "usage_info.call_duration_seconds",
     "status": "is_completed",
+    # Named for what it filtered before anything wrote the key. It has
+    # always pointed at cost_info.total_cost_usd, which now holds money;
+    # the UI labels it "Cost (USD)". The id stays because it is a wire
+    # value -- it appears in saved filter state.
     "tokenUsage": "cost_info.total_cost_usd",
     "runId": "id",
     "workflowId": "workflow_id",
@@ -55,6 +59,7 @@ ATTRIBUTE_FIELD_MAPPING = {
     "calledNumber": "initial_context.called_number",
     "callDirection": "call_type",
     "callChannel": "mode",
+    "hasRecording": "recording_url",
 }
 
 
@@ -70,7 +75,7 @@ def apply_workflow_run_filters(
     - dispositionCode: Filter by gathered_context.mapped_call_disposition
     - duration: Filter by usage_info.call_duration_seconds range
     - status: Filter by is_completed status
-    - tokenUsage: Filter by cost_info.total_cost_usd range
+    - tokenUsage: Filter by cost_info.total_cost_usd range (money, despite the name)
     - runId: Filter by workflow run ID (exact match)
     - workflowId: Filter by workflow ID (exact match)
     - callTags: Filter by gathered_context.call_tags (array of strings)
@@ -78,6 +83,7 @@ def apply_workflow_run_filters(
     - calledNumber: Filter by initial_context.called_number (text search)
     - callDirection: Filter by call_type (inbound / outbound)
     - callChannel: Filter by mode, grouped into telephony / web / chat
+    - hasRecording: Filter by recording_url being set
 
     Args:
         base_query: The base SQLAlchemy query to apply filters to
@@ -173,6 +179,14 @@ def apply_workflow_run_filters(
                 direction = value.get("status")
                 if direction in {call_type.value for call_type in CallType}:
                     filter_conditions.append(WorkflowRunModel.call_type == direction)
+
+            elif filter_type == "radio" and field == "recording_url":
+                # Stored as a URL string, so "has one" is simply NOT NULL.
+                has_recording = value.get("status")
+                if has_recording == "yes":
+                    filter_conditions.append(WorkflowRunModel.recording_url.isnot(None))
+                elif has_recording == "no":
+                    filter_conditions.append(WorkflowRunModel.recording_url.is_(None))
 
             elif filter_type == "radio" and field == "mode":
                 # The UI filters by channel (telephony / web / chat); the column

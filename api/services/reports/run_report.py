@@ -42,6 +42,7 @@ def build_run_report_csv(runs: List[Any]) -> io.StringIO:
         "Phone Number",
         "Call Disposition",
         "Call Duration (s)",
+        "Cost (USD)",
     ]
     post_headers = [
         "Call Tags",
@@ -54,6 +55,7 @@ def build_run_report_csv(runs: List[Any]) -> io.StringIO:
         initial = run.initial_context or {}
         gathered = run.gathered_context or {}
         usage = run.usage_info or {}
+        cost = run.cost_info or {}
 
         call_tags = gathered.get("call_tags", [])
         if isinstance(call_tags, list):
@@ -68,6 +70,9 @@ def build_run_report_csv(runs: List[Any]) -> io.StringIO:
             initial.get("phone_number", ""),
             gathered.get("mapped_call_disposition", ""),
             usage.get("call_duration_seconds", ""),
+            # Blank, not 0, when the run was never priced -- a zero here would
+            # read as a free call rather than an unknown one.
+            cost.get("charge_usd", ""),
         ]
 
         extracted = gathered.get("extracted_variables", {})
