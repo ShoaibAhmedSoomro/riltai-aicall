@@ -167,6 +167,49 @@ export type ActiveCallsResponse = {
 };
 
 /**
+ * AlertItem
+ */
+export type AlertItem = {
+    /**
+     * Severity
+     */
+    severity: string;
+    /**
+     * Text
+     */
+    text: string;
+    /**
+     * Href
+     */
+    href: string;
+    /**
+     * Count
+     */
+    count: number;
+    /**
+     * Occurred At
+     */
+    occurred_at?: string | null;
+};
+
+/**
+ * AlertsResponse
+ *
+ * Things worth acting on, composed from signals that already exist.
+ *
+ * Deliberately NOT an alerting domain: no new table, no sweeper, no rules
+ * engine. Three conditions the system already records are read on request.
+ * An empty list means nothing is wrong, which is a real answer -- the panel
+ * this replaces showed invented alerts.
+ */
+export type AlertsResponse = {
+    /**
+     * Items
+     */
+    items: Array<AlertItem>;
+};
+
+/**
  * AmbientNoiseConfigurationDefaults
  */
 export type AmbientNoiseConfigurationDefaults = {
@@ -5095,6 +5138,53 @@ export type PublicEmbedChatTurn = {
     status: string;
     user_message?: PublicEmbedChatMessage | null;
     assistant_message?: PublicEmbedChatMessage | null;
+};
+
+/**
+ * QueueSummaryResponse
+ *
+ * Org-wide queued-run counts, for the dashboard's queue panel.
+ *
+ * The sample panel this replaces had segments labelled "Retrying" and
+ * "Exhausted" with no counterpart in the data. The state enum is exactly
+ * (queued, processing, processed, failed), so "Exhausted" is failed, and
+ * "retrying" is queued runs that have already failed at least once --
+ * a subset of queued rather than a state of its own, which is why the
+ * segments do not sum to total.
+ */
+export type QueueSummaryResponse = {
+    /**
+     * Total
+     */
+    total: number;
+    /**
+     * Queued
+     */
+    queued: number;
+    /**
+     * Processing
+     */
+    processing: number;
+    /**
+     * Processed
+     */
+    processed: number;
+    /**
+     * Failed
+     */
+    failed: number;
+    /**
+     * Retrying
+     */
+    retrying: number;
+    /**
+     * Scheduled
+     */
+    scheduled: number;
+    /**
+     * Campaigns
+     */
+    campaigns: number;
 };
 
 /**
@@ -11568,6 +11658,45 @@ export type DownloadCampaignReportApiV1CampaignCampaignIdReportGetResponses = {
     200: unknown;
 };
 
+export type GetQueueSummaryApiV1CampaignQueueSummaryGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/campaign/queue-summary';
+};
+
+export type GetQueueSummaryApiV1CampaignQueueSummaryGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetQueueSummaryApiV1CampaignQueueSummaryGetError = GetQueueSummaryApiV1CampaignQueueSummaryGetErrors[keyof GetQueueSummaryApiV1CampaignQueueSummaryGetErrors];
+
+export type GetQueueSummaryApiV1CampaignQueueSummaryGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: QueueSummaryResponse;
+};
+
+export type GetQueueSummaryApiV1CampaignQueueSummaryGetResponse = GetQueueSummaryApiV1CampaignQueueSummaryGetResponses[keyof GetQueueSummaryApiV1CampaignQueueSummaryGetResponses];
+
 export type ListCredentialsApiV1CredentialsGetData = {
     body?: never;
     headers?: {
@@ -14820,6 +14949,45 @@ export type GetDailyRunsDetailApiV1OrganizationsReportsDailyRunsGetResponses = {
 };
 
 export type GetDailyRunsDetailApiV1OrganizationsReportsDailyRunsGetResponse = GetDailyRunsDetailApiV1OrganizationsReportsDailyRunsGetResponses[keyof GetDailyRunsDetailApiV1OrganizationsReportsDailyRunsGetResponses];
+
+export type GetAlertsApiV1OrganizationsReportsAlertsGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/organizations/reports/alerts';
+};
+
+export type GetAlertsApiV1OrganizationsReportsAlertsGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetAlertsApiV1OrganizationsReportsAlertsGetError = GetAlertsApiV1OrganizationsReportsAlertsGetErrors[keyof GetAlertsApiV1OrganizationsReportsAlertsGetErrors];
+
+export type GetAlertsApiV1OrganizationsReportsAlertsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: AlertsResponse;
+};
+
+export type GetAlertsApiV1OrganizationsReportsAlertsGetResponse = GetAlertsApiV1OrganizationsReportsAlertsGetResponses[keyof GetAlertsApiV1OrganizationsReportsAlertsGetResponses];
 
 export type GetTurnCredentialsApiV1TurnCredentialsGetData = {
     body?: never;
