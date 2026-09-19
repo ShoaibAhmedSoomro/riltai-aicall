@@ -1311,11 +1311,13 @@ export const listInvitesApiV1OrganizationsInvitesGet = <ThrowOnError extends boo
 /**
  * Create Invite
  *
- * Invite someone to join this organization.
+ * Invite someone to join this organization, and send it.
  *
- * Records the invitation; it does not send it. There is no email capability in
- * this codebase, so until one exists the invite sits here unaccepted. That is
- * a deliberate staging decision rather than an oversight -- see the model.
+ * The record is written first and the send is best-effort: a provider outage
+ * must not lose an invitation that an admin has already been told about. The
+ * response reports whether it actually went, so the screen can say "sent" or
+ * "recorded but not delivered" instead of guessing -- an invite that silently
+ * went nowhere is the failure this whole flow is designed around.
  */
 export const createInviteApiV1OrganizationsInvitesPost = <ThrowOnError extends boolean = false>(options: Options<CreateInviteApiV1OrganizationsInvitesPostData, ThrowOnError>): RequestResult<CreateInviteApiV1OrganizationsInvitesPostResponses, CreateInviteApiV1OrganizationsInvitesPostErrors, ThrowOnError> => (options.client ?? client).post<CreateInviteApiV1OrganizationsInvitesPostResponses, CreateInviteApiV1OrganizationsInvitesPostErrors, ThrowOnError>({
     url: '/api/v1/organizations/invites',

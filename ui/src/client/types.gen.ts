@@ -4452,10 +4452,14 @@ export type OrganizationContextResponse = {
  *
  * A pending invitation. The token is deliberately NOT exposed.
  *
- * Nothing can deliver an invite yet -- there is no email capability -- and
- * returning the token here would turn this into a copy-a-link flow by the back
- * door, which is not the shape that was chosen. It is stored so that adding
- * email later is the sending step and nothing else.
+ * Returning the token here would turn an emailed invitation into a
+ * copy-a-link flow by the back door, which is not the shape that was chosen.
+ * It leaves the server only inside the message itself.
+ *
+ * `delivered` is None for invitations listed later, because whether the
+ * original send succeeded is not recorded on the row -- only the create
+ * response knows, and inventing a value for the list would be a guess
+ * presented as a fact.
  */
 export type OrganizationInviteResponse = {
     /**
@@ -4482,6 +4486,10 @@ export type OrganizationInviteResponse = {
      * Invited By Email
      */
     invited_by_email?: string | null;
+    /**
+     * Delivered
+     */
+    delivered?: boolean | null;
 };
 
 /**

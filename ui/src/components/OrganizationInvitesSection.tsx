@@ -56,6 +56,7 @@ export function OrganizationInvitesSection() {
   const [role, setRole] = useState<OrgRole>("member");
   const [creating, setCreating] = useState(false);
   const [revokingId, setRevokingId] = useState<number | null>(null);
+  const [undelivered, setUndelivered] = useState(false);
 
   useEffect(() => {
     if (authLoading || !user || hasFetched.current) return;
@@ -101,7 +102,18 @@ export function OrganizationInvitesSection() {
       if (response.data) setInvites((prev) => [response.data!, ...prev]);
       setEmail("");
       setRole("member");
-      toast.success("Invitation recorded");
+
+      // `delivered` is the server reporting whether the message actually went.
+      // Saying "invitation sent" when email is unconfigured would leave the
+      // admin waiting on someone who was never contacted -- the exact failure
+      // this screen has always been careful about.
+      if (response.data?.delivered) {
+        toast.success("Invitation sent");
+        setUndelivered(false);
+      } else {
+        toast.warning("Invitation recorded, but not sent");
+        setUndelivered(true);
+      }
     } catch (err) {
       toast.error(detailFromError(err, "Could not create invitation"));
     } finally {
@@ -152,19 +164,22 @@ export function OrganizationInvitesSection() {
 
   return (
     <div className="space-y-5">
-      {/* Stated plainly and first. Without this an admin creates invitations and
-          waits for people who were never contacted. */}
-      <div className="flex gap-2 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-        <Info className="mt-0.5 h-4 w-4 shrink-0" />
-        <p>
-          <span className="font-medium text-foreground">
-            Invitations are recorded but not yet delivered.
-          </span>{" "}
-          This deployment has no email configured, so nothing is sent and an
-          invitation cannot be accepted yet. Creating one now reserves the
-          address and the role; they will be sendable once email is set up.
-        </p>
-      </div>
+      {/* Only after a send has actually failed. A permanent banner would keep
+          claiming nothing is delivered on a deployment where email works, and
+          a reader who has seen it be wrong once stops reading it. */}
+      {undelivered && (
+        <div className="flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            <span className="font-medium">
+              That invitation was recorded but not sent.
+            </span>{" "}
+            This deployment has no email configured, so the address and role are
+            reserved but nobody was contacted. Set RESEND_API_KEY and EMAIL_FROM,
+            then invite again.
+          </p>
+        </div>
+      )}
 
       <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-3">
         <div className="flex-1 min-w-[220px] space-y-1.5">

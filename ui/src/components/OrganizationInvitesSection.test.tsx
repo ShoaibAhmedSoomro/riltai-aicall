@@ -19,6 +19,7 @@ const createInvite = vi.fn();
 const revokeInvite = vi.fn();
 const useAuth = vi.fn();
 const toastError = vi.fn();
+const toastWarning = vi.fn();
 const toastSuccess = vi.fn();
 
 vi.mock('@/client/sdk.gen', () => ({
@@ -27,7 +28,7 @@ vi.mock('@/client/sdk.gen', () => ({
     revokeInviteApiV1OrganizationsInvitesInviteIdDelete: (...a: unknown[]) => revokeInvite(...a),
 }));
 vi.mock('@/lib/auth', () => ({ useAuth: () => useAuth() }));
-vi.mock('sonner', () => ({ toast: { success: (...a: unknown[]) => toastSuccess(...a), error: (...a: unknown[]) => toastError(...a) } }));
+vi.mock('sonner', () => ({ toast: { success: (...a: unknown[]) => toastSuccess(...a), error: (...a: unknown[]) => toastError(...a), warning: (...a: unknown[]) => toastWarning(...a) } }));
 
 import { OrganizationInvitesSection } from './OrganizationInvitesSection';
 
@@ -49,11 +50,44 @@ beforeEach(() => {
 });
 
 describe('OrganizationInvitesSection', () => {
-    it('says up front that invitations cannot be delivered yet', async () => {
+    it('says nothing about delivery until a send has actually failed', async () => {
+        // This used to be a permanent banner asserting nothing is delivered.
+        // That became a lie the moment email was configured, and a notice a
+        // reader has seen be wrong once is a notice they stop reading.
         render(<OrganizationInvitesSection />);
+        await waitFor(() => expect(screen.getByLabelText(/email address/i)).toBeDefined());
+        expect(screen.queryByText(/not sent/i)).toBeNull();
+    });
+
+    it('warns when an invitation was recorded but not delivered', async () => {
+        // The failure this screen exists to prevent: an admin waiting on
+        // someone who was never contacted.
+        createInvite.mockResolvedValue({ data: { ...PENDING, delivered: false } });
+        render(<OrganizationInvitesSection />);
+        await waitFor(() => expect(screen.getByLabelText(/email address/i)).toBeDefined());
+
+        fireEvent.change(screen.getByLabelText(/email address/i), {
+            target: { value: 'new@x.com' },
+        });
+        fireEvent.submit(screen.getByLabelText(/email address/i).closest('form')!);
+
         await waitFor(() =>
-            expect(screen.getByText(/recorded but not yet delivered/i)).toBeDefined(),
+            expect(screen.getByText(/recorded but not sent/i)).toBeDefined(),
         );
+    });
+
+    it('does not warn when the invitation was delivered', async () => {
+        createInvite.mockResolvedValue({ data: { ...PENDING, delivered: true } });
+        render(<OrganizationInvitesSection />);
+        await waitFor(() => expect(screen.getByLabelText(/email address/i)).toBeDefined());
+
+        fireEvent.change(screen.getByLabelText(/email address/i), {
+            target: { value: 'new@x.com' },
+        });
+        fireEvent.submit(screen.getByLabelText(/email address/i).closest('form')!);
+
+        await waitFor(() => expect(screen.getByText('new@x.com')).toBeDefined());
+        expect(screen.queryByText(/not sent/i)).toBeNull();
     });
 
     it('lists pending invitations with who invited them', async () => {
