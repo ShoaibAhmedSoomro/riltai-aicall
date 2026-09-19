@@ -1,21 +1,36 @@
+import jwt
 from fastapi import APIRouter, Depends, HTTPException
+from loguru import logger
 
-from api.constants import ENABLE_SIGNUP
+from api.constants import (
+    ENABLE_SIGNUP,
+    PASSWORD_RESET_EXPIRY_MINUTES,
+    PUBLIC_BASE_URL,
+)
 from api.db import db_client
 from api.db.models import UserModel
 from api.enums import OrgRole, PostHogEvent
 from api.schemas.auth import (
     AuthResponse,
+    ForgotPasswordRequest,
     LoginRequest,
     ProfileUpdateRequest,
+    ResetPasswordRequest,
     SignupRequest,
     UserProfileFields,
     UserResponse,
 )
 from api.services.auth.depends import get_user, require_local_auth
+from api.services.email import email_is_configured, send_email
 from api.services.organization_bootstrap import ensure_organization_bootstrapped
 from api.services.posthog_client import capture_event
-from api.utils.auth import create_jwt_token, hash_password, verify_password
+from api.utils.auth import (
+    create_jwt_token,
+    create_password_reset_token,
+    hash_password,
+    verify_password,
+    verify_password_reset_token,
+)
 
 router = APIRouter(
     prefix="/auth",
@@ -248,4 +263,101 @@ async def update_profile(
     return AuthResponse(
         token=create_jwt_token(updated.id, updated.email),
         user=_user_response(updated),
+    )
+
+
+def _reset_link(token: str) -> str:
+    base = (PUBLIC_BASE_URL or "").rstrip("/")
+    return f"{base}/auth/reset-password?token={token}"
+
+
+@router.post("/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest) -> dict:
+    """Start a password reset.
+
+    Answers the same way whether or not the address has an account. That is
+    the whole point: this endpoint is unauthenticated, so distinguishing the
+    two turns it into a way to ask whether a given person is a customer.
+
+    The one thing it DOES report is that email is not set up on this
+    deployment, because that is a fact about the server rather than about any
+    user, and hiding it strands the caller waiting for a message that was
+    never going to arrive.
+    """
+    if not email_is_configured():
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Password reset needs email, which is not configured on this "
+                "deployment. Ask an administrator to reset your password."
+            ),
+        )
+
+    user = await db_client.get_user_by_email(request.email)
+    if user and user.password_hash:
+        token = create_password_reset_token(user.id, user.password_hash)
+        await send_email(
+            to=user.email,
+            subject="Reset your AICall password",
+            html=(
+                "<p>Someone asked to reset the password for this AICall "
+                "account. If that was not you, ignore this message and "
+                "nothing changes.</p>"
+                f'<p><a href="{_reset_link(token)}">Choose a new password</a></p>'
+                f"<p>This link stops working in "
+                f"{PASSWORD_RESET_EXPIRY_MINUTES} minutes, and as soon as it "
+                "is used once.</p>"
+            ),
+        )
+    else:
+        # No account, or an SSO-provisioned one with no password to reset.
+        # Deliberately silent, and deliberately not faster than the branch
+        # above by enough to time.
+        logger.info("Password reset requested for an address with no local login")
+
+    return {"status": "sent"}
+
+
+@router.post("/reset-password", response_model=AuthResponse)
+async def reset_password(request: ResetPasswordRequest) -> AuthResponse:
+    """Finish a password reset and sign the user in.
+
+    Signing them in is deliberate: the alternative sends someone who just
+    proved control of the mailbox back to a login form to retype the password
+    they set ten seconds ago.
+    """
+    # The token carries a fingerprint of the password it was minted against,
+    # so it has to be checked against the CURRENT hash -- which means finding
+    # the user before the token can be trusted. The id is read unverified for
+    # that lookup only, and nothing is changed until the signature, the
+    # purpose, the expiry and the fingerprint have all been verified below.
+    try:
+        unverified = jwt.decode(request.token, options={"verify_signature": False})
+        user_id = int(unverified.get("sub", ""))
+    except (jwt.PyJWTError, TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="This reset link is not valid.")
+
+    user = await db_client.get_user_by_id(user_id)
+    if not user or not user.password_hash:
+        raise HTTPException(status_code=400, detail="This reset link is not valid.")
+
+    if verify_password_reset_token(request.token, user.password_hash) != user.id:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "This reset link has expired or has already been used. "
+                "Request a new one."
+            ),
+        )
+
+    updated = await db_client.update_user_profile(
+        user.id, password_hash=hash_password(request.password)
+    )
+    if updated is None:
+        raise HTTPException(status_code=400, detail="This reset link is not valid.")
+
+    organization_id = await ensure_organization_bootstrapped(updated)
+    return AuthResponse(
+        token=create_jwt_token(updated.id, updated.email),
+        user=_user_response(updated, organization_id=organization_id),
     )

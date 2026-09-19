@@ -25,6 +25,24 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    password: str
+
+    @field_validator("password")
+    @classmethod
+    def password_min_length(cls, v: str) -> str:
+        # Same floor as signup. A reset that accepts a weaker password than
+        # signup would is a way around the rule, not a convenience.
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        return v
+
+
 # Fixed set so the UI can guarantee a readable avatar in both themes; a free
 # hex would let a user pick something unreadable on their own dashboard.
 AVATAR_COLORS = ("slate", "teal", "indigo", "amber", "rose", "violet")

@@ -37,6 +37,14 @@ PUBLIC_BY_DESIGN: dict[str, str] = {
     # Unauthenticated on purpose: the caller has no session to present.
     "/api/v1/auth/login": "issues the session; cannot require one",
     "/api/v1/auth/signup": "creates the account; cannot require one",
+    "/api/v1/auth/forgot-password": (
+        "the caller is locked out by definition, so there is no session to "
+        "require; answers identically whether or not the address exists"
+    ),
+    "/api/v1/auth/reset-password": (
+        "authenticated by the emailed token itself, which is single-use and "
+        "bound to the current password hash"
+    ),
     # Note: /auth/session and /auth/logout are Next.js routes under
     # ui/src/app/api/auth/, not FastAPI ones. Listing them here made this
     # list look more complete than it was, which the staleness check caught.

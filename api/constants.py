@@ -272,4 +272,17 @@ FORCE_TURN_RELAY = os.getenv("FORCE_TURN_RELAY", "false").lower() == "true"
 OSS_JWT_SECRET = os.getenv("OSS_JWT_SECRET", "change-me-in-production")
 OSS_JWT_EXPIRY_HOURS = int(os.getenv("OSS_JWT_EXPIRY_HOURS", "720"))  # 30 days
 
+# Transactional email (Resend). Both must be set before anything is delivered;
+# api.services.email degrades to "not sent" rather than raising when they are
+# not, which is the state a fresh self-hosted install is in.
+#
+# EMAIL_FROM must be an address on a domain verified in Resend -- an
+# unverified From is the usual cause of a 403 on an otherwise valid key.
+RESEND_API_KEY = os.getenv("RESEND_API_KEY") or None
+EMAIL_FROM = os.getenv("EMAIL_FROM") or None
+
+# How long a password-reset link stays usable. Short, because the link is a
+# bearer credential sitting in an inbox.
+PASSWORD_RESET_EXPIRY_MINUTES = int(os.getenv("PASSWORD_RESET_EXPIRY_MINUTES", "30"))
+
 TUNER_BASE_URL = os.getenv("TUNER_BASE_URL", "https://api.usetuner.ai")
