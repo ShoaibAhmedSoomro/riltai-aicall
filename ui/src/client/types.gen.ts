@@ -2624,6 +2624,16 @@ export type FolderResponse = {
 };
 
 /**
+ * ForgotPasswordRequest
+ */
+export type ForgotPasswordRequest = {
+    /**
+     * Email
+     */
+    email: string;
+};
+
+/**
  * Gladia
  */
 export type GladiaSttConfiguration = {
@@ -5384,6 +5394,20 @@ export type RedialCampaignRequest = {
      */
     retry_on_busy?: boolean;
     retry_config?: RetryConfigRequest | null;
+};
+
+/**
+ * ResetPasswordRequest
+ */
+export type ResetPasswordRequest = {
+    /**
+     * Token
+     */
+    token: string;
+    /**
+     * Password
+     */
+    password: string;
 };
 
 /**
@@ -9977,6 +10001,45 @@ export type UpdateWorkflowApiV1WorkflowWorkflowIdPutResponses = {
 
 export type UpdateWorkflowApiV1WorkflowWorkflowIdPutResponse = UpdateWorkflowApiV1WorkflowWorkflowIdPutResponses[keyof UpdateWorkflowApiV1WorkflowWorkflowIdPutResponses];
 
+export type DuplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePostData = {
+    body: DuplicateTemplateRequest;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/workflow/templates/duplicate';
+};
+
+export type DuplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DuplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePostError = DuplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePostErrors[keyof DuplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePostErrors];
+
+export type DuplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: WorkflowResponse;
+};
+
+export type DuplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePostResponse = DuplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePostResponses[keyof DuplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePostResponses];
+
 export type DuplicateWorkflowEndpointApiV1WorkflowWorkflowIdDuplicatePostData = {
     body?: never;
     headers?: {
@@ -10283,45 +10346,6 @@ export type GetWorkflowTemplatesApiV1WorkflowTemplatesGetResponses = {
 };
 
 export type GetWorkflowTemplatesApiV1WorkflowTemplatesGetResponse = GetWorkflowTemplatesApiV1WorkflowTemplatesGetResponses[keyof GetWorkflowTemplatesApiV1WorkflowTemplatesGetResponses];
-
-export type DuplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePostData = {
-    body: DuplicateTemplateRequest;
-    headers?: {
-        /**
-         * Authorization
-         */
-        authorization?: string | null;
-        /**
-         * X-Api-Key
-         */
-        'X-API-Key'?: string | null;
-    };
-    path?: never;
-    query?: never;
-    url: '/api/v1/workflow/templates/duplicate';
-};
-
-export type DuplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePostErrors = {
-    /**
-     * Not found
-     */
-    404: unknown;
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type DuplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePostError = DuplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePostErrors[keyof DuplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePostErrors];
-
-export type DuplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePostResponses = {
-    /**
-     * Successful Response
-     */
-    200: WorkflowResponse;
-};
-
-export type DuplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePostResponse = DuplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePostResponses[keyof DuplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePostResponses];
 
 export type GetAmbientNoiseUploadUrlApiV1WorkflowAmbientNoiseUploadUrlPostData = {
     body: AmbientNoiseUploadRequest;
@@ -11184,6 +11208,45 @@ export type GetCampaignsApiV1CampaignGetResponses = {
 
 export type GetCampaignsApiV1CampaignGetResponse = GetCampaignsApiV1CampaignGetResponses[keyof GetCampaignsApiV1CampaignGetResponses];
 
+export type GetQueueSummaryApiV1CampaignQueueSummaryGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/campaign/queue-summary';
+};
+
+export type GetQueueSummaryApiV1CampaignQueueSummaryGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetQueueSummaryApiV1CampaignQueueSummaryGetError = GetQueueSummaryApiV1CampaignQueueSummaryGetErrors[keyof GetQueueSummaryApiV1CampaignQueueSummaryGetErrors];
+
+export type GetQueueSummaryApiV1CampaignQueueSummaryGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: QueueSummaryResponse;
+};
+
+export type GetQueueSummaryApiV1CampaignQueueSummaryGetResponse = GetQueueSummaryApiV1CampaignQueueSummaryGetResponses[keyof GetQueueSummaryApiV1CampaignQueueSummaryGetResponses];
+
 export type GetCampaignApiV1CampaignCampaignIdGetData = {
     body?: never;
     headers?: {
@@ -11665,45 +11728,6 @@ export type DownloadCampaignReportApiV1CampaignCampaignIdReportGetResponses = {
      */
     200: unknown;
 };
-
-export type GetQueueSummaryApiV1CampaignQueueSummaryGetData = {
-    body?: never;
-    headers?: {
-        /**
-         * Authorization
-         */
-        authorization?: string | null;
-        /**
-         * X-Api-Key
-         */
-        'X-API-Key'?: string | null;
-    };
-    path?: never;
-    query?: never;
-    url: '/api/v1/campaign/queue-summary';
-};
-
-export type GetQueueSummaryApiV1CampaignQueueSummaryGetErrors = {
-    /**
-     * Not found
-     */
-    404: unknown;
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetQueueSummaryApiV1CampaignQueueSummaryGetError = GetQueueSummaryApiV1CampaignQueueSummaryGetErrors[keyof GetQueueSummaryApiV1CampaignQueueSummaryGetErrors];
-
-export type GetQueueSummaryApiV1CampaignQueueSummaryGetResponses = {
-    /**
-     * Successful Response
-     */
-    200: QueueSummaryResponse;
-};
-
-export type GetQueueSummaryApiV1CampaignQueueSummaryGetResponse = GetQueueSummaryApiV1CampaignQueueSummaryGetResponses[keyof GetQueueSummaryApiV1CampaignQueueSummaryGetResponses];
 
 export type ListCredentialsApiV1CredentialsGetData = {
     body?: never;
@@ -16586,6 +16610,68 @@ export type UpdateProfileApiV1AuthProfilePatchResponses = {
 };
 
 export type UpdateProfileApiV1AuthProfilePatchResponse = UpdateProfileApiV1AuthProfilePatchResponses[keyof UpdateProfileApiV1AuthProfilePatchResponses];
+
+export type ForgotPasswordApiV1AuthForgotPasswordPostData = {
+    body: ForgotPasswordRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/forgot-password';
+};
+
+export type ForgotPasswordApiV1AuthForgotPasswordPostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ForgotPasswordApiV1AuthForgotPasswordPostError = ForgotPasswordApiV1AuthForgotPasswordPostErrors[keyof ForgotPasswordApiV1AuthForgotPasswordPostErrors];
+
+export type ForgotPasswordApiV1AuthForgotPasswordPostResponses = {
+    /**
+     * Response Forgot Password Api V1 Auth Forgot Password Post
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type ForgotPasswordApiV1AuthForgotPasswordPostResponse = ForgotPasswordApiV1AuthForgotPasswordPostResponses[keyof ForgotPasswordApiV1AuthForgotPasswordPostResponses];
+
+export type ResetPasswordApiV1AuthResetPasswordPostData = {
+    body: ResetPasswordRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/reset-password';
+};
+
+export type ResetPasswordApiV1AuthResetPasswordPostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ResetPasswordApiV1AuthResetPasswordPostError = ResetPasswordApiV1AuthResetPasswordPostErrors[keyof ResetPasswordApiV1AuthResetPasswordPostErrors];
+
+export type ResetPasswordApiV1AuthResetPasswordPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: AuthResponse;
+};
+
+export type ResetPasswordApiV1AuthResetPasswordPostResponse = ResetPasswordApiV1AuthResetPasswordPostResponses[keyof ResetPasswordApiV1AuthResetPasswordPostResponses];
 
 export type ListNodeTypesApiV1NodeTypesGetData = {
     body?: never;
