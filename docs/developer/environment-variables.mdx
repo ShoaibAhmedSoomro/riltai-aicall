@@ -47,6 +47,22 @@ The relevant required variables for each mode are noted in the descriptions belo
 Never use the placeholder `OSS_JWT_SECRET` in a production deployment. Generate a strong random secret and store it securely.
 </Warning>
 
+## Email
+
+Password resets and organization invitations are delivered through [Resend](https://resend.com). Both variables must be set before anything is sent.
+
+| Variable | Default | Description |
+|---|---|---|
+| `RESEND_API_KEY` | unset | Resend API key. Without it, no mail is sent |
+| `EMAIL_FROM` | unset | Sender address, e.g. `AICall <noreply@yourdomain.com>`. Must be on a domain **verified in Resend** |
+| `PASSWORD_RESET_EXPIRY_MINUTES` | `30` | How long a reset link stays usable. It is also single use |
+
+Leave them unset and the product says so rather than pretending: `POST /auth/forgot-password` answers `503`, and the invitations screen keeps its "recorded but not yet delivered" notice. Nothing fails silently.
+
+<Note>
+A verified sender is the usual sticking point. An otherwise valid key returns `403` when `EMAIL_FROM` is on a domain Resend has not verified for your account.
+</Note>
+
 ---
 
 ## Authentication (Stack Auth)

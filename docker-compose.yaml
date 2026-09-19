@@ -302,6 +302,15 @@ services:
 
       OSS_JWT_SECRET: "${OSS_JWT_SECRET:?OSS_JWT_SECRET must be set to a strong secret}"
 
+      # Transactional email: password resets and organization invitations.
+      # Both must be set before anything is delivered. Leave them unset and the
+      # product says so rather than pretending -- /auth/forgot-password answers
+      # 503 and the invitations screen keeps its "recorded but not delivered"
+      # notice. EMAIL_FROM has to be on a domain verified in Resend; an
+      # unverified sender is the usual cause of a 403 on a valid key.
+      RESEND_API_KEY: "${RESEND_API_KEY:-}"
+      EMAIL_FROM: "${EMAIL_FROM:-}"
+
       # Telephony media WebSocket capability token. The carrier dials the media
       # socket back, so its URL is caller-visible and the ids in it are otherwise
       # guessable. Set a secret in .env to have providers sign that URL and the
