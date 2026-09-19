@@ -5,6 +5,7 @@ from loguru import logger
 from api.services.pipecat.audio_config import AudioConfig
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.worker import PipelineParams, PipelineWorker
+from pipecat.processors.aggregators.dtmf_aggregator import DTMFAggregator
 from pipecat.processors.aggregators.llm_context import LLMContext
 from pipecat.processors.audio.audio_buffer_processor import AudioBufferProcessor
 from pipecat.utils.run_context import turn_var
@@ -53,6 +54,19 @@ def build_pipeline(
     processors = [
         transport.input(),  # Transport user input
         stt,
+        # Caller keypad presses. Every telephony serializer already decodes
+        # carrier DTMF into InputDTMFFrame, but nothing consumed them, so the
+        # digits were silently dropped -- a caller pressing "1 to confirm" was
+        # simply ignored. The aggregator collects a sequence into one
+        # TranscriptionFrame ("DTMF: 12#") so the LLM reads it as user input,
+        # and interrupts the bot on the first digit, which is what pressing a
+        # key during speech means.
+        #
+        # ponytail: pipecat's defaults -- 2s idle flush, "#" terminates. No
+        # per-agent dial, because there is no agent for which dropping the
+        # caller's keypresses is the right behaviour. Add one if a real
+        # workflow ever needs a different terminator.
+        DTMFAggregator(),
     ]
 
     # Insert voicemail detector after STT if enabled
@@ -131,6 +145,10 @@ def build_realtime_pipeline(
     """
     processors = [
         transport.input(),
+        # See build_pipeline: without this the caller's keypresses are dropped
+        # here too. There is no STT to sit behind in this pipeline, so it goes
+        # directly after the transport.
+        DTMFAggregator(),
         user_context_aggregator,
         realtime_llm,
     ]
