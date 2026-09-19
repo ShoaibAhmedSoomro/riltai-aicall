@@ -1,4 +1,5 @@
 from copy import deepcopy
+from html import escape as html_escape
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -16,6 +17,7 @@ from api.constants import (
     DEFAULT_CAMPAIGN_RETRY_CONFIG,
     DEFAULT_ORG_CONCURRENCY_LIMIT,
     DEPLOYMENT_MODE,
+    PUBLIC_BASE_URL,
 )
 from api.db import db_client
 from api.db.models import UserModel
@@ -62,6 +64,7 @@ from api.schemas.telephony_phone_number import (
     PhoneNumberUpdateRequest,
     ProviderSyncStatus,
 )
+
 from api.services.auth.depends import (
     get_org_role,
     get_user,
@@ -80,6 +83,7 @@ from api.services.configuration.ai_model_configuration import (
     upsert_organization_ai_model_configuration_v2,
 )
 from api.services.configuration.check_validity import UserConfigurationValidator
+from api.services.email import send_email
 from api.services.configuration.defaults import DEFAULT_SERVICE_PROVIDERS
 from api.services.configuration.masking import is_mask_of, mask_key, mask_user_config
 from api.services.configuration.registry import (
@@ -2037,10 +2041,14 @@ async def remove_member(
 class OrganizationInviteResponse(BaseModel):
     """A pending invitation. The token is deliberately NOT exposed.
 
-    Nothing can deliver an invite yet -- there is no email capability -- and
-    returning the token here would turn this into a copy-a-link flow by the back
-    door, which is not the shape that was chosen. It is stored so that adding
-    email later is the sending step and nothing else.
+    Returning the token here would turn an emailed invitation into a
+    copy-a-link flow by the back door, which is not the shape that was chosen.
+    It leaves the server only inside the message itself.
+
+    `delivered` is None for invitations listed later, because whether the
+    original send succeeded is not recorded on the row -- only the create
+    response knows, and inventing a value for the list would be a guess
+    presented as a fact.
     """
 
     id: int
@@ -2049,6 +2057,8 @@ class OrganizationInviteResponse(BaseModel):
     created_at: Optional[str] = None
     expires_at: Optional[str] = None
     invited_by_email: Optional[str] = None
+    # Whether the message actually went out. None when unknown -- see above.
+    delivered: Optional[bool] = None
 
 
 class CreateInviteRequest(BaseModel):
@@ -2086,11 +2096,13 @@ async def create_invite(
     request: CreateInviteRequest,
     user: UserModel = Depends(require_admin),
 ):
-    """Invite someone to join this organization.
+    """Invite someone to join this organization, and send it.
 
-    Records the invitation; it does not send it. There is no email capability in
-    this codebase, so until one exists the invite sits here unaccepted. That is
-    a deliberate staging decision rather than an oversight -- see the model.
+    The record is written first and the send is best-effort: a provider outage
+    must not lose an invitation that an admin has already been told about. The
+    response reports whether it actually went, so the screen can say "sent" or
+    "recorded but not delivered" instead of guessing -- an invite that silently
+    went nowhere is the failure this whole flow is designed around.
     """
     organization_id = user.selected_organization_id
     email = normalize_invite_email(request.email)
@@ -2113,6 +2125,24 @@ async def create_invite(
     except InviteConflictError as e:
         raise HTTPException(status_code=409, detail=str(e))
 
+    # The token leaves the server here and nowhere else: it is still not on the
+    # response model, so this stays an emailed invitation rather than becoming
+    # a copy-a-link flow by the back door.
+    base = (PUBLIC_BASE_URL or "").rstrip("/")
+    inviter = user.name or user.email
+    delivered = await send_email(
+        to=invite.email,
+        subject="You have been invited to AICall",
+        html=(
+            f"<p>{html_escape(inviter)} invited you to join their AICall "
+            "organization.</p>"
+            f'<p><a href="{base}/auth/signup?invite={invite.token}">'
+            "Create your account</a></p>"
+            "<p>If you were not expecting this, ignore it -- the invitation "
+            "does nothing until someone signs up with it.</p>"
+        ),
+    )
+
     return OrganizationInviteResponse(
         id=invite.id,
         email=invite.email,
@@ -2120,6 +2150,7 @@ async def create_invite(
         created_at=invite.created_at.isoformat() if invite.created_at else None,
         expires_at=invite.expires_at.isoformat() if invite.expires_at else None,
         invited_by_email=user.email,
+        delivered=delivered,
     )
 
 

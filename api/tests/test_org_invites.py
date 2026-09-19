@@ -92,6 +92,10 @@ async def test_an_admin_can_invite_a_co_admin(monkeypatch):
         role="admin",
         created_at=datetime.now(UTC),
         expires_at=datetime.now(UTC) + timedelta(days=7),
+        # The real model always has one, and the route now puts it in the
+        # emailed link. A stand-in without it diverges from the column that
+        # is NOT NULL on the table.
+        token="tok-abc",
     )
     create = AsyncMock(return_value=created)
     monkeypatch.setattr(org_routes.db_client, "create_invite", create)
