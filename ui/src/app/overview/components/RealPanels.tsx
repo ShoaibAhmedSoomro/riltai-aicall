@@ -173,7 +173,7 @@ export function SpendPanel({
                 !loading && summary === null
                     ? 'Spend could not be loaded.'
                     : summary && spend === null
-                      ? 'No calls have been priced yet. Set a rate card on the Usage page and completed calls will start recording a cost.'
+                      ? 'No calls have been priced yet. Set a rate card in Settings, and completed calls start recording a cost. Text chats are never priced: the rate card is per minute of talk time.'
                       : undefined
             }
         >

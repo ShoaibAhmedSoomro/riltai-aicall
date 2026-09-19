@@ -230,8 +230,19 @@ async def _price_from_local_rate_card(workflow_run, organization_id: int) -> Non
 async def report_workflow_run_platform_usage(workflow_run) -> None:
     """Report hosted platform usage for a completed workflow run, and store the charge."""
     if getattr(workflow_run, "mode", None) == WorkflowRunMode.TEXTCHAT.value:
+        # This skips LOCAL rate-card pricing too, not just the MPS report --
+        # _price_from_local_rate_card is called below this line. That is
+        # intended: the rate card is priced per minute of TALK TIME, and a text
+        # chat's duration is wall-clock typing time, so billing it at a voice
+        # rate would invent spend. The overview's Spend panel says so rather
+        # than leaving the reader to wonder why a completed run has no cost.
+        #
+        # To price chats, move the _price_from_local_rate_card call above this
+        # guard -- but give them their own rate first, because per-minute is
+        # the wrong unit for a conversation nobody spoke in.
         logger.info(
-            "Skipping platform usage report for text chat workflow run {}",
+            "Skipping platform usage report and local pricing for text chat "
+            "workflow run {}",
             workflow_run.id,
         )
         return
