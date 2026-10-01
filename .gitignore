@@ -31,3 +31,5 @@ docs/superpowers/
 # Runtime state shared between the host cron job and the api container
 # (scripts/maintenance.py). Never source.
 /maintenance/
+# Offsite backup settings written by scripts/setup_offsite_backup.sh
+/backup.env

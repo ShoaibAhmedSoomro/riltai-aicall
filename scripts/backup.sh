@@ -22,9 +22,20 @@
 #                      This is the offsite step, deliberately left to you so no
 #                      provider or credential is baked in here. e.g.
 #                      BACKUP_POST_HOOK='rclone copy "$1" r2:aicall-backups/'
+#   BACKUP_ENV_FILE    a file of the settings above, sourced if it exists
+#                      (default ./backup.env). Needed because cron does not read
+#                      .env, and the offsite hook has to survive being run from
+#                      cron. scripts/setup_offsite_backup.sh writes it.
+#
+# An offsite copy of THIS data must be encrypted before it leaves the host: the
+# dump holds every user's password hash and every API key an organisation has
+# stored. setup_offsite_backup.sh does that with an rclone crypt remote.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+
+# shellcheck disable=SC1090
+[ -f "${BACKUP_ENV_FILE:-./backup.env}" ] && . "${BACKUP_ENV_FILE:-./backup.env}"
 
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
 BACKUP_KEEP_DAYS="${BACKUP_KEEP_DAYS:-14}"
