@@ -88,6 +88,17 @@ function SidebarProvider({
     [setOpenProp, open]
   )
 
+  // Restore the saved choice. Done after mount, not in the initial state, so
+  // the server render and the first client render still agree.
+  React.useEffect(() => {
+    if (openProp !== undefined) return
+    const saved = document.cookie
+      .split("; ")
+      .find((c) => c.startsWith(`${SIDEBAR_COOKIE_NAME}=`))
+      ?.split("=")[1]
+    if (saved === "true" || saved === "false") _setOpen(saved === "true")
+  }, [openProp])
+
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
@@ -256,6 +267,7 @@ function Sidebar({
 function SidebarTrigger({
   className,
   onClick,
+  children,
   ...props
 }: React.ComponentProps<typeof Button>) {
   const { toggleSidebar } = useSidebar()
@@ -273,7 +285,7 @@ function SidebarTrigger({
       }}
       {...props}
     >
-      <PanelLeftIcon />
+      {children ?? <PanelLeftIcon />}
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   )

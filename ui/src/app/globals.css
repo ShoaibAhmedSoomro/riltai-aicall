@@ -223,6 +223,25 @@
   .app-surface {
     background-color: var(--background);
   }
+
+  /* Headline KPI cards (StatCard variant). Self-contained: white text on a
+     fixed gradient, so they read the same in light and dark. The lift at the
+     bottom-left is where the figure sits. */
+  .card-grad-purple {
+    background:
+      radial-gradient(120% 90% at 0% 110%, rgb(196 170 255 / 0.85), transparent 55%),
+      linear-gradient(135deg, #5a0ee0 0%, #7a22f4 55%, #8f4df5 100%);
+  }
+  .card-grad-blue {
+    background:
+      radial-gradient(120% 90% at 0% 110%, rgb(160 195 255 / 0.85), transparent 55%),
+      linear-gradient(135deg, #1b45d8 0%, #2b64f2 55%, #3b7bff 100%);
+  }
+  .card-grad-ink {
+    background:
+      radial-gradient(90% 70% at 0% 115%, rgb(106 30 220 / 0.7), transparent 60%),
+      linear-gradient(135deg, #0b0b0f 0%, #131318 100%);
+  }
 }
 
 /* Lead-form shell ("Ledger" treatment, user-approved 2026-06-11): neutral

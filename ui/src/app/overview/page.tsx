@@ -115,22 +115,11 @@ export default function OverviewPage() {
                 </p>
             </div>
 
-            {/* ── KPI row. Every tile links to the page that explains it. */}
-            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+            {/* ── Headline figures. Every card links to the page that explains it. */}
+            <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
                 <StatCard
-                    label="Voice agents"
-                    icon={Bot}
-                    href="/workflow"
-                    loading={data.loading && data.agents === null}
-                    unavailable={!data.loading && data.agents === null ? 'Unavailable' : undefined}
-                    value={(data.agents?.total ?? 0).toLocaleString()}
-                    hint={
-                        data.agents
-                            ? `${data.agents.active} active · ${data.agents.archived} archived`
-                            : undefined
-                    }
-                />
-                <StatCard
+                    variant="purple"
+                    caption="Started today"
                     label="Calls today"
                     icon={Phone}
                     href="/reports"
@@ -142,24 +131,8 @@ export default function OverviewPage() {
                     hint="All runs started today"
                 />
                 <StatCard
-                    label={`Calls this week`}
-                    icon={PhoneCall}
-                    href="/usage"
-                    loading={data.loading && data.dayVolume === null}
-                    unavailable={!data.loading && data.dayVolume === null ? 'Unavailable' : undefined}
-                    value={weekTotal.toLocaleString()}
-                    hint="Last 7 days"
-                />
-                <StatCard
-                    label="Calls all time"
-                    icon={Phone}
-                    href="/usage"
-                    loading={data.loading && data.totalCalls === null}
-                    unavailable={!data.loading && data.totalCalls === null ? 'Unavailable' : undefined}
-                    value={(data.totalCalls ?? 0).toLocaleString()}
-                    hint="All runs in the period"
-                />
-                <StatCard
+                    variant="blue"
+                    caption="In progress"
                     label="Live now"
                     icon={Radio}
                     href="/usage"
@@ -183,6 +156,8 @@ export default function OverviewPage() {
                     }
                 />
                 <StatCard
+                    variant="ink"
+                    caption="This billing period"
                     label="Talk time"
                     icon={Clock}
                     href="/usage"
@@ -190,6 +165,39 @@ export default function OverviewPage() {
                     unavailable={!data.loading && data.period === null ? 'Unavailable' : undefined}
                     value={talkTime(data.period?.total_duration_seconds ?? 0)}
                     hint="This billing period"
+                />
+            </div>
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <StatCard
+                    label="Voice agents"
+                    icon={Bot}
+                    href="/workflow"
+                    loading={data.loading && data.agents === null}
+                    unavailable={!data.loading && data.agents === null ? 'Unavailable' : undefined}
+                    value={(data.agents?.total ?? 0).toLocaleString()}
+                    hint={
+                        data.agents
+                            ? `${data.agents.active} active · ${data.agents.archived} archived`
+                            : undefined
+                    }
+                />
+                <StatCard
+                    label={`Calls this week`}
+                    icon={PhoneCall}
+                    href="/usage"
+                    loading={data.loading && data.dayVolume === null}
+                    unavailable={!data.loading && data.dayVolume === null ? 'Unavailable' : undefined}
+                    value={weekTotal.toLocaleString()}
+                    hint="Last 7 days"
+                />
+                <StatCard
+                    label="Calls all time"
+                    icon={Phone}
+                    href="/usage"
+                    loading={data.loading && data.totalCalls === null}
+                    unavailable={!data.loading && data.totalCalls === null ? 'Unavailable' : undefined}
+                    value={(data.totalCalls ?? 0).toLocaleString()}
+                    hint="All runs in the period"
                 />
                 <StatCard
                     label="Campaigns"

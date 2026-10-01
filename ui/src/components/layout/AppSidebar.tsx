@@ -2,11 +2,8 @@
 
 import {
   AlertTriangle,
-  ArrowUpCircle,
   AudioLines,
   Brain,
-  ChevronLeft,
-  ChevronRight,
   CircleDollarSign,
   Database,
   FileText,
@@ -15,6 +12,8 @@ import {
   LogOut,
   type LucideIcon,
   Megaphone,
+  PanelLeftClose,
+  PanelLeftOpen,
   Phone,
   Settings,
   TrendingUp,
@@ -53,11 +52,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { DEPLOYMENT_UPDATE_DOC_URL } from "@/constants/documentation";
-import { useAppConfig } from "@/context/AppConfigContext";
 import { useLeadForms } from "@/context/LeadFormsContext";
 import { useTelephonyConfigWarnings } from "@/context/TelephonyConfigWarningsContext";
-import { useLatestReleaseVersion } from "@/hooks/useLatestReleaseVersion";
 import type { LocalUser } from "@/lib/auth";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -159,7 +155,6 @@ export function AppSidebar() {
   const router = useRouter();
   const { state, isMobile, setOpenMobile } = useSidebar();
   const { provider, logout, user } = useAuth();
-  const { config } = useAppConfig();
   const { openHireExpert } = useLeadForms();
   const {
     telnyxMissingWebhookPublicKeyCount,
@@ -169,15 +164,6 @@ export function AppSidebar() {
     telnyxMissingWebhookPublicKeyCount > 0 ||
     vonageMissingSignatureSecretCount > 0;
   const isCollapsed = !isMobile && state === "collapsed";
-
-  // Version info from app config context
-  const versionInfo = config ? { ui: config.uiVersion, api: config.apiVersion } : null;
-
-  // Check for updates only on self-hosted (OSS) deployments — cloud is managed for the user.
-  const { latest: latestRelease, isBehind, isLatest } = useLatestReleaseVersion(
-    versionInfo?.ui,
-    { enabled: config?.deploymentMode === "oss" },
-  );
 
   const isActive = (path: string) => pathname.startsWith(path);
 
@@ -321,62 +307,30 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader className="px-2 py-3 notranslate" translate="no">
-        <div className="flex items-center justify-between">
-          <div className={cn("flex items-center gap-2", isCollapsed && "hidden")}>
-            <Link
-              href="/"
-              className="notranslate flex items-center gap-2 px-1"
-              translate="no"
-            >
-              <BrandLogo mark className="h-6" />
-              {versionInfo && (
-                <span
-                  className="notranslate text-xs font-normal text-muted-foreground"
-                  translate="no"
-                >
-                  v{versionInfo.ui}
-                </span>
-              )}
-            </Link>
-            {isBehind && latestRelease && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <a
-                    href={DEPLOYMENT_UPDATE_DOC_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 rounded-md border bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium leading-none text-amber-900 transition-opacity hover:opacity-80 dark:bg-amber-950 dark:text-amber-200"
-                  >
-                    <ArrowUpCircle className="h-3 w-3" />
-                    Update
-                  </a>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p>Latest: {latestRelease} - click to see the update guide</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-            {isLatest && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="inline-flex items-center rounded-md border bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium leading-none text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
-                    Latest
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p>You&apos;re running the latest release</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-          </div>
+        <div className={cn("flex items-center justify-between", isCollapsed && "flex-col gap-2")}>
+          <Link
+            href="/"
+            className="notranslate flex items-center gap-2 px-1"
+            translate="no"
+            aria-label="AICall home"
+          >
+            <BrandLogo mark className="h-6" />
+          </Link>
 
-          <SidebarTrigger className={cn("hover:bg-accent", isCollapsed && "mx-auto")}>
-            {isCollapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <ChevronLeft className="h-4 w-4" />
-            )}
-          </SidebarTrigger>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <SidebarTrigger className="hover:bg-accent">
+                {isCollapsed ? (
+                  <PanelLeftOpen className="h-4 w-4" />
+                ) : (
+                  <PanelLeftClose className="h-4 w-4" />
+                )}
+              </SidebarTrigger>
+            </TooltipTrigger>
+            <TooltipContent side={isCollapsed ? "right" : "bottom"}>
+              <p>{isCollapsed ? "Expand" : "Collapse"} sidebar (Ctrl+B)</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         {provider === "stack" && (
