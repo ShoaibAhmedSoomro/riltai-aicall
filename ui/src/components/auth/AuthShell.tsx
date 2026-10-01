@@ -28,9 +28,9 @@ export function AuthShell({
     <div className="grid min-h-screen w-full bg-background lg:grid-cols-[55%_45%]">
       {/* Form column (LEFT) — scrolls and stays centered so tall forms never
           clip. Carries the giant faded "AICall" imprint along its bottom. */}
-      <main className="auth-imprint flex min-h-screen flex-col overflow-y-auto">
+      <main className="flex min-h-screen flex-col overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-6 sm:p-10">
-          <div className="w-full max-w-md space-y-6 rounded-2xl border border-border/60 bg-card p-6 shadow-lg sm:p-8">
+          <div className="w-full max-w-md space-y-6 rounded-lg border bg-card p-6 shadow-md sm:p-8">
             {/* Mobile-only wordmark (brand panel is hidden) */}
             <div className="lg:hidden">
               <BrandLogo className="h-7" />
@@ -45,13 +45,6 @@ export function AuthShell({
           so token consumers inside it (the --cta glow below) must resolve
           against the dark theme or they paint ink on ink in light mode. */}
       <aside className="dark relative hidden flex-col justify-between overflow-hidden border-l border-border/60 bg-zinc-950 p-10 lg:flex xl:p-14">
-        {/* Ambient depth: soft radial glow behind the content */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-24 top-1/3 size-[28rem] rounded-full opacity-20 blur-3xl"
-          style={{ background: "radial-gradient(circle, var(--cta), transparent 70%)" }}
-        />
-
         <div className="relative">
           <BrandLogo inverse className="h-8" />
         </div>

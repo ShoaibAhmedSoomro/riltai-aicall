@@ -38,121 +38,121 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-sm: 4px;
+  --radius-md: var(--radius);
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-cta: var(--cta);
   --color-cta-foreground: var(--cta-foreground);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Palette derived from the brand lockup (logo-rilt/):
-     #000000 / #ffffff   the artwork is pure monochrome — it contains no accent
-
-   So the palette contains none either. Neutrals sit at chroma 0, and the one
-   bold surface is ink: --cta is near-black with white on it, which is the
-   logo's own contrast rather than an invented brand colour. --primary and
-   --foreground are the same ink, so buttons, headings and body text read as one
-   material.
-
-   Contrast was measured (oklch → sRGB → WCAG), not eyeballed. Every text pair
-   clears AA; the ratios are noted inline. Charts are the deliberate exception:
-   categorical series need hue to stay distinguishable, so --chart-* carry a
-   cool ramp that is explicitly NOT part of the brand.
+   Design tokens, taken from the Rilt CRM (packages/ui/src/styles/globals.css):
+   flat white, untinted neutrals, ONE brand green, a 5px radius scale and
+   near-flat shadows. Only two things are ever filled: --primary for the action
+   you want, --destructive for the one you cannot undo; secondary, outline and
+   ghost are quiet chips. --primary is the same value in both themes (a brand
+   colour that changes per theme is two colours); only --ring lightens in dark,
+   because a ring just has to be seen. Charts keep their own categorical ramp.
    ──────────────────────────────────────────────────────────────────────────── */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.205 0 0);          /* 17.9:1 on background */
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.205 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.205 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0); /* 17.2:1 on primary */
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  /* 0.525, not the shadcn default 0.556: at 0.556 this scored 4.34 against
-     --muted and failed AA for body text. Now 4.94 on muted, 5.39 on white. */
-  --muted-foreground: oklch(0.525 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  /* semantic, and the only hue in the non-chart palette: danger must still
-     read as danger even in a monochrome system */
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.205 0 0);
-  /* Categorical ramp — cool, hue-spread so adjacent series stay separable.
-     Not brand colour; deliberately outside the monochrome system. Each clears
-     3:1 against the page for a chart mark (amber is the tight one at 3.17,
-     which is why it sits at L 0.66 rather than a brighter 0.83). */
-  --chart-1: oklch(0.50 0.035 250);       /* slate   5.98:1 */
-  --chart-2: oklch(0.63 0.105 195);       /* teal    3.33:1 */
-  --chart-3: oklch(0.52 0.145 265);       /* indigo  5.64:1 */
-  --chart-4: oklch(0.66 0.125 75);        /* amber   3.17:1 */
-  --chart-5: oklch(0.60 0.165 15);        /* rose    4.30:1 */
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.205 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.205 0 0);
-  /* The one bold move, and it is monochrome: ink CTAs with white on them.
-     17.2:1 — the retired accent could only carry dark text; white on it
-     measured about 2.3:1 and failed AA outright. */
-  --cta: oklch(0.205 0 0);
-  --cta-foreground: oklch(0.985 0 0);
-  /* Giant faded wordmark generated from the real lockup in logo-rilt/, with
-     fill + opacity baked in. Theme-switched here; consumed by .app-surface
-     and .auth-imprint. */
-  --brand-imprint: url("/brand-imprint-light.svg");
+  --radius: 5px;
+  --background: #ffffff;
+  --foreground: #171717;
+  --card: #ffffff;
+  --card-foreground: #171717;
+  --popover: #ffffff;
+  --popover-foreground: #171717;
+  --primary: #006b4f;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f4;
+  --secondary-foreground: #171717;
+  --muted: #f4f4f4;
+  --muted-foreground: #6b6b6b;
+  --accent: #f4f4f4;
+  --accent-foreground: #171717;
+  --destructive: #ae2e24;
+  --destructive-foreground: #ffffff;
+  --success: oklch(0.55 0.13 150);
+  --success-foreground: #ffffff;
+  --warning: oklch(0.62 0.14 65);
+  --warning-foreground: #ffffff;
+  --info: oklch(0.55 0.16 255);
+  --info-foreground: #ffffff;
+  --border: #e2e2e2;
+  --input: #e2e2e2;
+  --ring: #006b4f;
+  --chart-1: #00915f;
+  --chart-2: #2563eb;
+  --chart-3: #b45309;
+  --chart-4: #7c3aed;
+  --chart-5: #0891b2;
+  --sidebar: #fafafa;
+  --sidebar-foreground: #171717;
+  --sidebar-primary: #006b4f;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f4f4f4;
+  --sidebar-accent-foreground: #171717;
+  --sidebar-border: #e2e2e2;
+  --sidebar-ring: #006b4f;
+  /* --cta predates this palette; it is the primary action, so it is --primary. */
+  --cta: var(--primary);
+  --cta-foreground: var(--primary-foreground);
+  --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.04);
+  --shadow-xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.04);
+  --shadow-sm: 0px 1px 2px 0px hsl(0 0% 0% / 0.06);
+  --shadow: 0px 1px 2px 0px hsl(0 0% 0% / 0.06);
+  --shadow-md: 0px 2px 4px -1px hsl(0 0% 0% / 0.08);
+  --shadow-lg: 0px 4px 8px -2px hsl(0 0% 0% / 0.08);
+  --shadow-xl: 0px 8px 16px -4px hsl(0 0% 0% / 0.08);
 }
 
-/* Dark is opt-in (the app defaults to light — see ThemeProvider in
-   app/layout.tsx). Same monochrome family, mirrored: ink and paper
-   swap roles, and the chart ramp lifts to hold against a dark ground. */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);          /* 19.0:1 on background */
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);     /* 17.2:1 on card */
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);    /* 7.6:1 on bg, 6.9:1 on card */
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.985 0 0);
-  /* same ramp, lifted so it holds against a dark ground (all ≥ 6.2:1) */
-  --chart-1: oklch(0.68 0.045 250);
-  --chart-2: oklch(0.74 0.105 195);
-  --chart-3: oklch(0.66 0.145 265);
-  --chart-4: oklch(0.83 0.135 75);
-  --chart-5: oklch(0.70 0.165 15);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.985 0 0);
-  --sidebar-primary-foreground: oklch(0.205 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.985 0 0);
-  /* inverted: white CTA carrying ink, the mirror of the light theme */
-  --cta: oklch(0.985 0 0);
-  --cta-foreground: oklch(0.205 0 0);
-  --brand-imprint: url("/brand-imprint-dark.svg");
+  --background: #0f0f0f;
+  --foreground: #f5f5f5;
+  --card: #171717;
+  --card-foreground: #f5f5f5;
+  --popover: #171717;
+  --popover-foreground: #f5f5f5;
+  --primary: #006b4f;
+  --primary-foreground: #ffffff;
+  --secondary: #1f1f1f;
+  --secondary-foreground: #f5f5f5;
+  --muted: #1f1f1f;
+  --muted-foreground: #a0a0a0;
+  --accent: #292929;
+  --accent-foreground: #f5f5f5;
+  --destructive: #ae2e24;
+  --destructive-foreground: #ffffff;
+  --success: oklch(0.72 0.16 155);
+  --success-foreground: oklch(0.205 0 0);
+  --warning: oklch(0.8 0.15 75);
+  --warning-foreground: oklch(0.205 0 0);
+  --info: oklch(0.7 0.15 250);
+  --info-foreground: oklch(0.205 0 0);
+  --border: #2a2a2a;
+  --input: #2a2a2a;
+  --ring: #40be96;
+  --chart-1: #0fa871;
+  --chart-2: #4b87f0;
+  --chart-3: #c07e22;
+  --chart-4: #9b7bf0;
+  --chart-5: #1e93b8;
+  --sidebar: #171717;
+  --sidebar-foreground: #f5f5f5;
+  --sidebar-primary: #006b4f;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #292929;
+  --sidebar-accent-foreground: #f5f5f5;
+  --sidebar-border: #2a2a2a;
+  --sidebar-ring: #40be96;
 }
 
 @layer base {
@@ -218,81 +218,11 @@
 }
 
 @layer components {
-  /* Matte app background — flat charcoal (dark) / soft paper (light), NO
-     gradients, with one subtle graphic in BOTH themes: the giant faded
-     "AICall" wordmark (--brand-imprint, defined in :root/.dark) pinned to
-     the bottom of the viewport, echoing the rilt.ai footer. */
-  /* NOTE: background-attachment: fixed positions in VIEWPORT space but only
-     paints inside .app-surface, which starts right of the ~270px sidebar —
-     the +135px x-shift recentres the wordmark on the VISIBLE canvas. */
+  /* Flat page ground. The giant faded wordmark that used to sit here is gone:
+     the CRM it is modelled on has no decoration behind its content. */
   .app-surface {
-    background-color: oklch(0.985 0 0);
-    background-image: var(--brand-imprint);
-    background-size: min(68vw, 980px) auto;
-    background-position: calc(50% + 135px) calc(100% - 24px);
-    background-repeat: no-repeat;
-    background-attachment: fixed;
+    background-color: var(--background);
   }
-  /* Sidebar is offcanvas on small screens — true centre there. */
-  @media (max-width: 767px) {
-    .app-surface {
-      background-position: center calc(100% - 24px);
-    }
-  }
-  .dark .app-surface {
-    background-color: oklch(0.165 0 0);
-  }
-
-  /* Giant faded "AICall" imprint for the auth pages (applied to the AuthShell
-     form column, shared by Stack + OSS login/signup). Same --brand-imprint as
-     .app-surface; element-relative here (no fixed attachment), so it centers
-     and scales to whatever element carries the class. */
-  .auth-imprint {
-    background-image: var(--brand-imprint);
-    background-size: min(86%, 920px) auto;
-    background-position: center calc(100% - 32px);
-    background-repeat: no-repeat;
-  }
-
-}
-
-/* ---------------------------------------------------------------------------
-   UN-LAYERED overrides. These intentionally live OUTSIDE @layer blocks:
-   they restyle elements that carry Tailwind utility classes (bg-sidebar,
-   rounded-lg, shadow-sm, border-*) and utilities sit in a later cascade
-   layer than @layer components — un-layered author CSS beats both.
---------------------------------------------------------------------------- */
-
-/* Floating-dock sidebar: detached rounded panel. Targets the shadcn sidebar's
-   inner panel; applied via .app-sidebar-dock on <Sidebar variant="floating">. */
-.app-sidebar-dock [data-slot="sidebar-inner"] {
-  border-radius: 1.25rem;
-  overflow: hidden;
-}
-/* Flat carbon-charcoal panel with a soft light glow along the LEFT edge:
-   a 1px highlight line plus an inner bloom fading rightwards. */
-.dark .app-sidebar-dock [data-slot="sidebar-inner"] {
-  border-color: rgb(255 255 255 / 0.1);
-  background-color: oklch(0.18 0.002 80);
-  box-shadow:
-    inset 1px 0 0 rgb(255 255 255 / 0.1),
-    inset 3px 0 6px -4px rgb(255 255 255 / 0.08),
-    0 24px 50px -14px rgb(0 0 0 / 0.85);
-}
-
-/* Card surface ("Crosshatch + Top-Lit Edge", user-approved 2026-06-11 after a
-   3-round design board): a 45° hairline twill weave at 1% laid over the panel
-   colour, plus — dark mode only — a brighter SOLID top border, like light
-   catching the machined top edge of the panel. Applied app-wide by the Card
-   primitive (components/ui/card.tsx). Un-layered so border-top-color beats
-   the border-border/60 utility. No gradients (user constraint). */
-.card-weave {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath d='M0 0l12 12M12 0L0 12' stroke='%23000000' stroke-opacity='.015' fill='none'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-}
-.dark .card-weave {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath d='M0 0l12 12M12 0L0 12' stroke='%23ffffff' stroke-opacity='.01' fill='none'/%3E%3C/svg%3E");
-  border-top-color: rgb(255 255 255 / 0.2);
 }
 
 /* Lead-form shell ("Ledger" treatment, user-approved 2026-06-11): neutral
