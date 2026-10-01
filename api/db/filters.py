@@ -48,7 +48,7 @@ ATTRIBUTE_FIELD_MAPPING = {
     "status": "is_completed",
     # Named for what it filtered before anything wrote the key. It has
     # always pointed at cost_info.total_cost_usd, which now holds money;
-    # the UI labels it "Cost (USD)". The id stays because it is a wire
+    # the UI labels it "Cost (AED)". The id stays because it is a wire
     # value -- it appears in saved filter state.
     "tokenUsage": "cost_info.total_cost_usd",
     "runId": "id",

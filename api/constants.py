@@ -64,6 +64,15 @@ DATABASE_URL = os.environ["DATABASE_URL"]
 REDIS_URL = os.environ["REDIS_URL"]
 
 DEPLOYMENT_MODE = os.getenv("DEPLOYMENT_MODE", "oss")
+
+# The currency every money figure in this product is in. UAE dirham. The wire
+# fields keep their `*_usd` names (price_per_minute_usd, total_cost_usd, ...)
+# because renaming a contract would break saved filters and API clients; the
+# NAME is historical, the UNIT is this currency. The UI draws the dirham sign
+# for it, so it is a single value rather than a per-org setting.
+# ponytail: one currency. Per-org currency would need the UI to pick the sign
+# from the value instead of hardcoding it.
+BILLING_CURRENCY = "AED"
 CORS_ALLOWED_ORIGINS = [
     o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()
 ]

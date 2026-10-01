@@ -24,7 +24,7 @@ from typing import Any
 
 from loguru import logger
 
-from api.constants import DEPLOYMENT_MODE
+from api.constants import BILLING_CURRENCY, DEPLOYMENT_MODE
 from api.db import db_client
 from api.enums import OrganizationConfigurationKey, WorkflowRunMode
 from api.services.managed_model_services import get_mps_correlation_id
@@ -167,7 +167,7 @@ async def _rate_card_for_organization(organization_id: int) -> dict | None:
         return None
     return {
         "price_per_minute_usd": rate,
-        "currency": str(value.get("currency") or "USD").upper(),
+        "currency": str(value.get("currency") or BILLING_CURRENCY).upper(),
     }
 
 

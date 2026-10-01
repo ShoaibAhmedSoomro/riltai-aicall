@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { PostHogEvent } from "@/constants/posthog-events";
-import { MAX_TOPUP_USD, MIN_TOPUP_USD, startTopUp, TOPUP_PRESETS } from "@/lib/billing/topup";
+import { MAX_TOPUP_AED, MIN_TOPUP_AED, startTopUp, TOPUP_PRESETS } from "@/lib/billing/topup";
+import { DirhamSign, formatMoney, Money } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
 // Round to whole cents and reject non-positive / non-finite input so a typo
@@ -34,7 +35,7 @@ export function BuyCreditsControl({ className }: { className?: string }) {
   // The effective amount: a parsed custom value takes precedence when present.
   const customAmount = custom.trim() ? parseAmount(custom) : null;
   const amount = customAmount ?? selected;
-  const valid = amount != null && amount >= MIN_TOPUP_USD && amount <= MAX_TOPUP_USD;
+  const valid = amount != null && amount >= MIN_TOPUP_AED && amount <= MAX_TOPUP_AED;
 
   const selectPreset = (value: number) => {
     setSelected(value);
@@ -48,7 +49,7 @@ export function BuyCreditsControl({ className }: { className?: string }) {
     setSelected(null);
     setError(null);
     const parsed = parseAmount(raw);
-    if (parsed != null && parsed >= MIN_TOPUP_USD && parsed <= MAX_TOPUP_USD) {
+    if (parsed != null && parsed >= MIN_TOPUP_AED && parsed <= MAX_TOPUP_AED) {
       posthog.capture(PostHogEvent.BUY_CREDITS_AMOUNT_SELECTED, { amount: parsed });
     }
   };
@@ -84,7 +85,7 @@ export function BuyCreditsControl({ className }: { className?: string }) {
       <PopoverContent align="end" className="w-72 space-y-3">
         <div className="space-y-0.5">
           <p className="text-sm font-medium">Top up credits</p>
-          <p className="text-xs text-muted-foreground">Pick an amount (min ${MIN_TOPUP_USD}).</p>
+          <p className="text-xs text-muted-foreground">Pick an amount (min <Money value={MIN_TOPUP_AED} />).</p>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -100,20 +101,20 @@ export function BuyCreditsControl({ className }: { className?: string }) {
                 selected === value && "border-cta bg-cta/10 text-foreground ring-1 ring-cta/40",
               )}
             >
-              ${value}
+              <Money value={value} maxDecimals={0} />
             </button>
           ))}
           <div className="relative">
             <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-              $
+              <DirhamSign />
             </span>
             <Input
               inputMode="decimal"
               value={custom}
               onChange={(e) => onCustomChange(e.target.value)}
               placeholder="Custom"
-              aria-label={`Custom amount (min $${MIN_TOPUP_USD})`}
-              className="h-9 w-24 pl-5"
+              aria-label={`Custom amount (min ${formatMoney(MIN_TOPUP_AED, { maxDecimals: 0 })})`}
+              className="h-9 w-24 pl-7"
             />
           </div>
         </div>
@@ -126,7 +127,7 @@ export function BuyCreditsControl({ className }: { className?: string }) {
           disabled={!valid || busy}
           className="w-full bg-cta text-cta-foreground shadow-xs hover:bg-cta/90 focus-visible:ring-cta/50"
         >
-          {busy ? "Starting…" : valid && amount != null ? `Buy $${amount}` : "Buy Credits"}
+          {busy ? "Starting…" : valid && amount != null ? `Buy ${formatMoney(amount, { maxDecimals: 2 })}` : "Buy Credits"}
         </Button>
       </PopoverContent>
     </Popover>

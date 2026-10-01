@@ -4,6 +4,7 @@ from typing import List, Literal, Optional, TypedDict, Union
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ValidationError
 
+from api.constants import BILLING_CURRENCY
 from api.db import db_client
 from api.db.models import (
     UserModel,
@@ -156,7 +157,7 @@ async def get_user_configurations(
         if org and org.price_per_second_usd is not None:
             masked_config["organization_pricing"] = {
                 "price_per_second_usd": org.price_per_second_usd,
-                "currency": "USD",
+                "currency": BILLING_CURRENCY,
                 "billing_enabled": True,
             }
 
@@ -251,7 +252,7 @@ async def update_user_configurations(
         if org and org.price_per_second_usd is not None:
             masked_config["organization_pricing"] = {
                 "price_per_second_usd": org.price_per_second_usd,
-                "currency": "USD",
+                "currency": BILLING_CURRENCY,
                 "billing_enabled": True,
             }
 

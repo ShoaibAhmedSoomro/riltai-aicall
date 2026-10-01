@@ -26,6 +26,7 @@ import {
 import { useDispositionCodes } from '@/hooks/useDispositionCodes';
 import { detailFromError } from '@/lib/apiError';
 import { useAuth } from '@/lib/auth';
+import { Money } from '@/lib/currency';
 import { formatDateTime, getLocalTimezone } from '@/lib/dateTime';
 import { usageFilterAttributes, withDispositionCodeOptions } from '@/lib/filterAttributes';
 import { decodeFiltersFromURL, encodeFiltersToURL } from '@/lib/filters';
@@ -445,15 +446,9 @@ export default function UsagePage() {
         return `${minutes}m ${remainingSeconds}s`;
     };
 
-    // Two decimals rounds a short call at a per-minute rate down to $0.00, so
+    // Two decimals rounds a short call at a per-minute rate down to 0.00, so
     // allow four and let Intl drop the ones it doesn't need.
-    const usd = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 4,
-    });
-    const formatUsd = (amount: number) => usd.format(amount);
+    const formatUsd = (amount: number) => <Money value={amount} maxDecimals={4} />;
 
     // The Cost column used to follow organizations.price_per_second_usd, a
     // column no code path writes, so it never appeared. Follow the data: if a

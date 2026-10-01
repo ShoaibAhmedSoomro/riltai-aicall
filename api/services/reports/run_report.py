@@ -10,6 +10,7 @@ import io
 from datetime import UTC, datetime
 from typing import Any, List, Optional
 
+from api.constants import BILLING_CURRENCY
 from api.db import db_client
 from api.utils.artifacts import artifact_url
 
@@ -42,7 +43,7 @@ def build_run_report_csv(runs: List[Any]) -> io.StringIO:
         "Phone Number",
         "Call Disposition",
         "Call Duration (s)",
-        "Cost (USD)",
+        f"Cost ({BILLING_CURRENCY})",
     ]
     post_headers = [
         "Call Tags",

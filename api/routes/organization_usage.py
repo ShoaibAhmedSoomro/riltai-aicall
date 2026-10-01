@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from api.constants import DEPLOYMENT_MODE, UI_APP_URL
+from api.constants import BILLING_CURRENCY, DEPLOYMENT_MODE, UI_APP_URL
 from api.db import db_client
 from api.db.models import UserModel
 from api.enums import OrganizationConfigurationKey
@@ -579,7 +579,7 @@ async def get_daily_usage_breakdown(
             # reporting the week as having cost nothing.
             total_cost_usd=(round(total_cost, 6) if total_cost is not None else None),
             total_rilt_tokens=round((total_cost or 0.0) * 100, 2),
-            currency="USD" if total_cost is not None else None,
+            currency=BILLING_CURRENCY if total_cost is not None else None,
         )
     except HTTPException:
         raise
@@ -610,7 +610,7 @@ class UsageRateCardRequest(BaseModel):
     price_per_minute_usd: float = Field(gt=0, le=100)
     # ISO 4217 is three letters. Rejected rather than coerced, so a stored
     # currency always means something to whatever formats it later.
-    currency: str = Field(default="USD", pattern=r"^[A-Za-z]{3}$")
+    currency: str = Field(default=BILLING_CURRENCY, pattern=r"^[A-Za-z]{3}$")
 
 
 def _rate_card_response(value: dict | None) -> UsageRateCardResponse:
@@ -628,7 +628,7 @@ def _rate_card_response(value: dict | None) -> UsageRateCardResponse:
     return UsageRateCardResponse(
         configured=True,
         price_per_minute_usd=rate,
-        currency=str((value or {}).get("currency") or "USD").upper(),
+        currency=str((value or {}).get("currency") or BILLING_CURRENCY).upper(),
         applies_to_this_deployment=applies,
     )
 
@@ -668,9 +668,16 @@ async def save_usage_rate_card(
     if not user.selected_organization_id:
         raise HTTPException(status_code=400, detail="No organization selected")
 
+    # One currency product-wide (see BILLING_CURRENCY). Refused rather than
+    # coerced: a rate typed as dollars and stored as dirhams is a 3.67x error.
+    if request.currency.upper() != BILLING_CURRENCY:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Prices are in {BILLING_CURRENCY}; enter the rate in {BILLING_CURRENCY}.",
+        )
     value = {
         "price_per_minute_usd": request.price_per_minute_usd,
-        "currency": request.currency.upper(),
+        "currency": BILLING_CURRENCY,
     }
     await db_client.upsert_configuration(
         user.selected_organization_id,

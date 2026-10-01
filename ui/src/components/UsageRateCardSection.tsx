@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { detailFromError } from "@/lib/apiError";
 import { useAuth } from "@/lib/auth";
+import { BILLING_CURRENCY, Money } from "@/lib/currency";
 
 export function UsageRateCardSection() {
   const { user, loading: authLoading } = useAuth();
@@ -69,7 +70,7 @@ export function UsageRateCardSection() {
     setSaving(true);
     try {
       const response = await saveUsageRateCardApiV1OrganizationsUsageRateCardPut({
-        body: { price_per_minute_usd: parsed, currency: card?.currency || "USD" },
+        body: { price_per_minute_usd: parsed, currency: BILLING_CURRENCY },
       });
       if (response.error) {
         // A member gets 403 here. Say so rather than showing a generic failure
@@ -124,7 +125,7 @@ export function UsageRateCardSection() {
     <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="price_per_minute_usd" className="text-xs">
-          Price per minute (USD)
+          Price per minute (AED)
         </Label>
         <div className="flex items-center gap-2">
           <Input
@@ -133,7 +134,7 @@ export function UsageRateCardSection() {
             step="0.001"
             min="0"
             max="100"
-            placeholder="e.g. 0.05"
+            placeholder="e.g. 0.35"
             value={rate}
             disabled={readOnly}
             onChange={(e) => setRate(e.target.value)}
@@ -150,7 +151,7 @@ export function UsageRateCardSection() {
           <p>
             Calls are costed at{" "}
             <span className="font-medium text-foreground">
-              ${card.price_per_minute_usd}/min
+              <Money value={card.price_per_minute_usd!} maxDecimals={4} />/min
             </span>
             . Only calls completed after a change use the new rate — existing
             calls keep what they were costed at, so a report does not change
@@ -160,7 +161,7 @@ export function UsageRateCardSection() {
           <p>
             <span className="font-medium text-foreground">No price set.</span>{" "}
             Cost columns and spend figures stay empty until you set one. They
-            show empty rather than $0.00 on purpose: zero would say your calls
+            show empty rather than 0.00 on purpose: zero would say your calls
             were free.
           </p>
         )}

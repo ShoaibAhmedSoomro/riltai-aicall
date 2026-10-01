@@ -682,7 +682,7 @@ async def test_the_period_meter_measures_instead_of_reading_a_dead_column(
 
     assert usage["total_duration_seconds"] == 120
     assert usage["used_amount_usd"] == pytest.approx(0.20)
-    assert usage["currency"] == "USD"
+    assert usage["currency"] == "AED"
     # Cost in cents, the unit "rilt tokens" means everywhere else.
     assert usage["used_dograh_tokens"] == pytest.approx(20.0)
 
@@ -1251,7 +1251,7 @@ def test_the_csv_carries_the_cost_and_leaves_it_blank_when_unpriced():
             .splitlines()
         )
     )
-    cost = rows[0].index("Cost (USD)")
+    cost = rows[0].index("Cost (AED)")
     assert [r[cost] for r in rows[1:]] == ["0.1", "", ""]
 
 

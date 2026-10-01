@@ -33,7 +33,7 @@ const UNSET = { configured: false, applies_to_this_deployment: true };
 const SET = {
     configured: true,
     price_per_minute_usd: 0.05,
-    currency: 'USD',
+    currency: 'AED',
     applies_to_this_deployment: true,
 };
 
@@ -59,7 +59,7 @@ describe('UsageRateCardSection', () => {
     it('shows the configured rate', async () => {
         getRateCard.mockResolvedValue({ data: SET });
         render(<UsageRateCardSection />);
-        await waitFor(() => expect(screen.getByText(/\$0\.05\/min/)).toBeDefined());
+        await waitFor(() => expect(screen.getByText(/0\.05/)).toBeDefined());
     });
 
     it('prefills the input so saving is an edit, not a re-entry', async () => {

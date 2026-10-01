@@ -18,6 +18,7 @@ from api.db.models import (
     WorkflowModel,
     WorkflowRunModel,
 )
+from api.constants import BILLING_CURRENCY
 from api.enums import OrganizationConfigurationKey
 from api.utils.recording_artifacts import get_recording_storage_key
 
@@ -166,7 +167,7 @@ class OrganizationUsageClient(BaseDBClient):
         # treats as "no cost source", and it renders nothing rather than $0.00.
         if total_charge_usd is not None:
             result["used_amount_usd"] = total_charge_usd
-            result["currency"] = "USD"
+            result["currency"] = BILLING_CURRENCY
 
         return result
 
@@ -499,7 +500,7 @@ class OrganizationUsageClient(BaseDBClient):
                 "total_minutes": round(total_minutes, 1),
                 "total_cost_usd": round(total_cost_usd, 2),
                 "total_rilt_tokens": round(total_rilt_tokens, 0),
-                "currency": "USD",
+                "currency": BILLING_CURRENCY,
             }
 
     def _calculate_current_period(self) -> tuple[datetime, datetime]:

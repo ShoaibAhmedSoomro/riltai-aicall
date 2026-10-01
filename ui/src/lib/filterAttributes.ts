@@ -62,16 +62,16 @@ export const baseFilterAttributes: Record<string, Omit<FilterAttribute, "id">> =
   // Usage" label was never contradicted by a result.
   tokenUsage: {
     type: "numberRange",
-    label: "Cost (USD)",
+    label: "Cost (AED)",
     config: {
       min: 0,
       max: 100,
       step: 0.01,
-      unit: "USD",
+      unit: "AED",
       numberPresets: [
-        { label: "< $0.10", min: 0, max: 0.1 },
-        { label: "$0.10-$1", min: 0.1, max: 1 },
-        { label: "> $1", min: 1, max: 100 },
+        { label: "< 0.50 AED", min: 0, max: 0.5 },
+        { label: "0.50-5 AED", min: 0.5, max: 5 },
+        { label: "> 5 AED", min: 5, max: 100 },
       ],
     },
   },

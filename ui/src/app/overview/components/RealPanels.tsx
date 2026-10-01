@@ -2,6 +2,7 @@
 
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import {
     Area,
     AreaChart,
@@ -26,6 +27,7 @@ import type {
     UsageSeriesResponse,
     UsageSummaryResponse,
 } from '@/client/types.gen';
+import { Money } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 
 import { Panel } from './Panel';
@@ -41,7 +43,7 @@ import { Panel } from './Panel';
  * never drawn as zero. `total_charge_usd` is null when nothing was priced,
  * `answer_rate_pct` is null when there were no calls to answer. Each of those
  * gets a sentence saying what would fill it -- Panel's `empty` prop -- rather
- * than a $0.00 or a 0% that reads as measured.
+ * than a 0.00 or a 0% that reads as measured.
  *
  * A delta is only shown against `summary.previous`, an equal-length window
  * immediately before the current one that arrives from the same query. No
@@ -51,14 +53,8 @@ import { Panel } from './Panel';
 
 const WINDOW = 'Last 30 days';
 
-const usdFmt = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    // At a per-minute rate a short call rounds to $0.00 at two decimals.
-    maximumFractionDigits: 4,
-});
-const money = (n: number) => usdFmt.format(n);
+// At a per-minute rate a short call rounds to 0.00 at two decimals, so allow four.
+const money = (n: number) => <Money value={n} maxDecimals={4} />;
 
 const int = (n: number) => n.toLocaleString();
 
@@ -92,7 +88,7 @@ function FooterStat({
     invert = false,
 }: {
     label: string;
-    value: string;
+    value: ReactNode;
     pct?: number | null;
     invert?: boolean;
 }) {

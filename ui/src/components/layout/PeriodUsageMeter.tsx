@@ -9,6 +9,7 @@ import { getCurrentPeriodUsageApiV1OrganizationsUsageCurrentPeriodGet } from "@/
 import type { CurrentUsageResponse } from "@/client/types.gen";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/lib/auth";
+import { formatMoney, Money } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
 // These deliberately do NOT reuse the page-local helpers elsewhere in the app,
@@ -34,20 +35,6 @@ export function formatDuration(seconds: number): string {
     return `${hours}h ${String(Math.round(minutes % 60)).padStart(2, "0")}m`;
 }
 
-export function formatMoney(amount: number, currency: string | null | undefined): string {
-    const code = (currency || "USD").toUpperCase();
-    try {
-        return new Intl.NumberFormat(undefined, {
-            style: "currency",
-            currency: code,
-            maximumFractionDigits: amount < 10 ? 2 : 0,
-        }).format(amount);
-    } catch {
-        // Intl throws on a currency code it does not know; the number still
-        // carries the useful information.
-        return `${amount.toFixed(2)} ${code}`;
-    }
-}
 
 export function formatPeriod(start: string, end: string): string | null {
     const from = new Date(start);
@@ -117,10 +104,11 @@ export function PeriodUsageMeter({ className }: { className?: string }) {
     if (!usage) return null;
 
     const duration = formatDuration(usage.total_duration_seconds);
-    const spend =
+    const spendAmount =
         typeof usage.used_amount_usd === "number" && usage.used_amount_usd > 0
-            ? formatMoney(usage.used_amount_usd, usage.currency)
+            ? usage.used_amount_usd
             : null;
+    const spend = spendAmount !== null ? formatMoney(spendAmount, { maxDecimals: spendAmount < 10 ? 2 : 0 }) : null;
     const period = formatPeriod(usage.period_start, usage.period_end);
 
     return (
@@ -144,7 +132,9 @@ export function PeriodUsageMeter({ className }: { className?: string }) {
                                 10% in the dark theme, which made the separator
                                 read as a rendering artefact rather than a divider. */}
                             <span aria-hidden className="text-muted-foreground/70">·</span>
-                            <span className="hidden font-medium sm:inline">{spend}</span>
+                            <span className="hidden font-medium sm:inline">
+                                <Money value={spendAmount!} maxDecimals={spendAmount! < 10 ? 2 : 0} />
+                            </span>
                         </>
                     )}
                 </Link>
@@ -157,7 +147,12 @@ export function PeriodUsageMeter({ className }: { className?: string }) {
                         cost in cents, so printing both showed one figure twice
                         in two units. */}
                     {duration} of calls
-                    {spend ? ` · ${spend}` : ""}
+                    {spendAmount !== null && (
+                        <>
+                            {" · "}
+                            <Money value={spendAmount} maxDecimals={spendAmount < 10 ? 2 : 0} />
+                        </>
+                    )}
                 </p>
             </TooltipContent>
         </Tooltip>

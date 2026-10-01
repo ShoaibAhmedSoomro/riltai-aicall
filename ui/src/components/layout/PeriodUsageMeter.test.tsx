@@ -11,7 +11,7 @@ vi.mock('@/client/sdk.gen', () => ({
 vi.mock('@/lib/auth', () => ({ useAuth: () => useAuth() }));
 vi.mock('next/navigation', () => ({ usePathname: () => '/overview' }));
 
-import { formatDuration, formatMoney, formatPeriod, PeriodUsageMeter } from './PeriodUsageMeter';
+import { formatDuration, formatPeriod, PeriodUsageMeter } from './PeriodUsageMeter';
 
 const usage = {
     period_start: '2026-09-01T00:00:00Z',
@@ -49,19 +49,6 @@ describe('period usage formatting', () => {
         }
     });
 
-    it('formats money in the given currency and defaults to USD', () => {
-        expect(formatMoney(1.5, 'USD')).toContain('1.50');
-        expect(formatMoney(1.5, null)).toContain('1.50');
-        expect(formatMoney(1.5, 'usd')).toContain('1.50');
-    });
-
-    it('survives a currency code Intl does not know', () => {
-        // Intl.NumberFormat throws a RangeError on an invalid code; the amount
-        // still has to reach the operator.
-        const out = formatMoney(12.34, 'NOTACURRENCY');
-        expect(out).toContain('12.34');
-        expect(out).toContain('NOTACURRENCY');
-    });
 
     it('returns null for an unparseable period instead of "Invalid Date"', () => {
         expect(formatPeriod('not-a-date', 'also-not')).toBeNull();
@@ -96,13 +83,14 @@ describe('PeriodUsageMeter', () => {
 
     it('adds spend only when the period is actually priced', async () => {
         getCurrentPeriodUsage.mockResolvedValue({
-            data: { ...usage, used_amount_usd: 4.2, currency: 'USD' },
+            data: { ...usage, used_amount_usd: 4.2, currency: 'AED' },
             error: undefined,
         });
         await renderAndSettle();
 
         expect(await screen.findByText('12 min')).toBeDefined();
         expect(screen.getByText(/4\.20/)).toBeDefined();
+        expect(screen.getByRole('img', { name: 'AED' })).toBeDefined();
     });
 
     it('renders nothing for a BYOK install with no priced amount', async () => {
@@ -110,7 +98,7 @@ describe('PeriodUsageMeter', () => {
         await renderAndSettle();
 
         // duration still shows, but no currency figure is invented
-        expect(screen.queryByText(/\$/)).toBeNull();
+        expect(screen.queryByRole('img', { name: 'AED' })).toBeNull();
     });
 
     // The generated client RESOLVES on 4xx/5xx rather than throwing, so an

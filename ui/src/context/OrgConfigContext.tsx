@@ -9,6 +9,7 @@ import { setupAuthInterceptor } from '@/lib/apiClient';
 import { detailFromError } from '@/lib/apiError';
 import type { AuthUser } from '@/lib/auth';
 import { useAuth } from '@/lib/auth';
+import { BILLING_CURRENCY } from '@/lib/currency';
 
 interface TeamPermission {
     id: string;
@@ -44,7 +45,7 @@ const pricingFromUserConfig = (
 
     return {
         price_per_second_usd: userConfig.organization_pricing.price_per_second_usd as number | null,
-        currency: (userConfig.organization_pricing.currency as string) || 'USD',
+        currency: (userConfig.organization_pricing.currency as string) || BILLING_CURRENCY,
         billing_enabled: (userConfig.organization_pricing.billing_enabled as boolean) || false,
     };
 };
