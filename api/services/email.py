@@ -16,7 +16,7 @@ worse than an error, because the user waits instead of retrying.
 import httpx
 from loguru import logger
 
-from api.constants import EMAIL_FROM, RESEND_API_KEY
+from api.constants import EMAIL_FROM, PUBLIC_BASE_URL, RESEND_API_KEY
 
 _ENDPOINT = "https://api.resend.com/emails"
 _TIMEOUT_SECONDS = 10.0
@@ -28,10 +28,17 @@ def email_is_configured() -> bool:
     Read this before offering a flow that depends on delivery, so the UI can
     say "email is not set up" instead of accepting a request that goes nowhere.
     """
-    return bool(RESEND_API_KEY and EMAIL_FROM)
+    # PUBLIC_BASE_URL is part of "configured" because every message we send is
+    # built around a link, and without a base the link is a relative path that
+    # goes nowhere from an inbox. Treating that as unconfigured gives the same
+    # honest "not sent" as a missing key, instead of a crash after an invitation
+    # row has already been written.
+    return bool(RESEND_API_KEY and EMAIL_FROM and PUBLIC_BASE_URL)
 
 
-async def send_email(*, to: str, subject: str, html: str) -> bool:
+async def send_email(
+    *, to: str, subject: str, html: str, text: str | None = None
+) -> bool:
     """Send one message. Returns whether it was accepted for delivery.
 
     Never raises: this is called from request handlers and background jobs
@@ -49,7 +56,15 @@ async def send_email(*, to: str, subject: str, html: str) -> bool:
             response = await client.post(
                 _ENDPOINT,
                 headers={"Authorization": f"Bearer {RESEND_API_KEY}"},
-                json={"from": EMAIL_FROM, "to": [to], "subject": subject, "html": html},
+                json={
+                    "from": EMAIL_FROM,
+                    "to": [to],
+                    "subject": subject,
+                    "html": html,
+                    # A text part is not decoration: without one, spam filters
+                    # score the message down and text-only clients show raw HTML.
+                    **({"text": text} if text else {}),
+                },
             )
     except Exception as exc:
         # Provider unreachable, DNS, timeout. The caller degrades; the address

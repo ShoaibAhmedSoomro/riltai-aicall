@@ -1,5 +1,4 @@
 from copy import deepcopy
-from html import escape as html_escape
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -83,7 +82,8 @@ from api.services.configuration.ai_model_configuration import (
     upsert_organization_ai_model_configuration_v2,
 )
 from api.services.configuration.check_validity import UserConfigurationValidator
-from api.services.email import send_email
+from api.services.email import email_is_configured, send_email
+from api.services.email_templates import render_email
 from api.services.configuration.defaults import DEFAULT_SERVICE_PROVIDERS
 from api.services.configuration.masking import is_mask_of, mask_key, mask_user_config
 from api.services.configuration.registry import (
@@ -2128,20 +2128,34 @@ async def create_invite(
     # The token leaves the server here and nowhere else: it is still not on the
     # response model, so this stays an emailed invitation rather than becoming
     # a copy-a-link flow by the back door.
-    base = (PUBLIC_BASE_URL or "").rstrip("/")
-    inviter = user.name or user.email
-    delivered = await send_email(
-        to=invite.email,
-        subject="You have been invited to AICall",
-        html=(
-            f"<p>{html_escape(inviter)} invited you to join their AICall "
-            "organization.</p>"
-            f'<p><a href="{base}/auth/signup?invite={invite.token}">'
-            "Create your account</a></p>"
-            "<p>If you were not expecting this, ignore it -- the invitation "
-            "does nothing until someone signs up with it.</p>"
-        ),
-    )
+    #
+    # Gated BEFORE rendering, not only inside send_email: building the message
+    # needs a base URL, and the invitation row is already written, so a failure
+    # here would leave a recorded invite and a 500.
+    delivered = False
+    if email_is_configured():
+        base = PUBLIC_BASE_URL.rstrip("/")
+        inviter = user.name or user.email
+        message = render_email(
+            preheader=f"{inviter} invited you to join their organization.",
+            heading="You\u2019re invited to AICall",
+            paragraphs=[
+                f"{inviter} invited you to join their organization on AICall.",
+                "Create your account with this email address to accept.",
+            ],
+            cta_label="Accept invitation",
+            cta_url=f"{base}/auth/signup?invite={invite.token}",
+            footnote=(
+                "If you were not expecting this, ignore it. The invitation does "
+                "nothing until someone signs up with it, and it expires on its own."
+            ),
+        )
+        delivered = await send_email(
+            to=invite.email,
+            subject=f"{inviter} invited you to AICall",
+            html=message.html,
+            text=message.text,
+        )
 
     return OrganizationInviteResponse(
         id=invite.id,

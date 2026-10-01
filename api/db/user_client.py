@@ -232,6 +232,27 @@ class UserClient(BaseDBClient):
             )
             return result.scalar_one_or_none()
 
+    async def mark_email_verified(self, user_id: int) -> UserModel | None:
+        """Stamp the address as verified, keeping the FIRST time it was.
+
+        Idempotent on purpose: the link may be opened twice (a mail scanner
+        pre-fetching it, a double click), and the second open must not move the
+        timestamp or fail.
+        """
+        from sqlalchemy import update
+
+        async with self.async_session() as session:
+            await session.execute(
+                update(UserModel)
+                .where(UserModel.id == user_id, UserModel.email_verified_at.is_(None))
+                .values(email_verified_at=datetime.now(timezone.utc))
+            )
+            await session.commit()
+            result = await session.execute(
+                select(UserModel).where(UserModel.id == user_id)
+            )
+            return result.scalar_one_or_none()
+
     async def get_user_by_email(self, email: str) -> UserModel | None:
         """Fetch a user by their email address (case-insensitive).
 

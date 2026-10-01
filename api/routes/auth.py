@@ -4,6 +4,7 @@ from loguru import logger
 
 from api.constants import (
     ENABLE_SIGNUP,
+    EMAIL_VERIFY_EXPIRY_HOURS,
     PASSWORD_RESET_EXPIRY_MINUTES,
     PUBLIC_BASE_URL,
 )
@@ -19,15 +20,19 @@ from api.schemas.auth import (
     SignupRequest,
     UserProfileFields,
     UserResponse,
+    VerifyEmailRequest,
 )
 from api.services.auth.depends import get_user, require_local_auth
 from api.services.email import email_is_configured, send_email
+from api.services.email_templates import render_email
 from api.services.organization_bootstrap import ensure_organization_bootstrapped
 from api.services.posthog_client import capture_event
 from api.utils.auth import (
+    create_email_verification_token,
     create_jwt_token,
     create_password_reset_token,
     hash_password,
+    verify_email_verification_token,
     verify_password,
     verify_password_reset_token,
 )
@@ -61,6 +66,7 @@ def _user_response(
         profile=UserProfileFields(**(user.profile or {})),
         created_at=user.created_at.isoformat() if user.created_at else None,
         is_superuser=bool(user.is_superuser),
+        email_verified=user.email_verified_at is not None,
     )
 
 
@@ -124,6 +130,12 @@ async def signup(request: SignupRequest):
         await db_client.add_user_to_organization(
             user.id, organization.id, role=invite.role
         )
+        # Possession of the token IS proof of the mailbox: it was only ever
+        # transmitted inside the invitation email, it is never returned by the
+        # API, and the signup address was just checked against the invited one.
+        # Sending a second "verify your email" message to someone who has just
+        # clicked a link from their inbox would be noise.
+        user = await db_client.mark_email_verified(user.id) or user
     else:
         # Create organization for the user
         org_provider_id = f"org_{user.provider_id}"
@@ -151,6 +163,12 @@ async def signup(request: SignupRequest):
 
     # Create JWT token
     token = create_jwt_token(user.id, request.email)
+
+    if invite is None:
+        # Best effort. A deployment with no email still signs people up, and a
+        # provider outage must not fail an account that was just created --
+        # the resend endpoint exists for exactly that gap.
+        await _send_verification_email(user)
 
     capture_event(
         distinct_id=str(user.provider_id),
@@ -296,18 +314,26 @@ async def forgot_password(request: ForgotPasswordRequest) -> dict:
     user = await db_client.get_user_by_email(request.email)
     if user and user.password_hash:
         token = create_password_reset_token(user.id, user.password_hash)
+        message = render_email(
+            preheader="Choose a new password. This link works once.",
+            heading="Reset your password",
+            paragraphs=[
+                "Someone asked to reset the password for this AICall account. "
+                "If that was you, choose a new one below.",
+            ],
+            cta_label="Choose a new password",
+            cta_url=_reset_link(token),
+            footnote=(
+                f"This link stops working in {PASSWORD_RESET_EXPIRY_MINUTES} "
+                "minutes, and as soon as it is used once. If you did not ask "
+                "for this, ignore this message and nothing changes."
+            ),
+        )
         await send_email(
             to=user.email,
             subject="Reset your AICall password",
-            html=(
-                "<p>Someone asked to reset the password for this AICall "
-                "account. If that was not you, ignore this message and "
-                "nothing changes.</p>"
-                f'<p><a href="{_reset_link(token)}">Choose a new password</a></p>'
-                f"<p>This link stops working in "
-                f"{PASSWORD_RESET_EXPIRY_MINUTES} minutes, and as soon as it "
-                "is used once.</p>"
-            ),
+            html=message.html,
+            text=message.text,
         )
     else:
         # No account, or an SSO-provisioned one with no password to reset.
@@ -361,3 +387,94 @@ async def reset_password(request: ResetPasswordRequest) -> AuthResponse:
         token=create_jwt_token(updated.id, updated.email),
         user=_user_response(updated, organization_id=organization_id),
     )
+
+
+def _verify_link(token: str) -> str:
+    base = (PUBLIC_BASE_URL or "").rstrip("/")
+    return f"{base}/auth/verify-email?token={token}"
+
+
+async def _send_verification_email(user: UserModel) -> bool:
+    """Send the verification message. Returns whether it was accepted."""
+    if not user.email or not email_is_configured():
+        return False
+    message = render_email(
+        preheader="Confirm this is your email address.",
+        heading="Confirm your email address",
+        paragraphs=[
+            "Welcome to AICall. Confirm that this address is yours so we can "
+            "reach you about your account.",
+        ],
+        cta_label="Confirm email address",
+        cta_url=_verify_link(create_email_verification_token(user.id, user.email)),
+        footnote=(
+            f"This link works for {EMAIL_VERIFY_EXPIRY_HOURS} hours. If you "
+            "did not create an AICall account, ignore this message."
+        ),
+    )
+    return await send_email(
+        to=user.email,
+        subject="Confirm your AICall email address",
+        html=message.html,
+        text=message.text,
+    )
+
+
+@router.post("/verify-email")
+async def verify_email(request: VerifyEmailRequest) -> dict:
+    """Record that the holder of a link controls the address it was sent to.
+
+    Public by necessity: the person clicking may not be signed in on this
+    device, and the token is the credential. Idempotent -- a second open (a mail
+    scanner pre-fetching the URL, a double click) reports the same success.
+    """
+    try:
+        user_id = int(
+            jwt.decode(request.token, options={"verify_signature": False}).get(
+                "sub", ""
+            )
+        )
+    except (jwt.PyJWTError, TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="This link is not valid.")
+
+    user = await db_client.get_user_by_id(user_id)
+    # Checked against the CURRENT address, so a link sent before the email was
+    # changed cannot verify the new one.
+    if (
+        not user
+        or not user.email
+        or verify_email_verification_token(request.token, user.email) != user.id
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="This link has expired or is no longer valid. Request a new one.",
+        )
+
+    await db_client.mark_email_verified(user.id)
+    return {"status": "verified"}
+
+
+@router.post("/resend-verification")
+async def resend_verification(user: UserModel = Depends(get_user)) -> dict:
+    """Send the verification email again, for the signed-in user."""
+    if user.email_verified_at is not None:
+        return {"status": "already_verified"}
+
+    if not email_is_configured():
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Email is not configured on this deployment, so a verification "
+                "message cannot be sent."
+            ),
+        )
+
+    if not await _send_verification_email(user):
+        # Unlike signup, the user asked for this, so a failure is reported
+        # rather than swallowed -- "check your inbox" for a message that never
+        # went is worse than an error.
+        raise HTTPException(
+            status_code=502,
+            detail="We could not send the email. Try again in a moment.",
+        )
+    return {"status": "sent"}

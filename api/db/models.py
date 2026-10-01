@@ -81,6 +81,9 @@ class UserModel(Base):
     )
     is_superuser = Column(Boolean, default=False)
     email = Column(String, nullable=True)
+    # NULL = never verified. Nothing gates on this; it records that someone
+    # followed a link sent to the address, nothing more.
+    email_verified_at = Column(DateTime(timezone=True), nullable=True)
     password_hash = Column(String, nullable=True)
     # Display name. Nullable because the hosted auth provider owns the identity
     # and never writes here; the local provider populates it at signup and lets

@@ -29,6 +29,10 @@ class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
 
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+
 class ResetPasswordRequest(BaseModel):
     token: str
     password: str
@@ -132,6 +136,9 @@ class UserResponse(BaseModel):
     # Read-only account facts a profile screen displays but cannot edit.
     created_at: str | None = None
     is_superuser: bool = False
+    # False for every account that predates verification, and for anyone who has
+    # not followed their link. Informational: nothing is gated on it.
+    email_verified: bool = False
 
 
 class AuthResponse(BaseModel):

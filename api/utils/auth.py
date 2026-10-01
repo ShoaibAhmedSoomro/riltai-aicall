@@ -7,6 +7,7 @@ import jwt
 from api.constants import (
     OSS_JWT_EXPIRY_HOURS,
     OSS_JWT_SECRET,
+    EMAIL_VERIFY_EXPIRY_HOURS,
     PASSWORD_RESET_EXPIRY_MINUTES,
 )
 
@@ -92,6 +93,53 @@ def verify_password_reset_token(token: str, password_hash: str) -> int | None:
         return None
 
     if payload.get("pwf") != _password_fingerprint(password_hash):
+        return None
+
+    try:
+        return int(payload["sub"])
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+# ── email verification ──────────────────────────────────────────────────────
+#
+# Same stateless shape as the reset token, with one difference that matters: it
+# is bound to the ADDRESS, not to a password. If the account's email is changed
+# after the link is sent, the link must stop working -- otherwise it would
+# verify an address nobody has proved they control. And it is deliberately NOT
+# single-use: opening it twice (a scanner pre-fetching the URL, a double click)
+# is harmless because verifying is idempotent.
+
+_VERIFY_PURPOSE = "email_verify"
+
+
+def create_email_verification_token(user_id: int, email: str) -> str:
+    now = datetime.now(UTC)
+    payload = {
+        "sub": str(user_id),
+        "purpose": _VERIFY_PURPOSE,
+        "em": email.strip().lower(),
+        "exp": now + timedelta(hours=EMAIL_VERIFY_EXPIRY_HOURS),
+        "iat": now,
+    }
+    return jwt.encode(payload, OSS_JWT_SECRET, algorithm="HS256")
+
+
+def verify_email_verification_token(token: str, current_email: str) -> int | None:
+    """The user id this token verifies, or None for any reason it cannot.
+
+    The address claim is what rejects a session or reset token (neither carries
+    one); the purpose check says so explicitly rather than leaving it to an
+    accident of which claim happens to be missing.
+    """
+    try:
+        payload = jwt.decode(token, OSS_JWT_SECRET, algorithms=["HS256"])
+    except jwt.PyJWTError:
+        return None
+
+    if payload.get("purpose") != _VERIFY_PURPOSE:
+        return None
+    if payload.get("em") != (current_email or "").strip().lower():
         return None
 
     try:

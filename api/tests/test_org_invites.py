@@ -241,6 +241,11 @@ async def test_an_invite_opens_signup_on_an_invite_only_install(monkeypatch):
     monkeypatch.setattr(
         auth_routes.db_client, "update_user_selected_organization", AsyncMock()
     )
+    verified = SimpleNamespace(**{**vars(user), "email_verified_at": object()})
+    mark_verified = AsyncMock(return_value=verified)
+    monkeypatch.setattr(auth_routes.db_client, "mark_email_verified", mark_verified)
+    sent_verification = AsyncMock()
+    monkeypatch.setattr(auth_routes, "_send_verification_email", sent_verification)
     monkeypatch.setattr(auth_routes, "ensure_organization_bootstrapped", AsyncMock())
     monkeypatch.setattr(auth_routes, "create_jwt_token", lambda *a: "tok")
     monkeypatch.setattr(auth_routes, "capture_event", lambda **k: None)
@@ -259,6 +264,13 @@ async def test_an_invite_opens_signup_on_an_invite_only_install(monkeypatch):
     assert link.await_args.kwargs["role"] == "member"
     # ...and did NOT get a personal organization of their own.
     personal_org.assert_not_awaited()
+
+    # Holding the token proves the mailbox: it only ever travelled inside the
+    # invitation email. So they are verified, and are not sent a second message
+    # asking them to prove it again.
+    mark_verified.assert_awaited_once_with(7)
+    sent_verification.assert_not_awaited()
+    assert res.user.email_verified is True
 
 
 @pytest.mark.asyncio
@@ -295,3 +307,47 @@ async def test_a_consumed_invite_cannot_be_used_twice(monkeypatch):
         )
     assert exc.value.status_code == 400
     link.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_an_ordinary_signup_is_not_marked_verified(monkeypatch):
+    """The other half of the invite shortcut. If a plain signup were stamped
+    too, the field would record nothing and the feature would be decoration.
+    It is sent a verification message instead."""
+    _signup_deps(monkeypatch, invite=None)
+    user = SimpleNamespace(
+        id=8,
+        provider_id="oss_8",
+        email="b@x.com",
+        name=None,
+        profile={},
+        created_at=None,
+        is_superuser=False,
+        email_verified_at=None,
+    )
+    monkeypatch.setattr(auth_routes, "hash_password", lambda p: "h")
+    monkeypatch.setattr(
+        auth_routes.db_client, "create_user_with_email", AsyncMock(return_value=user)
+    )
+    monkeypatch.setattr(
+        auth_routes.db_client,
+        "get_or_create_organization_by_provider_id",
+        AsyncMock(return_value=(SimpleNamespace(id=20), True)),
+    )
+    monkeypatch.setattr(auth_routes.db_client, "add_user_to_organization", AsyncMock())
+    monkeypatch.setattr(
+        auth_routes.db_client, "update_user_selected_organization", AsyncMock()
+    )
+    mark_verified = AsyncMock()
+    monkeypatch.setattr(auth_routes.db_client, "mark_email_verified", mark_verified)
+    sent_verification = AsyncMock(return_value=True)
+    monkeypatch.setattr(auth_routes, "_send_verification_email", sent_verification)
+    monkeypatch.setattr(auth_routes, "ensure_organization_bootstrapped", AsyncMock())
+    monkeypatch.setattr(auth_routes, "create_jwt_token", lambda *a: "tok")
+    monkeypatch.setattr(auth_routes, "capture_event", lambda **k: None)
+
+    res = await auth_routes.signup(SignupRequest(email="b@x.com", password="password1"))
+
+    mark_verified.assert_not_awaited()
+    sent_verification.assert_awaited_once_with(user)
+    assert res.user.email_verified is False

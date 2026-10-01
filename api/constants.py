@@ -283,6 +283,11 @@ EMAIL_FROM = os.getenv("EMAIL_FROM") or None
 
 # How long a password-reset link stays usable. Short, because the link is a
 # bearer credential sitting in an inbox.
+# Verification links are less sensitive than reset links -- opening one only
+# records a fact and can be repeated -- so they live longer. A day covers the
+# common case of signing up and getting to the inbox later.
+EMAIL_VERIFY_EXPIRY_HOURS = int(os.getenv("EMAIL_VERIFY_EXPIRY_HOURS", "24"))
+
 PASSWORD_RESET_EXPIRY_MINUTES = int(os.getenv("PASSWORD_RESET_EXPIRY_MINUTES", "30"))
 
 TUNER_BASE_URL = os.getenv("TUNER_BASE_URL", "https://api.usetuner.ai")

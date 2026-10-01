@@ -41,6 +41,11 @@ PUBLIC_BY_DESIGN: dict[str, str] = {
         "the caller is locked out by definition, so there is no session to "
         "require; answers identically whether or not the address exists"
     ),
+    "/api/v1/auth/verify-email": (
+        "the person opening the link may not be signed in on this device; the "
+        "emailed token is the credential, bound to the current address, and "
+        "verifying twice is harmless"
+    ),
     "/api/v1/auth/reset-password": (
         "authenticated by the emailed token itself, which is single-use and "
         "bound to the current password hash"

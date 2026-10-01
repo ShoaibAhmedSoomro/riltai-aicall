@@ -120,6 +120,7 @@ async def test_forgot_password_answers_the_same_either_way(user_exists):
 
     with (
         patch.object(auth, "email_is_configured", return_value=True),
+        patch.object(auth, "PUBLIC_BASE_URL", "https://aicall.test"),
         patch.object(auth, "send_email", new=sent),
         patch.object(
             auth.db_client, "get_user_by_email", new=AsyncMock(return_value=found)
