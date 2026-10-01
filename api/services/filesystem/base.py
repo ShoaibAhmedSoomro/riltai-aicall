@@ -139,3 +139,19 @@ class BaseFileSystem(ABC):
             bool: True if file was copied successfully, False otherwise
         """
         pass
+
+    @abstractmethod
+    async def adelete_file(self, file_path: str) -> bool:
+        """Delete a file from storage.
+
+        IDEMPOTENT BY CONTRACT: deleting something that is already gone is a
+        success. This exists for the retention purge, which deletes artifacts
+        and then records that it did; if it dies between the two, the next run
+        deletes the same keys again. A "not found" that read as failure would
+        wedge that run forever on the first object a previous attempt removed.
+
+        Returns:
+            bool: True if the file no longer exists, False if storage refused
+            or could not be reached (the caller should retry later).
+        """
+        pass

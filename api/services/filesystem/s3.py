@@ -190,3 +190,13 @@ class S3FileSystem(BaseFileSystem):
             return True
         except ClientError:
             return False
+
+    async def adelete_file(self, file_path: str) -> bool:
+        """Delete a file from S3. A key that is already gone is success."""
+        try:
+            async with self.session.client("s3", **self._client_kwargs()) as s3_client:
+                # S3 answers 204 for a missing key, so this is already idempotent.
+                await s3_client.delete_object(Bucket=self.bucket_name, Key=file_path)
+            return True
+        except ClientError as e:
+            return e.response.get("Error", {}).get("Code") in ("NoSuchKey", "404")

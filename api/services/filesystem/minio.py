@@ -266,3 +266,15 @@ class MinioFileSystem(BaseFileSystem):
             return True
         except S3Error:
             return False
+
+    async def adelete_file(self, file_path: str) -> bool:
+        """Delete a file from MinIO. A key that is already gone is success."""
+        try:
+            # remove_object does not raise for a missing key, which is the
+            # idempotence the contract asks for; it raises for real failures.
+            await asyncio.to_thread(
+                self.client.remove_object, self.bucket_name, file_path
+            )
+            return True
+        except S3Error as e:
+            return e.code in ("NoSuchKey", "NoSuchBucket")
