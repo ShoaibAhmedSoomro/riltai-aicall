@@ -2,6 +2,7 @@
 
 import { ExternalLink } from "lucide-react";
 
+import { DataRetentionSection } from "@/components/DataRetentionSection";
 import { EmailVerificationNotice } from "@/components/EmailVerificationNotice";
 import { MCPSection } from "@/components/MCPSection";
 import { OrganizationInvitesSection } from "@/components/OrganizationInvitesSection";
@@ -82,6 +83,20 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent>
             <UsageRateCardSection />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Data Retention</CardTitle>
+            <CardDescription>
+              How long recordings, transcripts and call logs are kept, and what
+              is saved in the first place. These are the defaults for every
+              agent; an agent can set its own.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DataRetentionSection />
           </CardContent>
         </Card>
 

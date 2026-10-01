@@ -47,6 +47,9 @@ class WorkflowClient(BaseDBClient):
                     status="published",
                     version_number=1,
                     published_at=datetime.now(UTC),
+                    created_by=user_id,
+                    updated_by=user_id,
+                    published_by=user_id,
                     workflow_configurations=new_workflow.workflow_configurations or {},
                     template_context_variables=new_workflow.template_context_variables
                     or {},
@@ -74,11 +77,16 @@ class WorkflowClient(BaseDBClient):
         workflow_definition: dict | None = None,
         workflow_configurations: dict | None = None,
         template_context_variables: dict | None = None,
+        actor_id: int | None = None,
     ) -> WorkflowDefinitionModel:
         """Create or update a draft version for this workflow.
 
         If a draft already exists, it is updated in place.
         If no draft exists, a new one is created with the next version number.
+
+        ``actor_id`` is who made the change. Optional so callers with no user in
+        hand (background jobs) still work; the version then keeps whoever last
+        had a name on it rather than being overwritten with nobody.
         """
         async with self.async_session() as session:
             # Check for existing draft
@@ -98,6 +106,8 @@ class WorkflowClient(BaseDBClient):
                     draft.workflow_configurations = workflow_configurations
                 if template_context_variables is not None:
                     draft.template_context_variables = template_context_variables
+                if actor_id is not None:
+                    draft.updated_by = actor_id
             else:
                 # Get current published to use as base for unspecified fields
                 pub_result = await session.execute(
@@ -124,6 +134,8 @@ class WorkflowClient(BaseDBClient):
                     status="draft",
                     version_number=next_version,
                     is_current=False,
+                    created_by=actor_id,
+                    updated_by=actor_id,
                 )
                 session.add(draft)
 
@@ -148,6 +160,7 @@ class WorkflowClient(BaseDBClient):
     async def publish_workflow_draft(
         self,
         workflow_id: int,
+        actor_id: int | None = None,
     ) -> WorkflowDefinitionModel:
         """Promote the current draft to published.
 
@@ -182,6 +195,7 @@ class WorkflowClient(BaseDBClient):
             draft.status = "published"
             draft.published_at = datetime.now(UTC)
             draft.is_current = True
+            draft.published_by = actor_id
 
             # Update workflow's released pointer + legacy fields
             wf_result = await session.execute(
@@ -346,6 +360,11 @@ class WorkflowClient(BaseDBClient):
         async with self.async_session() as session:
             query = (
                 select(WorkflowDefinitionModel)
+                .options(
+                    selectinload(WorkflowDefinitionModel.created_by_user),
+                    selectinload(WorkflowDefinitionModel.updated_by_user),
+                    selectinload(WorkflowDefinitionModel.published_by_user),
+                )
                 .where(
                     WorkflowDefinitionModel.workflow_id == workflow_id,
                     WorkflowDefinitionModel.status.in_(
@@ -614,6 +633,7 @@ class WorkflowClient(BaseDBClient):
         workflow_configurations: dict | None,
         user_id: int = None,
         organization_id: int = None,
+        actor_id: int | None = None,
     ) -> WorkflowModel:
         """
         Update an existing workflow in the database.
@@ -680,6 +700,7 @@ class WorkflowClient(BaseDBClient):
                 workflow_definition=workflow_definition,
                 workflow_configurations=workflow_configurations,
                 template_context_variables=template_context_variables,
+                actor_id=actor_id,
             )
             # Re-fetch with updated state
             workflow = await self.get_workflow(

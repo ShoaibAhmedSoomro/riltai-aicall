@@ -75,6 +75,7 @@ export const SETTINGS_DOCUMENTATION_URLS: Record<string, string> = {
 
     recordings: docsUrl("voice-agent/pre-recorded-audio"),
     deployment: docsUrl("voice-agent/add-to-website"),
+    governance: docsUrl("configurations/data-governance"),
 };
 
 export const WIDGET_CONTEXT_DOC_URL = docsUrl(

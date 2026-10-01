@@ -21,6 +21,25 @@ interface VersionHistoryPanelProps {
     onLoadMore: () => void;
 }
 
+/**
+ * Who is responsible for a version, in one short line. Published versions name
+ * the publisher; drafts name who last changed them. Nothing is shown for versions
+ * that predate the record: nobody can honestly be named for them.
+ */
+export function versionActors(version: WorkflowVersionResponse): string | null {
+    const author = version.created_by_name;
+    if (version.status === "draft") {
+        const editor = version.updated_by_name;
+        if (editor && author && editor !== author) return `Started by ${author} · edited by ${editor}`;
+        const who = editor ?? author;
+        return who ? `Edited by ${who}` : null;
+    }
+    const publisher = version.published_by_name;
+    if (publisher && author && publisher !== author) return `By ${author} · published by ${publisher}`;
+    const who = publisher ?? author;
+    return who ? `By ${who}` : null;
+}
+
 const statusLabel: Record<string, string> = {
     draft: "Draft",
     published: "Published",
@@ -132,6 +151,11 @@ export const VersionHistoryPanel = ({
                                                 addSuffix: true,
                                             })}
                                         </p>
+                                        {versionActors(version) && (
+                                            <p className="mt-0.5 text-xs text-gray-500">
+                                                {versionActors(version)}
+                                            </p>
+                                        )}
                                     </button>
 
                                     {canCompare && (

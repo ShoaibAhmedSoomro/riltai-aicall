@@ -118,6 +118,7 @@ type WorkflowConfigurationBase = Omit<
     | "text_chat_inactivity_timeout_seconds"
     | "external_pbx_field_mappings"
     | "external_pbx_lead_headers"
+    | "governance_configuration"
 >;
 
 // Every default below equals a literal that is live in the pipeline today, so
@@ -139,6 +140,49 @@ export type STTTurnConfiguration = {
 export type KnowledgeBaseConfiguration = {
     chunks_to_retrieve: number;
     min_similarity: number;
+};
+
+// Data & safety. Kept in step with GovernanceConfigurationDefaults in
+// api/schemas/workflow_configurations.py; every default there equals today's
+// behaviour (keep everything, forever, screen nothing).
+export type StorageMode = "everything" | "except_pii" | "basic_only";
+export type RedactionCategory = "phone" | "email" | "card" | "national_id" | "address" | "dob";
+export type GuardrailCategory =
+    | "hate"
+    | "harassment"
+    | "self_harm"
+    | "sexual_content"
+    | "violence"
+    | "illegal_activity"
+    | "medical_advice"
+    | "legal_advice"
+    | "financial_advice";
+export type GuardrailAction = "deflect" | "end_call" | "log_only";
+
+export type GovernanceConfiguration = {
+    /** null inherits the organization default. */
+    storage_mode: StorageMode | null;
+    /** null inherits the organization default; 0 keeps forever on purpose. */
+    retention_days: number | null;
+    record_audio: boolean;
+    store_transcript: boolean;
+    redaction_categories: RedactionCategory[];
+    redact_gathered_context: boolean;
+    guardrails: {
+        input_jailbreak: boolean;
+        output_categories: GuardrailCategory[];
+        on_violation: GuardrailAction;
+    };
+};
+
+export const DEFAULT_GOVERNANCE_CONFIGURATION: GovernanceConfiguration = {
+    storage_mode: null,
+    retention_days: null,
+    record_audio: true,
+    store_transcript: true,
+    redaction_categories: [],
+    redact_gathered_context: false,
+    guardrails: { input_jailbreak: false, output_categories: [], on_violation: "log_only" },
 };
 
 export const DEFAULT_VAD_CONFIGURATION: VADConfiguration = {
@@ -165,6 +209,7 @@ export type WorkflowConfigurations = WorkflowConfigurationBase & {
     vad_configuration: VADConfiguration;
     stt_turn_configuration: STTTurnConfiguration;
     knowledge_base_configuration: KnowledgeBaseConfiguration;
+    governance_configuration: GovernanceConfiguration;
     max_call_duration: number;  // Maximum call duration in seconds
     max_user_idle_timeout: number;  // Maximum user idle time in seconds
     smart_turn_stop_secs: number;  // Timeout in seconds for incomplete turn detection
@@ -192,6 +237,7 @@ const FALLBACK_WORKFLOW_CONFIGURATIONS: WorkflowConfigurations = {
     vad_configuration: DEFAULT_VAD_CONFIGURATION,
     stt_turn_configuration: DEFAULT_STT_TURN_CONFIGURATION,
     knowledge_base_configuration: DEFAULT_KNOWLEDGE_BASE_CONFIGURATION,
+    governance_configuration: DEFAULT_GOVERNANCE_CONFIGURATION,
     max_call_duration: 300,
     max_user_idle_timeout: 10,  // 10 seconds
     smart_turn_stop_secs: 2,  // 2 seconds
@@ -236,6 +282,16 @@ export function resolveWorkflowConfigurations(
             ...FALLBACK_WORKFLOW_CONFIGURATIONS.knowledge_base_configuration,
             ...defaults?.knowledge_base_configuration,
             ...configurations?.knowledge_base_configuration,
+        },
+        governance_configuration: {
+            ...DEFAULT_GOVERNANCE_CONFIGURATION,
+            ...(defaults?.governance_configuration as Partial<GovernanceConfiguration> | undefined),
+            ...(configurations?.governance_configuration as Partial<GovernanceConfiguration> | undefined),
+            guardrails: {
+                ...DEFAULT_GOVERNANCE_CONFIGURATION.guardrails,
+                ...((defaults?.governance_configuration as Partial<GovernanceConfiguration> | undefined)?.guardrails),
+                ...((configurations?.governance_configuration as Partial<GovernanceConfiguration> | undefined)?.guardrails),
+            },
         },
         max_call_duration:
             configurations?.max_call_duration

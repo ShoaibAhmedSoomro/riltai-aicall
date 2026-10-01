@@ -58,6 +58,8 @@ interface WorkflowRunResponse {
     gathered_context: Record<string, string | number | boolean | object> | null;
     logs: WorkflowRunLogs | null;
     annotations: Record<string, unknown> | null;
+    retention_expires_at: string | null;
+    purged_at: string | null;
 }
 
 const RUN_SHELL_HEIGHT_CLASS = "h-[calc(100svh-49px)] min-h-[calc(100svh-49px)] max-h-[calc(100svh-49px)]";
@@ -667,6 +669,8 @@ export default function WorkflowRunPage() {
                     gathered_context: runResponse.data?.gathered_context as Record<string, string> | null ?? null,
                     logs: runResponse.data?.logs as WorkflowRunLogs | null ?? null,
                     annotations: runResponse.data?.annotations as Record<string, unknown> | null ?? null,
+                    retention_expires_at: runResponse.data?.retention_expires_at ?? null,
+                    purged_at: runResponse.data?.purged_at ?? null,
                 };
                 setWorkflowRun(runData);
                 posthog.capture(PostHogEvent.WORKFLOW_RUN_DETAILS_VIEWED, {
@@ -763,6 +767,17 @@ export default function WorkflowRunPage() {
                                         Call time: {formatDateTime(workflowRun.created_at, organizationTimezone)}
                                     </p>
                                 )}
+                                {workflowRun?.purged_at ? (
+                                    <p className="text-sm text-muted-foreground">
+                                        Recording, transcript and logs were deleted on{" "}
+                                        {formatDateTime(workflowRun.purged_at, organizationTimezone)}.
+                                    </p>
+                                ) : workflowRun?.retention_expires_at ? (
+                                    <p className="text-sm text-muted-foreground">
+                                        Recording, transcript and logs are deleted on{" "}
+                                        {formatDateTime(workflowRun.retention_expires_at, organizationTimezone)}.
+                                    </p>
+                                ) : null}
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
                                 <Link href={`/workflow/${params.workflowId}`}>

@@ -173,6 +173,7 @@ async def save_workflow(workflow_id: int, code: str) -> dict[str, Any]:
     draft = await db_client.save_workflow_draft(
         workflow_id=workflow_id,
         workflow_definition=payload,
+        actor_id=user.id,
     )
 
     return {

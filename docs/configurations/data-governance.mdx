@@ -1,0 +1,109 @@
+---
+title: "Data & Safety"
+description: "Control what a call keeps, for how long, and what is screened"
+---
+
+Every call produces a recording, a transcript and a log of what happened. **Data & Safety** decides which of those are kept, how long they are kept, whether personal details are removed first, and whether the call is screened for misuse.
+
+Nothing changes until you change it. Out of the box, every call keeps everything, forever, and nothing is screened.
+
+## Where to set it
+
+| Level | Where | What it does |
+| --- | --- | --- |
+| Organization | **Settings → Data Retention** | The default for every agent. Only an admin can change it. |
+| Agent | The agent's **Settings → Data & Safety** | Overrides the organization default for that agent. |
+
+An agent's settings are part of its version. Publish the agent for a change to apply, and it applies to calls that **start after** that.
+
+## What to keep
+
+| Option | Recording | Transcript | Personal details |
+| --- | --- | --- | --- |
+| **Keep everything** | Kept | Kept | Kept |
+| **Keep everything except personal details** | Kept | Kept | Replaced with a placeholder before saving |
+| **Keep basic details only** | Not recorded | Not saved | Not applicable |
+
+Under **basic details only**, a call's outcome, duration and cost are still kept. After the retention period, the details captured during the call are cleared as well.
+
+You can also switch **Record the call audio** and **Save the transcript** off independently.
+
+- Turning recording off means the audio is never captured. It is not captured and deleted later.
+- Turning the transcript off also removes the spoken words from the call log. Call analysis and quality checks need a transcript, so they have nothing to read for those calls.
+
+## How long to keep it
+
+Choose 30, 60, 90, 180 or 365 days, or **Keep forever**. An agent can also choose **Use the organization default**.
+
+- The deletion date is **fixed when each call starts**. Changing the period later does not change calls that already happened.
+- A run with no deletion date is never deleted. Deletion only ever touches calls that were given a date.
+- The call's page shows when its recording, transcript and logs will be deleted.
+
+### What deletion removes
+
+Once a call passes its date, a daily job:
+
+1. Deletes the stored recording files and the transcript file.
+2. Clears the pointers to them and the call log of what was said, turn by turn.
+3. For a text chat, clears the stored conversation.
+4. Under **basic details only**, clears the captured and starting details too.
+5. Stops any shared link to the recording or transcript from working.
+
+If a file cannot be deleted, the call is left as it was and tried again the next day, so nothing is half-deleted.
+
+It **keeps** the call's row: when it happened, its outcome, duration, usage and cost. Reports and spend figures do not change retroactively.
+
+<Note>
+  Backups taken before a call was deleted still contain it. Deletion applies to the live system.
+</Note>
+
+## Removing personal details
+
+Pick the kinds to remove: phone numbers, email addresses, payment card numbers, ID and passport numbers, street addresses, and dates of birth.
+
+Matching text in the transcript and in the call log is replaced with a placeholder such as `[REDACTED:email]` **before it is saved**, so the original text is never stored. The call's page records that the pass ran and how many it replaced in each kind.
+
+This is a pattern-based pass. It is reliable for numbers and fixed formats, and it errs on the side of removing too much. It does **not** catch:
+
+- names, or free-text details such as "the flat next to the blue mosque";
+- numbers the caller spoke as words rather than digits.
+
+A card number is only removed if it passes the card checksum, so long reference numbers are left alone. A date is only treated as a date of birth when it follows a cue such as "born" or "DOB".
+
+By default the details **captured during the call** (the values your agent extracted) are left as they are, because they feed webhooks and integrations, which would otherwise receive placeholders. You can turn that on per agent.
+
+<Note>
+  Only Deepgram can also remove details inside the speech provider itself. For every other provider this pass, which runs on the finished transcript, is the mechanism.
+</Note>
+
+## Safety checks
+
+### While the call is running
+
+**Catch callers trying to override the agent** screens what the caller says for well-known attempts such as "ignore your instructions" or "reveal your prompt". It adds no delay to the conversation. When it catches one you choose:
+
+| Action | What happens |
+| --- | --- |
+| **Only record it** | The agent still hears the caller. The attempt is logged on the call. |
+| **Decline and carry on** | The agent never sees those words. A fixed reply is spoken. |
+| **Decline and end the call** | As above, then the call ends. |
+
+The log records which rule matched, not what the caller said.
+
+This check uses fixed patterns, so it catches common attempts and not every attempt. It is not available with realtime (speech-to-speech) models.
+
+### After the call
+
+Select the categories to review the **agent's replies** for: hateful content, harassment, self-harm, sexual content, violence, illegal activity, and medical, legal or financial advice. After the call ends, the agent's own language model reads the transcript and records any findings on the call's details, under `annotations.safety`.
+
+It is a record, not a gate: replies are **not** held back while the call runs, because holding each reply for a check would add a model call to every turn. If the model is unavailable or answers with something unusable, the record says the scan could not be completed rather than reporting a clean call.
+
+The scan reads the stored transcript, so if redaction is on, personal details are not sent to the model.
+
+## Who changed an agent
+
+The version history of an agent shows who last edited a draft and who published each version. Versions created before this was recorded show no name.
+
+## Link expiry
+
+Shared links to a call's recording or transcript expire (7 days by default), and a signed download link can last at most one day. Links created before expiry existed keep working until the call is deleted.

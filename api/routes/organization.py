@@ -642,6 +642,10 @@ async def get_preferences(
     return await get_organization_preferences(organization_id)
 
 
+# The org-wide data policy. Changing these decides what is deleted, and when.
+GOVERNANCE_PREFERENCE_FIELDS = ("data_retention_days", "default_storage_mode")
+
+
 @router.put("/preferences", response_model=OrganizationPreferences)
 async def save_preferences(
     request: OrganizationPreferences,
@@ -665,7 +669,27 @@ async def save_preferences(
     # test_phone_number permanently unclearable, regressing behaviour that
     # works today.
     current = await get_organization_preferences(organization_id)
-    merged = current.model_copy(update=request.model_dump(exclude_unset=True))
+    changes = request.model_dump(exclude_unset=True)
+
+    # This endpoint stays open to members (the test-call dialog writes it before
+    # every call), so the org-wide data policy is gated by FIELD, not by route.
+    # Only a real change counts: a client that echoes the whole object back
+    # unchanged must not be refused for fields it did not touch.
+    policy_changed = any(
+        k in changes and changes[k] != getattr(current, k)
+        for k in GOVERNANCE_PREFERENCE_FIELDS
+    )
+    if (
+        policy_changed
+        and not user.is_superuser
+        and await get_org_role(user) != OrgRole.ADMIN.value
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied. Organization admin privileges required to change data retention.",
+        )
+
+    merged = current.model_copy(update=changes)
 
     return await upsert_organization_preferences(
         organization_id,

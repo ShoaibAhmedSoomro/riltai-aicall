@@ -30,3 +30,5 @@ class WorkflowRunResponseSchema(BaseModel):
     call_type: CallType
     logs: Dict[str, Any] | None = None
     annotations: Dict[str, Any] | None = None
+    retention_expires_at: datetime | None = None
+    purged_at: datetime | None = None

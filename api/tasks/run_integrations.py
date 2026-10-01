@@ -135,9 +135,8 @@ async def _run_qa_nodes(
 async def _run_safety_scan(workflow_run, workflow_run_id: int, organization_id: int) -> None:
     """Write ``annotations["safety"]`` for an agent with guardrails on. Never raises."""
     try:
-        policy = await load_governance_policy(
-            workflow_run.definition.workflow_configurations, organization_id
-        )
+        configs = getattr(workflow_run.definition, "workflow_configurations", None)
+        policy = await load_governance_policy(configs, organization_id)
         result = await scan_run_safety(workflow_run, workflow_run_id, policy)
         if result is not None:
             await db_client.update_workflow_run(

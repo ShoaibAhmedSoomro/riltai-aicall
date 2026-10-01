@@ -1,7 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
-import { ArrowLeft, BookA, BookOpen, Brain, CalendarIcon, Clipboard, Download, ExternalLink, FileDown, Fingerprint, Loader2, Mic, Pause, PhoneOff, Play, Plus, Rocket, Settings, Trash2Icon, Upload, Variable, X } from "lucide-react";
+import { ArrowLeft, BookA, BookOpen, Brain, CalendarIcon, Clipboard, Download, ExternalLink, FileDown, Fingerprint, Loader2, Mic, Pause, PhoneOff, Play, Plus, Rocket, Settings, ShieldCheck, Trash2Icon, Upload, Variable, X } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -65,6 +65,7 @@ import {
 
 import { EmbedDialog } from "../components/EmbedDialog";
 import { useWorkflowState } from "../hooks/useWorkflowState";
+import { GovernanceSection } from "./GovernanceSection";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -102,6 +103,7 @@ const NAV_ITEMS = [
     { id: "dictionary", label: "Dictionary", icon: BookA },
     { id: "knowledge", label: "Knowledge Base", icon: BookOpen },
     { id: "voicemail", label: "Voicemail Detection", icon: PhoneOff },
+    { id: "governance", label: "Data & Safety", icon: ShieldCheck },
     { id: "recordings", label: "Recordings", icon: Mic },
     { id: "deployment", label: "Add to Website", icon: Rocket },
     { id: "report", label: "Report", icon: FileDown },
@@ -2039,6 +2041,12 @@ function WorkflowSettingsInner({
 
                             {/* Voicemail Detection */}
                             <VoicemailSection
+                                workflowConfigurations={resolvedWorkflowConfigurationsForRender}
+                                workflowName={workflowName}
+                                onSave={saveWorkflowConfigurations}
+                            />
+
+                            <GovernanceSection
                                 workflowConfigurations={resolvedWorkflowConfigurationsForRender}
                                 workflowName={workflowName}
                                 onSave={saveWorkflowConfigurations}

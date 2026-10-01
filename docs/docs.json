@@ -55,6 +55,7 @@
               "configurations/voice",
               "configurations/transcriber",
               "configurations/api-keys",
+              "configurations/data-governance",
               "configurations/agent-uuid",
               "configurations/interruption",
               "configurations/tracing"

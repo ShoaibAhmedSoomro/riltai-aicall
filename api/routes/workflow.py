@@ -353,6 +353,18 @@ class WorkflowVersionResponse(BaseModel):
     workflow_json: dict
     workflow_configurations: dict | None = None
     template_context_variables: dict | None = None
+    # Who touched this version, as display names. None for versions that predate
+    # the record: nobody can honestly be named for them.
+    created_by_name: str | None = None
+    updated_by_name: str | None = None
+    published_by_name: str | None = None
+
+
+def _actor_name(user) -> str | None:
+    """A teammate's name for the history panel: their name, else their email."""
+    if user is None:
+        return None
+    return user.name or user.email or None
 
 
 class UpdateWorkflowStatusRequest(BaseModel):
@@ -842,6 +854,9 @@ async def get_workflow_versions(
                 v.workflow_configurations
             ),
             template_context_variables=v.template_context_variables,
+            created_by_name=_actor_name(v.created_by_user),
+            updated_by_name=_actor_name(v.updated_by_user),
+            published_by_name=_actor_name(v.published_by_user),
         )
         for v in versions
         if v.version_number is not None
@@ -880,7 +895,9 @@ async def publish_workflow(
         raise _validation_errors_http_exception(errors)
 
     try:
-        published = await db_client.publish_workflow_draft(workflow_id)
+        published = await db_client.publish_workflow_draft(
+            workflow_id, actor_id=user.id
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -919,7 +936,7 @@ async def create_workflow_draft(
             status_code=404, detail=f"Workflow with id {workflow_id} not found"
         )
 
-    draft = await db_client.save_workflow_draft(workflow_id)
+    draft = await db_client.save_workflow_draft(workflow_id, actor_id=user.id)
     return WorkflowVersionResponse(
         id=draft.id,
         version_number=draft.version_number,
@@ -1284,6 +1301,7 @@ async def update_workflow(
             template_context_variables=request.template_context_variables,
             workflow_configurations=workflow_configurations,
             organization_id=user.selected_organization_id,
+            actor_id=user.id,
         )
 
         # Sync agent triggers if workflow definition was updated
@@ -1586,6 +1604,10 @@ async def get_workflow_run(
         "call_type": run.call_type,
         "logs": run.logs,
         "annotations": run.annotations,
+        # When this call's recording, transcript and logs are deleted, and
+        # whether that has happened. None means the call is kept.
+        "retention_expires_at": run.retention_expires_at,
+        "purged_at": run.purged_at,
     }
 
 

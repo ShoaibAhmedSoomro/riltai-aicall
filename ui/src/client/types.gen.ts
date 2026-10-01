@@ -4649,6 +4649,16 @@ export type OrganizationPreferences = {
      * External Pbx Integrations Enabled
      */
     external_pbx_integrations_enabled?: boolean;
+    /**
+     * Data Retention Days
+     *
+     * Days to keep a call's recording, transcript and logs. Absent means keep forever.
+     */
+    data_retention_days?: number | null;
+    /**
+     * Default Storage Mode
+     */
+    default_storage_mode?: 'everything' | 'except_pii' | 'basic_only';
 };
 
 /**
@@ -8568,6 +8578,16 @@ export type WorkflowRunResponseSchema = {
     annotations?: {
         [key: string]: unknown;
     } | null;
+    /**
+     * Retention Expires At
+     *
+     * When this call's recording, transcript and logs are deleted. Absent means kept.
+     */
+    retention_expires_at?: string | null;
+    /**
+     * Purged At
+     */
+    purged_at?: string | null;
 };
 
 /**
@@ -8872,6 +8892,18 @@ export type WorkflowVersionResponse = {
     template_context_variables?: {
         [key: string]: unknown;
     } | null;
+    /**
+     * Created By Name
+     */
+    created_by_name?: string | null;
+    /**
+     * Updated By Name
+     */
+    updated_by_name?: string | null;
+    /**
+     * Published By Name
+     */
+    published_by_name?: string | null;
 };
 
 /**
