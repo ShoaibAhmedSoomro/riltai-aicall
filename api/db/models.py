@@ -493,6 +493,16 @@ class WorkflowDefinitionModel(Base):
         JSON, nullable=False, default=dict, server_default=text("'{}'::json")
     )
 
+    # Who touched this version. Nullable: versions that predate these columns
+    # have no honest answer. The diff between versions already is the change
+    # history; this is the missing "by whom".
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    updated_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    published_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_by_user = relationship("UserModel", foreign_keys=[created_by])
+    updated_by_user = relationship("UserModel", foreign_keys=[updated_by])
+    published_by_user = relationship("UserModel", foreign_keys=[published_by])
+
     # Table constraints and indexes — unique hash constraint removed (no more dedup)
     __table_args__ = (
         Index("ix_workflow_definitions_workflow_status", "workflow_id", "status"),
@@ -683,6 +693,14 @@ class WorkflowRunModel(Base):
     # api/services/integrations/AGENTS.md tells integration authors to treat them
     # as durable. Backfilling a deadline would revoke links the product promised.
     public_access_token_expires_at = Column(DateTime(timezone=True), nullable=True)
+    # When this run's recording, transcript and logs are due for deletion. Stamped
+    # at creation from the policy then in force (see governance/policy.py), so a
+    # later policy change neither re-ages nor resurrects existing runs. NULL means
+    # never purge -- the standing decision, so only data somebody deliberately
+    # gave a deadline is ever deleted. purged_at marks the artifacts as removed;
+    # the row stays so reports and cost figures do not change retroactively.
+    retention_expires_at = Column(DateTime(timezone=True), nullable=True)
+    purged_at = Column(DateTime(timezone=True), nullable=True)
     text_session = relationship(
         "WorkflowRunTextSessionModel",
         back_populates="workflow_run",
@@ -715,6 +733,14 @@ class WorkflowRunModel(Base):
         # The superadmin listing sorts by date with no workflow predicate, so
         # the composite above cannot serve it.
         Index("idx_workflow_runs_created_at", text("created_at DESC")),
+        # The purge job's scan: only runs with a deadline that are not yet purged.
+        Index(
+            "idx_workflow_runs_retention_due",
+            "retention_expires_at",
+            postgresql_where=text(
+                "retention_expires_at IS NOT NULL AND purged_at IS NULL"
+            ),
+        ),
     )
 
 

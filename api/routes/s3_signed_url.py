@@ -161,6 +161,12 @@ async def _authorize_and_get_workflow_run(
     return workflow_run
 
 
+# One minute to one day. The UI asks for the default; nothing legitimate needs a
+# week-long download link, and retention is hollow while one can be minted.
+MIN_SIGNED_URL_SECONDS = 60
+MAX_SIGNED_URL_SECONDS = 86400
+
+
 @router.get(
     "/signed-url",
     response_model=S3SignedUrlResponse,
@@ -189,6 +195,10 @@ async def get_signed_url(
       are authorized via the workflow run they belong to.
     * Superusers can request any key.
     """
+
+    # The lifetime is the caller's to ask for, so it is the server's to bound: an
+    # unbounded value mints a link that outlives any retention policy.
+    expires_in = max(MIN_SIGNED_URL_SECONDS, min(expires_in, MAX_SIGNED_URL_SECONDS))
 
     # ------------------------------------------------------------------
     # 1. Authorize

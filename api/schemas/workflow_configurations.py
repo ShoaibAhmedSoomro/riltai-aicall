@@ -123,6 +123,89 @@ class KnowledgeBaseConfigurationDefaults(BaseModel):
     min_similarity: float = Field(default=DEFAULT_KB_MIN_SIMILARITY, ge=0.0, le=1.0)
 
 
+# --- Data & safety -----------------------------------------------------------
+# What a run keeps, for how long, and what is screened. Every default equals
+# today's behaviour (keep everything forever, screen nothing), so adding these
+# dials changes nothing until somebody moves one.
+
+StorageMode = Literal["everything", "except_pii", "basic_only"]
+
+# Names are the wire values and must match api/services/governance/redaction.py.
+RedactionCategory = Literal["phone", "email", "card", "national_id", "address", "dob"]
+REDACTION_CATEGORIES: tuple[str, ...] = (
+    "phone",
+    "email",
+    "card",
+    "national_id",
+    "address",
+    "dob",
+)
+
+GuardrailCategory = Literal[
+    "hate",
+    "harassment",
+    "self_harm",
+    "sexual_content",
+    "violence",
+    "illegal_activity",
+    "medical_advice",
+    "legal_advice",
+    "financial_advice",
+]
+GUARDRAIL_CATEGORIES: tuple[str, ...] = (
+    "hate",
+    "harassment",
+    "self_harm",
+    "sexual_content",
+    "violence",
+    "illegal_activity",
+    "medical_advice",
+    "legal_advice",
+    "financial_advice",
+)
+GuardrailAction = Literal["deflect", "end_call", "log_only"]
+
+# 10 years. A typo guard, not a business rule.
+MAX_RETENTION_DAYS = 3650
+
+
+class GuardrailConfigurationDefaults(BaseModel):
+    """What is screened, and what happens when something trips."""
+
+    model_config = ConfigDict(extra="allow")
+
+    input_jailbreak: bool = False
+    output_categories: list[GuardrailCategory] = Field(default_factory=list)
+    on_violation: GuardrailAction = "log_only"
+
+    @property
+    def enabled(self) -> bool:
+        return bool(self.input_jailbreak or self.output_categories)
+
+
+class GovernanceConfigurationDefaults(BaseModel):
+    """Per-agent data handling. Versioned with the agent, like every dial here.
+
+    ``storage_mode`` and ``retention_days`` are None to INHERIT the
+    organization default; ``retention_days = 0`` means keep forever on purpose
+    (distinct from "inherit", which is what None means).
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    storage_mode: StorageMode | None = None
+    retention_days: int | None = Field(default=None, ge=0, le=MAX_RETENTION_DAYS)
+    record_audio: bool = True
+    store_transcript: bool = True
+    redaction_categories: list[RedactionCategory] = Field(default_factory=list)
+    # Off by default: gathered_context feeds webhook payloads and post-call
+    # extraction, so redacting it silently breaks integrations.
+    redact_gathered_context: bool = False
+    guardrails: GuardrailConfigurationDefaults = Field(
+        default_factory=GuardrailConfigurationDefaults
+    )
+
+
 class WorkflowConfigurationDefaults(BaseModel):
     model_config = ConfigDict(extra="allow")
 
@@ -147,6 +230,9 @@ class WorkflowConfigurationDefaults(BaseModel):
     )
     knowledge_base_configuration: KnowledgeBaseConfigurationDefaults = Field(
         default_factory=KnowledgeBaseConfigurationDefaults
+    )
+    governance_configuration: GovernanceConfigurationDefaults = Field(
+        default_factory=GovernanceConfigurationDefaults
     )
     max_call_duration: int = Field(
         default=DEFAULT_MAX_CALL_DURATION_SECONDS,

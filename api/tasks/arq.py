@@ -43,6 +43,7 @@ from api.tasks.campaign_tasks import (
     process_campaign_batch,
     sync_campaign_source,
 )
+from api.tasks.data_retention import purge_expired_workflow_runs
 from api.tasks.knowledge_base_processing import process_knowledge_base_document
 from api.tasks.run_integrations import run_integrations_post_workflow_run
 from api.tasks.text_chat_inactivity import (
@@ -62,6 +63,7 @@ class WorkerSettings:
         process_knowledge_base_document,
         deliver_webhook,
         complete_inactive_text_chat_session,
+        purge_expired_workflow_runs,
     ]
     cron_jobs = [
         # Safety net for webhook deliveries whose ARQ job was lost (worker
@@ -80,6 +82,10 @@ class WorkerSettings:
             second=30,
             run_at_startup=True,
         ),
+        # Delete recordings, transcripts and logs past their retention deadline.
+        # Daily, off-peak. Not at startup: a deploy should not trigger a bulk
+        # delete as a side effect. A run with no deadline is never selected.
+        cron(purge_expired_workflow_runs, hour=2, minute=45, second=0),
     ]
     redis_settings = REDIS_SETTINGS
     max_jobs = 10

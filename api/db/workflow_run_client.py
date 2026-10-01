@@ -6,18 +6,23 @@ from sqlalchemy import func, or_
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload, selectinload
 
+from loguru import logger
+
 from api.constants import PUBLIC_ARTIFACT_TOKEN_TTL_DAYS
 from api.db.base_client import BaseDBClient
 from api.db.filters import apply_workflow_run_filters, get_workflow_run_order_clause
 from api.db.models import (
+    OrganizationConfigurationModel,
     OrganizationModel,
     UserModel,
     WorkflowDefinitionModel,
     WorkflowModel,
     WorkflowRunModel,
 )
-from api.enums import CallType, StorageBackend
+from api.enums import CallType, OrganizationConfigurationKey, StorageBackend
+from api.schemas.organization_preferences import OrganizationPreferences
 from api.schemas.workflow import WorkflowRunResponseSchema
+from api.services.governance.policy import resolve_governance_policy, retention_deadline
 from api.services.workflow.run_usage_response import format_public_cost_info
 from api.utils.recording_artifacts import get_recording_storage_key
 
@@ -72,7 +77,15 @@ class WorkflowRunClient(BaseDBClient):
             # Get the current storage backend based on ENABLE_AWS_S3 flag
             current_backend = StorageBackend.get_current_backend()
 
+            created_at = datetime.now(UTC)
+            retention_expires_at, governance_extra = await self._stamp_governance(
+                session, workflow, definition_id, created_at
+            )
+
             new_run = WorkflowRunModel(
+                created_at=created_at,
+                retention_expires_at=retention_expires_at,
+                extra=governance_extra,
                 name=name,
                 workflow=workflow,
                 mode=mode,
@@ -93,6 +106,138 @@ class WorkflowRunClient(BaseDBClient):
                 raise e
             await session.refresh(new_run)
         return new_run
+
+    async def _stamp_governance(
+        self,
+        session,
+        workflow: WorkflowModel,
+        definition_id: int | None,
+        created_at: datetime,
+    ) -> tuple[datetime | None, dict]:
+        """The retention deadline (and the policy it came from) for a new run.
+
+        Stamped at creation rather than joined in at purge time: the purge is
+        then one indexed scan, and a later policy change does not re-age or
+        resurrect runs that already exist.
+
+        Never raises. A run that fails to get a deadline is kept forever, which
+        is the safe direction; failing here would refuse a call over a
+        bookkeeping column.
+        """
+        try:
+            config_query = select(WorkflowDefinitionModel.workflow_configurations)
+            if definition_id is not None:
+                config_query = config_query.where(
+                    WorkflowDefinitionModel.id == definition_id
+                )
+            else:
+                config_query = config_query.where(
+                    WorkflowDefinitionModel.workflow_id == workflow.id,
+                    WorkflowDefinitionModel.is_current.is_(True),
+                )
+            workflow_configurations = (
+                await session.execute(config_query)
+            ).scalars().first()
+
+            prefs = OrganizationPreferences()
+            if workflow.organization_id is not None:
+                raw = (
+                    await session.execute(
+                        select(OrganizationConfigurationModel.value).where(
+                            OrganizationConfigurationModel.organization_id
+                            == workflow.organization_id,
+                            OrganizationConfigurationModel.key
+                            == OrganizationConfigurationKey.ORGANIZATION_PREFERENCES.value,
+                        )
+                    )
+                ).scalars().first()
+                if isinstance(raw, dict):
+                    prefs = OrganizationPreferences.model_validate(raw)
+
+            policy = resolve_governance_policy(workflow_configurations, prefs)
+            deadline = retention_deadline(created_at, policy)
+            if deadline is None and policy.storage_mode == "everything":
+                return None, {}
+            # Recorded so the purge knows what to clear without re-resolving a
+            # policy that may have changed since this call happened.
+            return deadline, {
+                "governance": {
+                    "storage_mode": policy.storage_mode,
+                    "retention_days": policy.retention_days,
+                }
+            }
+        except Exception as exc:
+            logger.error(
+                f"Could not resolve governance policy for workflow {workflow.id}; "
+                f"the run will be kept: {exc}"
+            )
+            return None, {}
+
+    async def get_runs_due_for_purge(
+        self, now: datetime, limit: int, after_id: int = 0
+    ) -> list[WorkflowRunModel]:
+        """Runs past their retention deadline whose artifacts still exist."""
+        async with self.async_session() as session:
+            result = await session.execute(
+                select(WorkflowRunModel)
+                .options(selectinload(WorkflowRunModel.text_session))
+                .where(
+                    WorkflowRunModel.retention_expires_at.is_not(None),
+                    WorkflowRunModel.retention_expires_at <= now,
+                    WorkflowRunModel.purged_at.is_(None),
+                    WorkflowRunModel.id > after_id,
+                )
+                .order_by(WorkflowRunModel.id)
+                .limit(limit)
+            )
+            return list(result.scalars().all())
+
+    async def delete_run_artifacts(
+        self, run_id: int, *, clear_context: bool, now: datetime
+    ) -> bool:
+        """Forget what a purged run captured, and mark it purged.
+
+        Called only after the stored objects are gone. Keeps the row, its
+        timestamps, usage and cost: removing them would change reports for calls
+        that were already counted.
+
+        Clears the places a call's content lives besides object storage: the
+        recording/transcript pointers, the realtime events in ``logs`` (which
+        carry the transcript turn by turn), and a text chat's conversation. Under
+        ``basic_only`` also the gathered and initial context.
+        """
+        async with self.async_session() as session:
+            run = (
+                await session.execute(
+                    select(WorkflowRunModel)
+                    .options(selectinload(WorkflowRunModel.text_session))
+                    .where(WorkflowRunModel.id == run_id)
+                )
+            ).scalars().first()
+            if run is None:
+                return False
+
+            run.recording_url = None
+            run.transcript_url = None
+            # Reassign, never mutate in place: JSON columns do not track it.
+            run.extra = {k: v for k, v in (run.extra or {}).items() if k != "recordings"}
+            run.logs = {
+                k: v
+                for k, v in (run.logs or {}).items()
+                if k != "realtime_feedback_events"
+            }
+            if clear_context:
+                run.gathered_context = {}
+                run.initial_context = {}
+            if run.text_session is not None:
+                run.text_session.session_data = {}
+            # The artifacts are gone, so a link to them should not keep answering.
+            run.public_access_token = None
+            run.public_access_token_expires_at = None
+            run.purged_at = now
+
+            await session.commit()
+            return True
 
     async def get_all_workflow_runs(self) -> list[WorkflowRunModel]:
         async with self.async_session() as session:
