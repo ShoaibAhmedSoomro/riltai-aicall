@@ -9,7 +9,19 @@ const OSS_TOKEN_COOKIE = 'rilt_auth_token';
 // `/embed` serves the public website widget (e.g. /embed/rilt-widget.js),
 // which must be fetchable without a session cookie so third-party sites can
 // embed it — otherwise the middleware 307-redirects the asset to /auth/login.
-const PUBLIC_PATHS = ['/auth/login', '/auth/signup', '/embed'];
+// Every page under /auth must be listed here: they are the pages a signed-out
+// person needs, and one that is missing silently redirects them to the login
+// form. That is how the password-reset pages shipped unreachable -- they worked
+// for anyone already signed in, which is the one person who does not need them.
+// middleware.test.ts fails if a new /auth page is added without being listed.
+const PUBLIC_PATHS = [
+    '/auth/login',
+    '/auth/signup',
+    '/auth/forgot-password',
+    '/auth/reset-password',
+    '/auth/verify-email',
+    '/embed',
+];
 
 let cachedAuthProvider: string | null = null;
 
