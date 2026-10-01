@@ -22,6 +22,7 @@ Bash-only (deployment / CI / OSS-user setup — not intended for Windows contrib
 - `format.sh` / `lint.sh` / `pre_commit.sh`
 - `generate_sdk.sh` / `release_sdks.sh` / `dump_docs_openapi.py`
 - `backup.sh` — dump/verify/restore Postgres + MinIO on a compose install. Server-side ops, so no `.ps1` pair; it drives `docker compose` from the repo root and is meant to run from cron. Documented in `docs/deployment/update.mdx`.
+- `maintenance.py` — host-side cron job (`tick` every minute, `auto` weekly) that clears the Docker **build cache** and nothing else, on request from the superadmin portal and on a schedule. Server-side ops, so no `.ps1` pair. It runs on the HOST because the api container must never have the Docker socket (root on the host); the two sides share `./maintenance` (the portal drops an empty file in `requests/`, the script writes `status.json`). It uses its own `DOCKER_CONFIG` because deploys run `sudo docker`, which leaves root-owned files in `~/.docker` that a cron job as `ubuntu` cannot open — found the first time it ran for real.
 - `check_alembic_heads.py` — CI gate, run by `pre-pr-drift-check.yml`. Fails on more than one migration head, because `alembic upgrade head` runs inside the api container's CMD and a second head becomes a restart loop rather than a failed deploy. `--self-check` proves the logic against synthetic graphs.
 - `setup-worktree.sh` / `worktree-sync-env.sh` — VS Code git-worktree dev flow (`.vscode/tasks.json`)
 

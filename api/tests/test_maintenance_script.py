@@ -241,3 +241,41 @@ def test_a_corrupt_status_file_is_replaced_not_fatal(tmp_path):
     (tmp_path / "status.json").write_text("{half a fi")
     m.refresh_status()
     assert "build_cache_bytes" in _status(tmp_path)
+
+
+# ── the environment it runs docker in ───────────────────────────────────────
+
+
+def test_docker_runs_with_a_private_config_directory(tmp_path):
+    """Found in production: deploys leave root-owned files in ~/.docker, and
+    the cron job (a different user) then failed on buildx/.lock. A directory
+    this script owns cannot be broken by whatever a deploy does."""
+    env = maint.docker_env(tmp_path)
+    assert env["DOCKER_CONFIG"] == str(tmp_path / ".docker-config")
+    # Everything else is inherited: it still needs PATH to find docker at all.
+    assert "PATH" in env
+
+
+def test_a_missing_docker_binary_is_a_recorded_failure_not_a_crash(monkeypatch):
+    """The request is consumed before the prune runs, so an exception here
+    would lose the outcome and leave the person who clicked with silence."""
+
+    def boom(*a, **k):
+        raise FileNotFoundError("docker")
+
+    monkeypatch.setattr(maint.subprocess, "run", boom)
+    code, out = maint._real_run(["docker", "builder", "prune"])
+    assert code != 0
+    assert "FileNotFoundError" in out
+
+
+def test_a_hung_daemon_is_a_recorded_failure_not_a_crash(monkeypatch):
+    import subprocess
+
+    def hang(*a, **k):
+        raise subprocess.TimeoutExpired("docker", 900)
+
+    monkeypatch.setattr(maint.subprocess, "run", hang)
+    code, out = maint._real_run(["docker", "builder", "prune"])
+    assert code != 0
+    assert "TimeoutExpired" in out

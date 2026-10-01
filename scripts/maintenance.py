@@ -66,8 +66,29 @@ def parse_size(text: str) -> int | None:
         return None
 
 
-def _real_run(cmd: list[str]) -> tuple[int, str]:
-    p = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
+def docker_env(maint_dir: Path) -> dict[str, str]:
+    """The environment to run Docker with: a PRIVATE config directory.
+
+    Found in production on the first real run: `docker builder prune` failed
+    with "open /home/ubuntu/.docker/buildx/.lock: permission denied". Deploys
+    run `sudo docker compose build`, which leaves root-owned files in the
+    deploying user's ~/.docker, and a cron job running as that user then cannot
+    open them. The daemon (and so the build cache) is the same whichever config
+    directory the client uses, so pointing this script at one it owns removes
+    the whole class of problem instead of fixing the current ownership and
+    waiting for the next deploy to break it again.
+    """
+    return {**os.environ, "DOCKER_CONFIG": str(Path(maint_dir) / ".docker-config")}
+
+
+def _real_run(cmd: list[str], env: dict[str, str] | None = None) -> tuple[int, str]:
+    # A missing binary or a hung daemon raises rather than returning a code.
+    # Either must come back as a failed result: the caller has already consumed
+    # the request, and an exception here would lose the outcome entirely.
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=900, env=env)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return 127, f"{type(exc).__name__}: {exc}"
     return p.returncode, (p.stdout or "") + (p.stderr or "")
 
 
@@ -215,7 +236,9 @@ def main(argv: list[str] | None = None) -> int:
         print("another maintenance run is in progress", file=sys.stderr)
         return 0
 
-    m = Maintenance(maint_dir)
+    env = docker_env(maint_dir)
+    Path(env["DOCKER_CONFIG"]).mkdir(parents=True, exist_ok=True)
+    m = Maintenance(maint_dir, run=lambda cmd: _real_run(cmd, env=env))
     if args.command == "status":
         m.refresh_status()
         print(json.dumps(m._read_status(), indent=2))
