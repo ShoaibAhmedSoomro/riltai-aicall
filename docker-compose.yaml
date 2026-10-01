@@ -327,6 +327,13 @@ services:
 
     ports:
       - "8000:8000"
+    # Shared with the host's cron job (scripts/maintenance.py): the host writes
+    # status.json here and the superadmin portal drops an empty request file in
+    # requests/. This folder is the ONLY channel -- the API is deliberately given
+    # no Docker access, because that would be root on the host if it were ever
+    # compromised.
+    volumes:
+      - ./maintenance:/maintenance
     depends_on:
       postgres:
         condition: service_healthy

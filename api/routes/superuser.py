@@ -3,10 +3,12 @@ from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from loguru import logger
 from pydantic import BaseModel
 
 from api.db import db_client
 from api.db.models import UserModel
+from api.services import maintenance
 from api.services.auth.depends import get_superuser
 from api.services.auth.stack_auth import (
     StackAuthSessionError,
@@ -202,3 +204,101 @@ async def get_workflow_runs(
         limit=limit,
         total_pages=total_pages,
     )
+
+
+# ── server maintenance ──────────────────────────────────────────────────────
+#
+# A portal for clearing the Docker build cache, which once grew to 109 GB and
+# took the disk to 81%. The API cannot and must not run Docker itself (that is
+# root on the host); it files an empty request that scripts/maintenance.py,
+# run from cron on the host, picks up. See api/services/maintenance.py.
+
+
+class DiskUsageResponse(BaseModel):
+    total_bytes: int
+    used_bytes: int
+    free_bytes: int
+    percent: float
+
+
+class LastPruneResponse(BaseModel):
+    at: str
+    source: str
+    ok: bool
+    # None, not 0, when the size could not be read either side of the prune:
+    # "freed nothing" and "could not tell" are different statements.
+    freed_bytes: Optional[int] = None
+    error: Optional[str] = None
+
+
+class MaintenancePolicyResponse(BaseModel):
+    auto_keep_hours: int
+    emergency_disk_percent: int
+
+
+class MaintenanceStatusResponse(BaseModel):
+    # False where the shared folder is not mounted (local development, another
+    # host). The page then says so rather than offering a button that cannot work.
+    available: bool
+    disk: DiskUsageResponse
+    # None until the host script has reported once.
+    build_cache_bytes: Optional[int] = None
+    status_updated_at: Optional[str] = None
+    last_prune: Optional[LastPruneResponse] = None
+    policy: Optional[MaintenancePolicyResponse] = None
+    prune_requested: bool
+
+
+class PruneRequestResponse(BaseModel):
+    status: str  # "requested" | "already_requested"
+
+
+@router.get("/maintenance", response_model=MaintenanceStatusResponse)
+async def get_maintenance_status(_: UserModel = Depends(get_superuser)):
+    status_ = maintenance.read_status() or {}
+
+    def _typed(model, value):
+        # A malformed section of the host's file becomes "unknown", not a 500.
+        try:
+            return model(**value) if isinstance(value, dict) else None
+        except Exception:
+            return None
+
+    return MaintenanceStatusResponse(
+        available=maintenance.is_available(),
+        disk=DiskUsageResponse(**maintenance.disk_usage()),
+        build_cache_bytes=status_.get("build_cache_bytes"),
+        status_updated_at=status_.get("updated_at"),
+        last_prune=_typed(LastPruneResponse, status_.get("last_prune")),
+        policy=_typed(MaintenancePolicyResponse, status_.get("policy")),
+        prune_requested=maintenance.prune_requested(),
+    )
+
+
+@router.post(
+    "/maintenance/prune-build-cache",
+    response_model=PruneRequestResponse,
+    status_code=202,
+)
+async def request_build_cache_prune(user: UserModel = Depends(get_superuser)):
+    """Ask the host to clear the Docker build cache.
+
+    202, not 200: nothing has happened yet. The host picks the request up within
+    a minute, and the page polls the status to find out how it went.
+    """
+    if not maintenance.is_available():
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Server maintenance is not available here: the shared "
+                "maintenance folder is not mounted on this deployment."
+            ),
+        )
+
+    created = maintenance.request_prune()
+    logger.info(
+        "Build cache clear {} by user {}",
+        "requested" if created else "already pending, requested again",
+        user.id,
+    )
+    return PruneRequestResponse(status="requested" if created else "already_requested")
