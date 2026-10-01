@@ -80,8 +80,19 @@ cmd_backup() {
     else
         # --volumes-from inherits minio's own mount, so we never have to guess
         # the project-prefixed volume name (which COMPOSE_PROJECT_NAME changes).
-        docker run --rm --volumes-from "$cid" -v "$(pwd)/$out:/backup" alpine \
+        # Absolute, resolved from the directory itself. "$(pwd)/$out" doubled up
+        # when BACKUP_DIR was absolute (".../repo//tmp/x"), and docker -v quietly
+        # CREATES a missing host path as root -- so the archive landed in a
+        # stray tree inside the repo while this script reported success.
+        local abs_out
+        abs_out=$(cd "$out" && pwd)
+        docker run --rm --volumes-from "$cid" -v "$abs_out:/backup" alpine \
             tar czf /backup/minio-data.tgz -C /data . || die "minio archive failed"
+        # The success line used to print without looking at the file at all
+        # ("ok ( bytes)"). A backup that cannot say how big its archive is has
+        # not produced one, and must not be offered offsite as good.
+        [ -s "$out/minio-data.tgz" ] \
+            || die "minio archive is missing or empty; not reporting this backup as good"
         echo "  minio-data.tgz ok ($(wc -c <"$out/minio-data.tgz") bytes)"
     fi
 
