@@ -2,6 +2,7 @@
 
 import { ExternalLink } from "lucide-react";
 
+import { EmailVerificationNotice } from "@/components/EmailVerificationNotice";
 import { MCPSection } from "@/components/MCPSection";
 import { OrganizationInvitesSection } from "@/components/OrganizationInvitesSection";
 import { OrganizationMembersSection } from "@/components/OrganizationMembersSection";
@@ -27,6 +28,8 @@ export default function SettingsPage() {
             Manage your platform configuration and integrations.
           </p>
         </div>
+
+        <EmailVerificationNotice />
 
         <Card>
           <CardHeader>

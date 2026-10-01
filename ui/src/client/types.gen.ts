@@ -7722,6 +7722,10 @@ export type UserResponse = {
      * Is Superuser
      */
     is_superuser?: boolean;
+    /**
+     * Email Verified
+     */
+    email_verified?: boolean;
 };
 
 /**
@@ -7789,6 +7793,16 @@ export type ValidationError = {
     ctx?: {
         [key: string]: unknown;
     };
+};
+
+/**
+ * VerifyEmailRequest
+ */
+export type VerifyEmailRequest = {
+    /**
+     * Token
+     */
+    token: string;
 };
 
 /**
@@ -16680,6 +16694,82 @@ export type ResetPasswordApiV1AuthResetPasswordPostResponses = {
 };
 
 export type ResetPasswordApiV1AuthResetPasswordPostResponse = ResetPasswordApiV1AuthResetPasswordPostResponses[keyof ResetPasswordApiV1AuthResetPasswordPostResponses];
+
+export type VerifyEmailApiV1AuthVerifyEmailPostData = {
+    body: VerifyEmailRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/verify-email';
+};
+
+export type VerifyEmailApiV1AuthVerifyEmailPostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type VerifyEmailApiV1AuthVerifyEmailPostError = VerifyEmailApiV1AuthVerifyEmailPostErrors[keyof VerifyEmailApiV1AuthVerifyEmailPostErrors];
+
+export type VerifyEmailApiV1AuthVerifyEmailPostResponses = {
+    /**
+     * Response Verify Email Api V1 Auth Verify Email Post
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type VerifyEmailApiV1AuthVerifyEmailPostResponse = VerifyEmailApiV1AuthVerifyEmailPostResponses[keyof VerifyEmailApiV1AuthVerifyEmailPostResponses];
+
+export type ResendVerificationApiV1AuthResendVerificationPostData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/resend-verification';
+};
+
+export type ResendVerificationApiV1AuthResendVerificationPostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ResendVerificationApiV1AuthResendVerificationPostError = ResendVerificationApiV1AuthResendVerificationPostErrors[keyof ResendVerificationApiV1AuthResendVerificationPostErrors];
+
+export type ResendVerificationApiV1AuthResendVerificationPostResponses = {
+    /**
+     * Response Resend Verification Api V1 Auth Resend Verification Post
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type ResendVerificationApiV1AuthResendVerificationPostResponse = ResendVerificationApiV1AuthResendVerificationPostResponses[keyof ResendVerificationApiV1AuthResendVerificationPostResponses];
 
 export type ListNodeTypesApiV1NodeTypesGetData = {
     body?: never;
