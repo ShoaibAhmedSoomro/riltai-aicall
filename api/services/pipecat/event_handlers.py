@@ -5,6 +5,13 @@ from loguru import logger
 from api.db import db_client
 from api.enums import PostHogEvent, WorkflowRunState
 from api.services.campaign.circuit_breaker import circuit_breaker
+from api.services.governance.enforcement import (
+    govern_context,
+    govern_events,
+    govern_transcript,
+    redaction_record,
+)
+from api.services.governance.policy import GovernancePolicy
 from api.services.integrations import IntegrationRuntimeSession
 from api.services.pipecat.audio_config import AudioConfig
 from api.services.pipecat.audio_playback import play_audio_loop
@@ -75,8 +82,13 @@ def register_event_handlers(
     user_provider_id: str | None = None,
     integration_runtime_sessions: list[IntegrationRuntimeSession] | None = None,
     include_transcript_end_timestamps: bool = False,
+    governance: GovernancePolicy | None = None,
 ):
     """Register all event handlers for transport and task events.
+
+    ``governance`` decides what of the call is kept: whether audio is recorded,
+    whether a transcript is stored, and what is redacted first. None keeps
+    everything, which is what every call did before it existed.
 
     Returns:
         In-memory recording buffers for use by other handlers.
@@ -172,7 +184,10 @@ def register_event_handlers(
     @transport.event_handler("on_client_connected")
     async def on_client_connected(_transport, _participant):
         logger.debug("In on_client_connected callback handler")
-        await audio_buffer.start_recording()
+        # Not starting the recording is what keeps audio out of memory; the data
+        # handler is skipped for the same reason in run_pipeline.
+        if governance is None or governance.record_audio:
+            await audio_buffer.start_recording()
         ready_state["client_connected"] = True
         await maybe_trigger_initial_response()
 
@@ -354,10 +369,11 @@ def register_event_handlers(
             f"Usage metrics: {usage_info}, Gathered context: {gathered_context}"
         )
 
+        stored_context, context_counts = govern_context(gathered_context, governance)
         await db_client.update_workflow_run(
             run_id=workflow_run_id,
             usage_info=usage_info,
-            gathered_context=gathered_context,
+            gathered_context=stored_context,
             is_completed=True,
             state=WorkflowRunState.COMPLETED.value,
         )
@@ -369,9 +385,12 @@ def register_event_handlers(
         )
 
         logs_update: dict[str, object] = {}
+        event_counts: dict[str, int] = {}
         if not in_memory_logs_buffer.is_empty:
             try:
-                feedback_events = in_memory_logs_buffer.get_events()
+                feedback_events, event_counts = govern_events(
+                    in_memory_logs_buffer.get_events(), governance
+                )
                 logs_update["realtime_feedback_events"] = feedback_events
                 logger.debug(
                     f"Saved {len(feedback_events)} feedback events to workflow run logs"
@@ -401,17 +420,18 @@ def register_event_handlers(
             user_audio_wav = None
             bot_audio_wav = None
 
-            if not in_memory_audio_buffers.mixed.is_empty:
+            keep_audio = governance is None or governance.record_audio
+            if keep_audio and not in_memory_audio_buffers.mixed.is_empty:
                 mixed_audio_wav = await in_memory_audio_buffers.mixed.to_wav_bytes()
             else:
                 logger.debug("Audio buffer is empty, skipping upload")
 
-            if not in_memory_audio_buffers.user.is_empty:
+            if keep_audio and not in_memory_audio_buffers.user.is_empty:
                 user_audio_wav = await in_memory_audio_buffers.user.to_wav_bytes()
             else:
                 logger.debug("User audio buffer is empty, skipping upload")
 
-            if not in_memory_audio_buffers.bot.is_empty:
+            if keep_audio and not in_memory_audio_buffers.bot.is_empty:
                 bot_audio_wav = await in_memory_audio_buffers.bot.to_wav_bytes()
             else:
                 logger.debug("Bot audio buffer is empty, skipping upload")
@@ -419,6 +439,7 @@ def register_event_handlers(
             transcript_text = in_memory_logs_buffer.generate_transcript_text(
                 include_end_timestamps=include_transcript_end_timestamps
             )
+            transcript_text, _ = govern_transcript(transcript_text, governance)
             if not transcript_text:
                 logger.debug("No transcript events in logs buffer, skipping upload")
 
@@ -431,6 +452,19 @@ def register_event_handlers(
             )
         except Exception as e:
             logger.error(f"Error uploading call artifacts: {e}", exc_info=True)
+
+        # Proof the redaction pass ran, and what it caught, for a compliance
+        # reviewer. Written whether or not it found anything.
+        # Counted from the events only: the transcript file is built from the
+        # same words, so adding its count would report one email as two.
+        record = redaction_record(governance, event_counts, context_counts)
+        if record:
+            try:
+                await db_client.update_workflow_run(
+                    run_id=workflow_run_id, extra={"redaction": record}
+                )
+            except Exception as e:
+                logger.error(f"Error recording redaction summary: {e}", exc_info=True)
 
         # Combined task: runs integrations (including QA), then calculates
         # cost (so QA token usage is captured in usage_info)

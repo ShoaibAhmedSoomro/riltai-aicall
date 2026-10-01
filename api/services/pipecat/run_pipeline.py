@@ -36,6 +36,8 @@ from api.services.pipecat.event_handlers import (
     register_event_handlers,
 )
 from api.services.pipecat.in_memory_buffers import InMemoryLogsBuffer
+from api.services.governance.loader import load_governance_policy
+from api.services.pipecat.guardrail_processor import GuardrailProcessor
 from api.services.pipecat.pipeline_builder import (
     build_pipeline,
     build_realtime_pipeline,
@@ -665,6 +667,10 @@ async def _run_pipeline_impl(
         transcript_config.get("include_end_timestamps", False)
     )
 
+    # What of this call is kept. The agent's settings come from the pinned
+    # version already loaded above; only the org default needs a lookup.
+    governance = await load_governance_policy(run_configs, workflow.organization_id)
+
     if run_configs:
         if "max_call_duration" in run_configs:
             max_call_duration_seconds = run_configs["max_call_duration"]
@@ -1088,6 +1094,38 @@ async def _run_pipeline_impl(
             )
         )
 
+    # In-call guardrail: the caller's side only, patterns only (see
+    # guardrail_processor.py for why). Not for realtime models, which have no
+    # transcription stage to screen.
+    guardrail = None
+    if governance.guardrails.input_jailbreak and not is_realtime:
+        guardrail_action = governance.guardrails.on_violation
+
+        async def _on_guardrail_violation(rule: str, action: str) -> None:
+            logger.warning(
+                f"Guardrail tripped on run {workflow_run_id}: rule={rule} action={action}"
+            )
+            # The rule's name, never the caller's words.
+            await in_memory_logs_buffer.append(
+                {
+                    "type": "rtf-guardrail",
+                    "payload": {"rule": rule, "action": action, "side": "caller"},
+                }
+            )
+            if action == "end_call":
+
+                async def _end_after_deflection():
+                    # Let the deflection finish before the line drops.
+                    await engine.wait_for_speech_playback()
+                    await engine.end_call_with_reason("guardrail_violation")
+
+                engine.arm_speech_playback()
+                asyncio.create_task(_end_after_deflection())
+
+        guardrail = GuardrailProcessor(
+            action=guardrail_action, on_violation=_on_guardrail_violation
+        )
+
     # Build the pipeline
     if is_realtime:
         pipeline = build_realtime_pipeline(
@@ -1113,6 +1151,7 @@ async def _run_pipeline_impl(
             pipeline_metrics_aggregator,
             voicemail_detector=voicemail_detector,
             recording_router=recording_router,
+            guardrail=guardrail,
         )
 
     # Create pipeline task with audio configuration
@@ -1200,9 +1239,15 @@ async def _run_pipeline_impl(
         user_provider_id=user_provider_id,
         integration_runtime_sessions=integration_runtime_sessions,
         include_transcript_end_timestamps=include_transcript_end_timestamps,
+        governance=governance,
     )
 
-    register_audio_data_handler(audio_buffer, workflow_run_id, in_memory_audio_buffer)
+    # Skipping the handler is what actually keeps audio out of memory: a
+    # recording that is never started would otherwise still be appended to.
+    if governance.record_audio:
+        register_audio_data_handler(
+            audio_buffer, workflow_run_id, in_memory_audio_buffer
+        )
 
     try:
         # Run the pipeline

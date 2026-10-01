@@ -13,6 +13,8 @@ from api.db.workflow_run_text_session_client import (
     WorkflowRunTextSessionRevisionConflictError,
 )
 from api.enums import WorkflowRunState
+from api.services.governance.enforcement import govern_events, redaction_record
+from api.services.governance.loader import load_governance_policy
 from api.services.workflow.text_chat_logs import (
     build_text_chat_realtime_feedback_events,
 )
@@ -147,6 +149,44 @@ async def append_text_chat_user_message(
     return await _reload_text_chat_session(run_id)
 
 
+async def _governed_events(
+    run_id: int, session_data: dict[str, Any]
+) -> tuple[list[dict[str, Any]], Any, dict[str, int]]:
+    """The run's log events as they should be stored under its governance policy.
+
+    A text chat's live conversation (``session_data``) is what the agent needs to
+    continue, so it is stored as typed until the retention purge clears it. What
+    this governs is everything derived from it that is kept for review: the log
+    events and the transcript file.
+
+    If the policy cannot be resolved the events are stored as built. Failing to
+    look up a setting must not lose the conversation's record.
+    """
+    events = build_text_chat_realtime_feedback_events(session_data)
+    try:
+        organization_id = await db_client.get_organization_id_by_workflow_run_id(run_id)
+        configs = (
+            await db_client.get_workflow_run_configurations(run_id, organization_id)
+            if organization_id
+            else {}
+        )
+        policy = await load_governance_policy(configs, organization_id)
+    except Exception as e:  # noqa: BLE001 - see docstring
+        logger.error(f"Could not resolve governance policy for text chat {run_id}: {e}")
+        return events, None, {}
+    governed, counts = govern_events(events, policy)
+    return governed, policy, counts
+
+
+async def _record_redaction(run_id: int, policy, counts: dict[str, int]) -> None:
+    record = redaction_record(policy, counts)
+    if record:
+        try:
+            await db_client.update_workflow_run(run_id, extra={"redaction": record})
+        except Exception as e:  # noqa: BLE001 - a summary must not fail the chat
+            logger.error(f"Could not record redaction summary for run {run_id}: {e}")
+
+
 async def rewind_text_chat_session_state(
     *,
     run_id: int,
@@ -172,13 +212,10 @@ async def rewind_text_chat_session_state(
             actual_revision=e.actual_revision,
         ) from e
 
+    rewound_events, _, _ = await _governed_events(run_id, session_data)
     await db_client.update_workflow_run(
         run_id,
-        logs={
-            "realtime_feedback_events": build_text_chat_realtime_feedback_events(
-                session_data
-            )
-        },
+        logs={"realtime_feedback_events": rewound_events},
     )
 
     return await _reload_text_chat_session(run_id)
@@ -214,7 +251,9 @@ async def complete_text_chat_session(
     if disposition not in call_tags:
         call_tags.append(disposition)
 
-    feedback_events = build_text_chat_realtime_feedback_events(completed_session_data)
+    feedback_events, policy, redaction_counts = await _governed_events(
+        run_id, completed_session_data
+    )
     usage_info = dict(workflow_run.usage_info or {})
     usage_info["call_duration_seconds"] = _text_chat_duration_seconds(
         text_session,
@@ -242,6 +281,7 @@ async def complete_text_chat_session(
         ) from e
 
     await _upload_text_chat_transcript(run_id, feedback_events)
+    await _record_redaction(run_id, policy, redaction_counts)
     await _enqueue_text_chat_completion(run_id)
 
     return await _reload_text_chat_session(run_id)
@@ -303,7 +343,9 @@ async def execute_pending_text_chat_turn(
         text_session,
         completed_at=completed_at,
     )
-    feedback_events = build_text_chat_realtime_feedback_events(completed_session_data)
+    feedback_events, policy, redaction_counts = await _governed_events(
+        run_id, completed_session_data
+    )
     text_chat_logs = {"realtime_feedback_events": feedback_events}
 
     try:
@@ -334,6 +376,7 @@ async def execute_pending_text_chat_turn(
 
     if execution.is_completed:
         await _upload_text_chat_transcript(run_id, feedback_events)
+        await _record_redaction(run_id, policy, redaction_counts)
         await _enqueue_text_chat_completion(run_id)
     else:
         await db_client.update_workflow_run(

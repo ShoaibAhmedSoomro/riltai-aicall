@@ -11,6 +11,8 @@ from pydantic import ValidationError
 
 from api.constants import BACKEND_API_ENDPOINT, DEFAULT_WEBHOOK_DELIVERY_CONFIG
 from api.db import db_client
+from api.services.governance.loader import load_governance_policy
+from api.services.governance.safety_scan import scan_run_safety
 from api.db.models import WorkflowRunModel
 from api.enums import OrganizationConfigurationKey
 from api.errors.failure import (
@@ -130,6 +132,21 @@ async def _run_qa_nodes(
     return results
 
 
+async def _run_safety_scan(workflow_run, workflow_run_id: int, organization_id: int) -> None:
+    """Write ``annotations["safety"]`` for an agent with guardrails on. Never raises."""
+    try:
+        policy = await load_governance_policy(
+            workflow_run.definition.workflow_configurations, organization_id
+        )
+        result = await scan_run_safety(workflow_run, workflow_run_id, policy)
+        if result is not None:
+            await db_client.update_workflow_run(
+                workflow_run_id, annotations={"safety": result}
+            )
+    except Exception as exc:
+        logger.error(f"Safety scan step failed for run {workflow_run_id}: {exc}")
+
+
 async def run_integrations_post_workflow_run(_ctx, workflow_run_id: int):
     """
     Run integrations after a workflow run completes.
@@ -181,6 +198,12 @@ async def run_integrations_post_workflow_run(_ctx, workflow_run_id: int):
         if not workflow_definition:
             logger.debug("No workflow definition, skipping integrations")
             return
+
+        # Safety scan of the finished call, when the agent asks for one. Before
+        # the early return below on purpose: an agent with guardrails and no QA
+        # node, webhook or campaign has no other post-call work, and it must
+        # still be scanned.
+        await _run_safety_scan(workflow_run, workflow_run_id, organization_id)
 
         # Step 3: Extract integration nodes
         nodes = workflow_definition.get("nodes", [])

@@ -38,6 +38,7 @@ def build_pipeline(
     pipeline_metrics_aggregator,
     voicemail_detector=None,
     recording_router=None,
+    guardrail=None,
 ):
     """Build the main pipeline with all components.
 
@@ -68,6 +69,12 @@ def build_pipeline(
         # workflow ever needs a different terminator.
         DTMFAggregator(),
     ]
+
+    # Screens the caller's words before the agent sees them. After DTMF so a
+    # keypad sequence (already a TranscriptionFrame) passes through the same
+    # gate, and before everything that would act on the text.
+    if guardrail:
+        processors.append(guardrail)
 
     # Insert voicemail detector after STT if enabled
     # Note: We intentionally do NOT use voicemail_detector.gate() to allow TTS
