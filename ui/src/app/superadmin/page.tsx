@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, List, Loader2 } from 'lucide-react';
+import { ArrowRight, HardDrive, List, Loader2 } from 'lucide-react';
 import Link from "next/link";
 import { useState } from "react";
 
@@ -172,6 +172,24 @@ export default function SuperadminPage() {
                                         )}
                                     </Button>
                                 </form>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="md:col-span-2">
+                            <CardHeader>
+                                <CardTitle>Server maintenance</CardTitle>
+                                <CardDescription>
+                                    Disk usage, and clearing the Docker build cache
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Link href="/superadmin/maintenance">
+                                    <Button variant="outline" className="w-full md:w-auto">
+                                        <HardDrive className="mr-2 h-4 w-4" />
+                                        Open maintenance
+                                        <ArrowRight className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </Link>
                             </CardContent>
                         </Card>
 

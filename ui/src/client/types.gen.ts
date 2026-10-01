@@ -2033,6 +2033,28 @@ export type DefaultConfigurationsResponse = {
 };
 
 /**
+ * DiskUsageResponse
+ */
+export type DiskUsageResponse = {
+    /**
+     * Total Bytes
+     */
+    total_bytes: number;
+    /**
+     * Used Bytes
+     */
+    used_bytes: number;
+    /**
+     * Free Bytes
+     */
+    free_bytes: number;
+    /**
+     * Percent
+     */
+    percent: number;
+};
+
+/**
  * DisplayOptions
  *
  * Conditional visibility rules.
@@ -3542,6 +3564,32 @@ export type LastCampaignSettingsResponse = {
 };
 
 /**
+ * LastPruneResponse
+ */
+export type LastPruneResponse = {
+    /**
+     * At
+     */
+    at: string;
+    /**
+     * Source
+     */
+    source: string;
+    /**
+     * Ok
+     */
+    ok: boolean;
+    /**
+     * Freed Bytes
+     */
+    freed_bytes?: number | null;
+    /**
+     * Error
+     */
+    error?: string | null;
+};
+
+/**
  * LiveUsageResponse
  *
  * What is happening right now, for a dashboard tile.
@@ -3765,6 +3813,45 @@ export type MpsCreditPurchaseUrlResponse = {
      * Checkout Url
      */
     checkout_url: string;
+};
+
+/**
+ * MaintenancePolicyResponse
+ */
+export type MaintenancePolicyResponse = {
+    /**
+     * Auto Keep Hours
+     */
+    auto_keep_hours: number;
+    /**
+     * Emergency Disk Percent
+     */
+    emergency_disk_percent: number;
+};
+
+/**
+ * MaintenanceStatusResponse
+ */
+export type MaintenanceStatusResponse = {
+    /**
+     * Available
+     */
+    available: boolean;
+    disk: DiskUsageResponse;
+    /**
+     * Build Cache Bytes
+     */
+    build_cache_bytes?: number | null;
+    /**
+     * Status Updated At
+     */
+    status_updated_at?: string | null;
+    last_prune?: LastPruneResponse | null;
+    policy?: MaintenancePolicyResponse | null;
+    /**
+     * Prune Requested
+     */
+    prune_requested: boolean;
 };
 
 /**
@@ -5080,6 +5167,16 @@ export type ProviderSyncStatus = {
      * Message
      */
     message?: string | null;
+};
+
+/**
+ * PruneRequestResponse
+ */
+export type PruneRequestResponse = {
+    /**
+     * Status
+     */
+    status: string;
 };
 
 /**
@@ -9448,6 +9545,84 @@ export type GetWorkflowRunsApiV1SuperuserWorkflowRunsGetResponses = {
 };
 
 export type GetWorkflowRunsApiV1SuperuserWorkflowRunsGetResponse = GetWorkflowRunsApiV1SuperuserWorkflowRunsGetResponses[keyof GetWorkflowRunsApiV1SuperuserWorkflowRunsGetResponses];
+
+export type GetMaintenanceStatusApiV1SuperuserMaintenanceGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/superuser/maintenance';
+};
+
+export type GetMaintenanceStatusApiV1SuperuserMaintenanceGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetMaintenanceStatusApiV1SuperuserMaintenanceGetError = GetMaintenanceStatusApiV1SuperuserMaintenanceGetErrors[keyof GetMaintenanceStatusApiV1SuperuserMaintenanceGetErrors];
+
+export type GetMaintenanceStatusApiV1SuperuserMaintenanceGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: MaintenanceStatusResponse;
+};
+
+export type GetMaintenanceStatusApiV1SuperuserMaintenanceGetResponse = GetMaintenanceStatusApiV1SuperuserMaintenanceGetResponses[keyof GetMaintenanceStatusApiV1SuperuserMaintenanceGetResponses];
+
+export type RequestBuildCachePruneApiV1SuperuserMaintenancePruneBuildCachePostData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/superuser/maintenance/prune-build-cache';
+};
+
+export type RequestBuildCachePruneApiV1SuperuserMaintenancePruneBuildCachePostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RequestBuildCachePruneApiV1SuperuserMaintenancePruneBuildCachePostError = RequestBuildCachePruneApiV1SuperuserMaintenancePruneBuildCachePostErrors[keyof RequestBuildCachePruneApiV1SuperuserMaintenancePruneBuildCachePostErrors];
+
+export type RequestBuildCachePruneApiV1SuperuserMaintenancePruneBuildCachePostResponses = {
+    /**
+     * Successful Response
+     */
+    202: PruneRequestResponse;
+};
+
+export type RequestBuildCachePruneApiV1SuperuserMaintenancePruneBuildCachePostResponse = RequestBuildCachePruneApiV1SuperuserMaintenancePruneBuildCachePostResponses[keyof RequestBuildCachePruneApiV1SuperuserMaintenancePruneBuildCachePostResponses];
 
 export type ValidateWorkflowApiV1WorkflowWorkflowIdValidatePostData = {
     body?: never;
