@@ -118,3 +118,17 @@ class PhoneNumberResponse(BaseModel):
 
 class PhoneNumberListResponse(BaseModel):
     phone_numbers: list[PhoneNumberResponse]
+
+
+class OrgPhoneNumberResponse(PhoneNumberResponse):
+    """A phone number as the organization-wide page shows it: the number plus
+    which provider account and trunk it belongs to."""
+
+    telephony_configuration_name: str
+    telephony_provider: str
+    telephony_configuration_inactive: bool = False
+    telephony_trunk_name: Optional[str] = None
+
+
+class OrgPhoneNumberListResponse(BaseModel):
+    phone_numbers: list[OrgPhoneNumberResponse]

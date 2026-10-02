@@ -2,13 +2,14 @@
 
 import type { FolderResponse, WorkflowListResponse } from '@/client/types.gen';
 
-import { WorkflowTable } from '../WorkflowTable';
+import { type AgentSelection, WorkflowTable } from '../WorkflowTable';
 import { FolderSection } from './FolderSection';
 
 interface AgentFolderViewProps {
     /** Active (non-archived) agents only. */
     workflows: WorkflowListResponse[];
     folders: FolderResponse[];
+    selection?: AgentSelection;
 }
 
 /**
@@ -17,10 +18,10 @@ interface AgentFolderViewProps {
  * When the organization has no folders yet, this falls back to the original
  * flat table so the feature stays invisible until someone creates a folder.
  */
-export function AgentFolderView({ workflows, folders }: AgentFolderViewProps) {
+export function AgentFolderView({ workflows, folders, selection }: AgentFolderViewProps) {
     // No folders → keep the original flat list (no folder chrome, nowhere to move to).
     if (folders.length === 0) {
-        return <WorkflowTable workflows={workflows} showArchived={false} />;
+        return <WorkflowTable workflows={workflows} showArchived={false} selection={selection} />;
     }
 
     // Group agents by folder. Agents whose folder_id is null — or points at a
@@ -49,6 +50,7 @@ export function AgentFolderView({ workflows, folders }: AgentFolderViewProps) {
                     workflows={byFolder.get(folder.id) ?? []}
                     allFolders={folders}
                     defaultOpen={false}
+                    selection={selection}
                 />
             ))}
             {uncategorized.length > 0 && (
@@ -56,6 +58,7 @@ export function AgentFolderView({ workflows, folders }: AgentFolderViewProps) {
                     kind="uncategorized"
                     workflows={uncategorized}
                     allFolders={folders}
+                    selection={selection}
                 />
             )}
         </div>

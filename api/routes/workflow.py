@@ -300,6 +300,11 @@ class WorkflowListResponse(BaseModel):
     total_runs: int
     folder_id: int | None = None
     workflow_uuid: str | None = None
+    # What a live call runs, versus what the editor shows. The editor opens the
+    # draft when there is one, so these two explain why the two can disagree.
+    # None when the agent has never been published.
+    released_version_number: int | None = None
+    has_unpublished_draft: bool = False
 
 
 class MoveWorkflowToFolderRequest(BaseModel):
@@ -750,6 +755,9 @@ async def get_workflows(
     # Get run counts for all workflows in a single query
     workflow_ids = [workflow.id for workflow in workflows]
     run_counts = await db_client.get_workflow_run_counts(workflow_ids)
+    # Two more bulk queries, never one per row.
+    draft_ids = await db_client.get_draft_workflow_ids(workflow_ids)
+    released_versions = await db_client.get_released_version_numbers(workflow_ids)
 
     return [
         WorkflowListResponse(
@@ -760,6 +768,8 @@ async def get_workflows(
             total_runs=run_counts.get(workflow.id, 0),
             folder_id=workflow.folder_id,
             workflow_uuid=workflow.workflow_uuid,
+            released_version_number=released_versions.get(workflow.id),
+            has_unpublished_draft=workflow.id in draft_ids,
         )
         for workflow in workflows
     ]

@@ -151,13 +151,27 @@ export const encodeFiltersToURL = (filters: ActiveFilter[]): string => {
   return params.toString();
 };
 
+// The values `?channel=` accepts. There is deliberately no "all voice": the run
+// modes only group into telephony, web and chat.
+export const CHANNEL_SHORTHANDS = ["telephony", "web", "chat"] as const;
+
 // Decode filters from URL parameters
 export const decodeFiltersFromURL = (
   params: URLSearchParams,
   availableAttributes: FilterAttribute[]
 ): ActiveFilter[] => {
   const filtersParam = params.get("filters");
-  if (!filtersParam) return [];
+  if (!filtersParam) {
+    // `?channel=chat` is a readable way to link to a pre-filtered list, so a nav
+    // item does not have to carry an encoded JSON blob. An explicit `filters`
+    // param wins (checked above), so links shared before this existed still work.
+    const channel = params.get("channel");
+    const attribute = availableAttributes.find((attr) => attr.id === "callChannel");
+    if (attribute && channel && (CHANNEL_SHORTHANDS as readonly string[]).includes(channel)) {
+      return [{ attribute, value: { status: channel }, isValid: true }];
+    }
+    return [];
+  }
 
   try {
     const filterData = JSON.parse(filtersParam) as Array<{

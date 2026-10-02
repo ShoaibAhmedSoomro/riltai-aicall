@@ -2,7 +2,7 @@
 
 import { useParams, useSearchParams } from "next/navigation";
 
-import WorkflowLayout from "../../WorkflowLayout";
+import { AgentTabs } from "../AgentTabs";
 import { WorkflowExecutions } from "../components/WorkflowExecutions";
 
 export default function WorkflowRunsPage() {
@@ -10,11 +10,12 @@ export default function WorkflowRunsPage() {
     const searchParams = useSearchParams();
 
     return (
-        <WorkflowLayout showFeaturesNav={false}>
+        <>
+            <AgentTabs workflowId={Number(workflowId)} />
             <WorkflowExecutions
                 workflowId={Number(workflowId)}
                 searchParams={searchParams}
             />
-        </WorkflowLayout>
+        </>
     );
 }

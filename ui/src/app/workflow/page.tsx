@@ -1,17 +1,14 @@
 import { Suspense } from 'react';
 
 import { getWorkflowsApiV1WorkflowFetchGet, listFoldersApiV1FolderGet } from '@/client/sdk.gen';
-import type { FolderResponse, WorkflowListResponse } from '@/client/types.gen';
+import type { FolderResponse } from '@/client/types.gen';
 import { Card, CardContent } from '@/components/ui/card';
+import { AgentsListView } from '@/components/workflow/AgentsListView';
 import { CreateWorkflowButton } from "@/components/workflow/CreateWorkflowButton";
-import { AgentFolderView } from '@/components/workflow/folders/AgentFolderView';
 import { CreateFolderButton } from '@/components/workflow/folders/CreateFolderButton';
-import { FolderSection } from '@/components/workflow/folders/FolderSection';
 import { UploadWorkflowButton } from '@/components/workflow/UploadWorkflowButton';
 import { getServerAccessToken, getServerAuthProvider } from '@/lib/auth/server';
 import logger from '@/lib/logger';
-
-import WorkflowLayout from "./WorkflowLayout";
 
 export const dynamic = 'force-dynamic';
 
@@ -48,15 +45,6 @@ async function WorkflowList() {
 
         const allWorkflowData = response.data ? (Array.isArray(response.data) ? response.data : [response.data]) : [];
 
-        // Separate active and archived workflows
-        const activeWorkflows = allWorkflowData
-            .filter((w: WorkflowListResponse) => w.status === 'active')
-            .sort((a: WorkflowListResponse, b: WorkflowListResponse) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-        const archivedWorkflows = allWorkflowData
-            .filter((w: WorkflowListResponse) => w.status === 'archived')
-            .sort((a: WorkflowListResponse, b: WorkflowListResponse) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
         // Fetch folders for grouping active agents. A failure here shouldn't
         // break the page — fall back to an empty list (flat, ungrouped view).
         let folders: FolderResponse[] = [];
@@ -71,30 +59,9 @@ async function WorkflowList() {
             logger.error(`Error fetching folders: ${folderErr}`);
         }
 
-        return (
-            <>
-                {/* Active Workflows Section */}
-                <div className="mb-8">
-                    <h2 className="text-xl font-semibold mb-4">Active Agents</h2>
-                    {activeWorkflows.length > 0 || folders.length > 0 ? (
-                        <AgentFolderView workflows={activeWorkflows} folders={folders} />
-                    ) : (
-                        <Card>
-                            <CardContent className="p-8 text-center text-muted-foreground">
-                                No active workflows found. Create your first workflow to get started.
-                            </CardContent>
-                        </Card>
-                    )}
-                </div>
-
-                {/* Archived Section — collapsible, same design as the folder/Uncategorized sections */}
-                {archivedWorkflows.length > 0 && (
-                    <div className="mb-8">
-                        <FolderSection kind="archived" workflows={archivedWorkflows} />
-                    </div>
-                )}
-            </>
-        );
+        // The whole list goes to the client view: search, status and folder
+        // filters and bulk actions all work on what is already here.
+        return <AgentsListView workflows={allWorkflowData} folders={folders} />;
     } catch (err) {
         logger.error(`Error fetching workflows: ${err}`);
         return (
@@ -162,11 +129,8 @@ function WorkflowsLoading() {
 
 export default function WorkflowPage() {
     return (
-        <WorkflowLayout showFeaturesNav={true}>
-            <Suspense fallback={<WorkflowsLoading />}>
-                <PageContent />
-            </Suspense>
-        </WorkflowLayout>
-
+        <Suspense fallback={<WorkflowsLoading />}>
+            <PageContent />
+        </Suspense>
     );
 }

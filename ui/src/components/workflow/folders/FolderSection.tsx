@@ -45,7 +45,7 @@ import {
 import logger from '@/lib/logger';
 import { cn } from '@/lib/utils';
 
-import { WorkflowTable } from '../WorkflowTable';
+import { type AgentSelection, WorkflowTable } from '../WorkflowTable';
 import { FolderFormDialog } from './FolderFormDialog';
 
 /**
@@ -64,6 +64,8 @@ interface FolderSectionProps {
     allFolders?: FolderResponse[];
     /** Defaults to open only for Uncategorized; folders and Archived start collapsed. */
     defaultOpen?: boolean;
+    /** Checkbox state shared across every section on the page. */
+    selection?: AgentSelection;
 }
 
 export function FolderSection({
@@ -72,6 +74,7 @@ export function FolderSection({
     workflows,
     allFolders = [],
     defaultOpen,
+    selection,
 }: FolderSectionProps) {
     const router = useRouter();
     const [open, setOpen] = useState(defaultOpen ?? kind === 'uncategorized');
@@ -198,6 +201,7 @@ export function FolderSection({
                                 // Archived agents are restore-only — not a move target.
                                 folders={isArchived ? undefined : allFolders}
                                 currentFolderId={folder?.id ?? null}
+                                selection={selection}
                             />
                         ) : (
                             <div className="rounded-lg border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">

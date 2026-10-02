@@ -1,43 +1,14 @@
 "use client";
 
-import {
-  AlertTriangle,
-  AudioLines,
-  Brain,
-  CircleDollarSign,
-  Database,
-  FileText,
-  Home,
-  Key,
-  LogOut,
-  type LucideIcon,
-  Megaphone,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Phone,
-  Settings,
-  TrendingUp,
-  UserRound,
-  Users,
-  Workflow,
-  Wrench,
-} from "lucide-react";
+import { AlertTriangle, PanelLeftClose, PanelLeftOpen, UserRound } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import React from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import React, { type ReactNode, Suspense } from "react";
 
 import { BrandLogo } from "@/components/BrandLogo";
 import { SidebarTeamSwitcher } from "@/components/layout/SidebarTeamSwitcher";
 import ThemeToggle from "@/components/ThemeSwitcher";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Sidebar,
   SidebarContent,
@@ -55,112 +26,25 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLeadForms } from "@/context/LeadFormsContext";
 import { useTelephonyConfigWarnings } from "@/context/TelephonyConfigWarningsContext";
-import type { LocalUser } from "@/lib/auth";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
-type SidebarNavItem = {
-  title: string;
-  url: string;
-  icon: LucideIcon;
-  showsTelephonyWarning?: boolean;
-};
-
-type SidebarNavSection = {
-  label?: string;
-  items: SidebarNavItem[];
-};
+import { findActiveNavItem, NAV_SECTIONS, type SidebarNavItem } from "./navConfig";
 
 const TELEPHONY_WARNING_COPY = "Action required";
 
-const NAV_SECTIONS: SidebarNavSection[] = [
-  {
-    items: [
-      {
-        title: "Overview",
-        url: "/overview",
-        icon: Home,
-      },
-    ],
-  },
-  {
-    label: "BUILD",
-    items: [
-      {
-        title: "Voice Agents",
-        url: "/workflow",
-        icon: Workflow,
-      },
-      {
-        title: "Campaigns",
-        url: "/campaigns",
-        icon: Megaphone,
-      },
-      {
-        title: "Contacts",
-        url: "/contacts",
-        icon: Users,
-      },
-      {
-        title: "Models",
-        url: "/model-configurations",
-        icon: Brain,
-      },
-      {
-        title: "Telephony",
-        url: "/telephony-configurations",
-        icon: Phone,
-        showsTelephonyWarning: true,
-      },
-      {
-        title: "Tools",
-        url: "/tools",
-        icon: Wrench,
-      },
-      {
-        title: "Files",
-        url: "/files",
-        icon: Database,
-      },
-      {
-        title: "Recordings",
-        url: "/recordings",
-        icon: AudioLines,
-      },
-      {
-        title: "Developers",
-        url: "/api-keys",
-        icon: Key,
-      },
-    ],
-  },
-  {
-    label: "MANAGE",
-    items: [
-      {
-        title: "Agent Runs",
-        url: "/usage",
-        icon: TrendingUp,
-      },
-      {
-        title: "Billing",
-        url: "/billing",
-        icon: CircleDollarSign,
-      },
-      {
-        title: "Reports",
-        url: "/reports",
-        icon: FileText,
-      }
-    ],
-  },
-];
+/**
+ * Reads the query string, which needs a Suspense boundary. The fallback renders the
+ * same children with no query, so the sidebar is never blank while it resolves.
+ */
+function WithSearchParams({ children }: { children: (search: URLSearchParams) => ReactNode }) {
+  return <>{children(useSearchParams())}</>;
+}
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const { state, isMobile, setOpenMobile } = useSidebar();
-  const { provider, logout, user } = useAuth();
+  const { provider } = useAuth();
   const { openHireExpert } = useLeadForms();
   const {
     telnyxMissingWebhookPublicKeyCount,
@@ -171,7 +55,6 @@ export function AppSidebar() {
     vonageMissingSignatureSecretCount > 0;
   const isCollapsed = !isMobile && state === "collapsed";
 
-  const isActive = (path: string) => pathname.startsWith(path);
 
   const handleMobileNavClick = () => {
     if (isMobile) {
@@ -179,8 +62,8 @@ export function AppSidebar() {
     }
   };
 
-  const SidebarLink = ({ item }: { item: SidebarNavItem }) => {
-    const isItemActive = isActive(item.url);
+  const SidebarLink = ({ item, active }: { item: SidebarNavItem; active: boolean }) => {
+    const isItemActive = active;
     const Icon = item.icon;
     const showWarningDot = item.showsTelephonyWarning && hasTelephonyWarning;
     const tooltip = {
@@ -215,6 +98,7 @@ export function AppSidebar() {
       >
         <Link
           href={item.url}
+          aria-current={isItemActive ? "page" : undefined}
           onClick={handleMobileNavClick}
           className={cn("relative", isCollapsed && "justify-center")}
           translate="no"
@@ -256,30 +140,35 @@ export function AppSidebar() {
     );
   };
 
-  // Footer identity trigger: avatar initials only (no name), in a subtle
-  // bordered circle. Same treatment expanded and collapsed.
-  const displayIdentity =
-    user?.displayName ||
-    (user as { primaryEmail?: string } | undefined)?.primaryEmail ||
-    (user as LocalUser | undefined)?.email ||
-    "";
-  const userInitials =
-    displayIdentity
-      .split(/[\s@]/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((s: string) => s[0]?.toUpperCase())
-      .join("") || "U";
-
-  const userChipTrigger = (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-7 w-7 shrink-0 cursor-pointer rounded-md border bg-background hover:bg-muted"
-    >
-      <span className="text-xs font-medium">{userInitials}</span>
-    </Button>
-  );
+  // One item is lit, worked out from path AND query (see navConfig).
+  const renderNav = (search: URLSearchParams) => {
+    const activeUrl = findActiveNavItem(NAV_SECTIONS, pathname, search)?.url;
+    return NAV_SECTIONS.map((section, index) => (
+      <SidebarGroup
+        key={section.label ?? "overview"}
+        className={index === 0 ? "mt-2" : "mt-6"}
+      >
+        {section.label && (
+          <SidebarGroupLabel
+            className={cn(
+              "notranslate text-xs font-semibold uppercase tracking-wider text-muted-foreground",
+              isCollapsed && "hidden"
+            )}
+            translate="no"
+          >
+            {section.label}
+          </SidebarGroupLabel>
+        )}
+        <SidebarMenu>
+          {section.items.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarLink item={item} active={item.url === activeUrl} />
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroup>
+    ));
+  };
 
   // "Hire an Expert" CTA, rendered INSIDE the shared footer pill next to the
   // profile icon. Expanded: label pill filling the row. Collapsed: icon-only.
@@ -347,31 +236,9 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className={cn("notranslate", isCollapsed && "px-0")} translate="no">
-        {NAV_SECTIONS.map((section, index) => (
-          <SidebarGroup
-            key={section.label ?? "overview"}
-            className={index === 0 ? "mt-2" : "mt-6"}
-          >
-            {section.label && (
-              <SidebarGroupLabel
-                className={cn(
-                  "notranslate text-xs font-semibold uppercase tracking-wider text-muted-foreground",
-                  isCollapsed && "hidden"
-                )}
-                translate="no"
-              >
-                {section.label}
-              </SidebarGroupLabel>
-            )}
-            <SidebarMenu>
-              {section.items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarLink item={item} />
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroup>
-        ))}
+        <Suspense fallback={renderNav(new URLSearchParams())}>
+          <WithSearchParams>{renderNav}</WithSearchParams>
+        </Suspense>
       </SidebarContent>
 
       <SidebarFooter
@@ -379,80 +246,11 @@ export function AppSidebar() {
         translate="no"
       >
         <div className="space-y-2">
-          {provider !== "stack" && (
-            <div
-              className={cn(
-                "flex items-center justify-between gap-1 rounded-md border bg-muted/30 p-1",
-                isCollapsed && "flex-col"
-              )}
-            >
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  {userChipTrigger}
-                </DropdownMenuTrigger>
-                <DropdownMenuContent side="top" align="start" className="w-56">
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      {(user as LocalUser | undefined)?.email && (
-                        <p className="text-xs text-muted-foreground">{(user as LocalUser).email}</p>
-                      )}
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push("/settings")} className="cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Platform Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => logout()} className="cursor-pointer">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              {hireExpertButton}
-            </div>
-          )}
-
-          {provider === "stack" && (
-            <div
-              className={cn(
-                "flex items-center justify-between gap-1 rounded-md border bg-muted/30 p-1",
-                isCollapsed && "flex-col"
-              )}
-            >
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  {userChipTrigger}
-                </DropdownMenuTrigger>
-                <DropdownMenuContent side="top" align="start" className="w-56">
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      {user?.displayName && (
-                        <p className="text-sm font-medium">{user.displayName}</p>
-                      )}
-                      {(user as { primaryEmail?: string })?.primaryEmail && (
-                        <p className="text-xs text-muted-foreground">{(user as { primaryEmail?: string }).primaryEmail}</p>
-                      )}
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push("/handler/account-settings")} className="cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Account settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/settings")} className="cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Platform Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => logout()} className="cursor-pointer">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              {hireExpertButton}
-            </div>
-          )}
+          {/* Name, email, settings and sign out live in the header's account menu
+              (ProfileMenu). This footer used to repeat all of it twice. */}
+          <div className={cn("flex", isCollapsed ? "justify-center" : "justify-start")}>
+            {hireExpertButton}
+          </div>
 
           <div className="mt-1 flex justify-center">
             <Tooltip>

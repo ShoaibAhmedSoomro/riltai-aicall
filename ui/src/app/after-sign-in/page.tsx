@@ -47,8 +47,8 @@ export default async function AfterSignInPage() {
             });
 
             if (countResponse.data && countResponse.data.active > 0) {
-                logger.debug('[AfterSignInPage] Redirecting to /workflow - user has workflows');
-                redirect('/workflow');
+                logger.debug('[AfterSignInPage] Redirecting to /overview - user has workflows');
+                redirect('/overview');
             } else {
                 logger.debug('[AfterSignInPage] Redirecting to /workflow/create - no workflows found');
                 redirect('/workflow/create');

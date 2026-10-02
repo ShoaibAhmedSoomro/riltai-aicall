@@ -28,6 +28,8 @@ import {
 import { useSidebar } from "@/components/ui/sidebar";
 import { copyTextToClipboard } from "@/lib/clipboard";
 
+import { agentTabHref, agentTabLabel } from '../agentRoutes';
+
 interface WorkflowEditorHeaderProps {
     workflowName: string;
     isDirty: boolean;
@@ -459,11 +461,11 @@ export const WorkflowEditorHeader = ({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-[#1a1a1a] border-[#3a3a3a]">
                         <DropdownMenuItem
-                            onClick={() => router.push(`/workflow/${workflowId}/runs`)}
+                            onClick={() => router.push(agentTabHref(workflowId, 'history'))}
                             className="text-white hover:bg-[#2a2a2a] cursor-pointer"
                         >
                             <History className="w-4 h-4 mr-2" />
-                            View Runs
+                            {agentTabLabel('history')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                             onClick={handleDuplicate}

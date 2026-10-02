@@ -16,6 +16,7 @@ from api.db.base_client import BaseDBClient
 from api.db.models import (
     TelephonyConfigurationModel,
     TelephonyPhoneNumberModel,
+    TelephonyTrunkModel,
     WorkflowModel,
 )
 from api.utils.telephony_address import normalize_telephony_address
@@ -61,6 +62,62 @@ class TelephonyPhoneNumberClient(BaseDBClient):
                 .order_by(TelephonyPhoneNumberModel.created_at)
             )
             return [(row, name) for row, name in result.all()]
+
+    async def list_phone_numbers_for_organization(
+        self, organization_id: int
+    ) -> List[Tuple[TelephonyPhoneNumberModel, Optional[str], Any]]:
+        """Every phone number in the organization, across all its telephony
+        configurations, with what the Phone Numbers page needs beside each one:
+        the inbound agent's name, the owning configuration, and the trunk's name.
+
+        One query. The per-configuration list answers "what numbers does this
+        provider account have"; this answers "which agent answers which number",
+        which has no other home when an organization has several providers.
+
+        Returns ``(number, inbound_workflow_name | None, configuration_row,
+        trunk_name | None)`` rows, ordered by configuration then creation.
+        """
+        async with self.async_session() as session:
+            result = await session.execute(
+                select(
+                    TelephonyPhoneNumberModel,
+                    WorkflowModel.name,
+                    TelephonyConfigurationModel,
+                    TelephonyTrunkModel.name,
+                )
+                .join(
+                    TelephonyConfigurationModel,
+                    TelephonyConfigurationModel.id
+                    == TelephonyPhoneNumberModel.telephony_configuration_id,
+                )
+                .join(
+                    WorkflowModel,
+                    WorkflowModel.id == TelephonyPhoneNumberModel.inbound_workflow_id,
+                    isouter=True,
+                )
+                .join(
+                    TelephonyTrunkModel,
+                    TelephonyTrunkModel.id
+                    == TelephonyPhoneNumberModel.telephony_trunk_id,
+                    isouter=True,
+                )
+                # Scoped on BOTH sides: the number's own organization_id, and the
+                # configuration's. They are the same by construction; checking
+                # both means a stray row cannot leak across tenants.
+                .where(
+                    TelephonyPhoneNumberModel.organization_id == organization_id,
+                    TelephonyConfigurationModel.organization_id == organization_id,
+                )
+                .order_by(
+                    TelephonyConfigurationModel.name,
+                    TelephonyPhoneNumberModel.created_at,
+                    TelephonyPhoneNumberModel.id,
+                )
+            )
+            return [
+                (number, workflow_name, config, trunk_name)
+                for number, workflow_name, config, trunk_name in result.all()
+            ]
 
     async def list_active_normalized_addresses_for_config(
         self, telephony_configuration_id: int

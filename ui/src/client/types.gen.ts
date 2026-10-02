@@ -4984,6 +4984,104 @@ export type OpenRouterLlmConfiguration = {
 };
 
 /**
+ * OrgPhoneNumberListResponse
+ */
+export type OrgPhoneNumberListResponse = {
+    /**
+     * Phone Numbers
+     */
+    phone_numbers: Array<OrgPhoneNumberResponse>;
+};
+
+/**
+ * OrgPhoneNumberResponse
+ *
+ * A phone number as the organization-wide page shows it: the number plus
+ * which provider account and trunk it belongs to.
+ */
+export type OrgPhoneNumberResponse = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Telephony Configuration Id
+     */
+    telephony_configuration_id: number;
+    /**
+     * Address
+     */
+    address: string;
+    /**
+     * Address Normalized
+     */
+    address_normalized: string;
+    /**
+     * Address Type
+     */
+    address_type: string;
+    /**
+     * Country Code
+     */
+    country_code?: string | null;
+    /**
+     * Label
+     */
+    label?: string | null;
+    /**
+     * Inbound Workflow Id
+     */
+    inbound_workflow_id?: number | null;
+    /**
+     * Inbound Workflow Name
+     */
+    inbound_workflow_name?: string | null;
+    /**
+     * Telephony Trunk Id
+     */
+    telephony_trunk_id?: number | null;
+    /**
+     * Is Active
+     */
+    is_active: boolean;
+    /**
+     * Is Default Caller Id
+     */
+    is_default_caller_id: boolean;
+    /**
+     * Extra Metadata
+     */
+    extra_metadata: {
+        [key: string]: unknown;
+    };
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Updated At
+     */
+    updated_at: string;
+    provider_sync?: ProviderSyncStatus | null;
+    /**
+     * Telephony Configuration Name
+     */
+    telephony_configuration_name: string;
+    /**
+     * Telephony Provider
+     */
+    telephony_provider: string;
+    /**
+     * Telephony Configuration Inactive
+     */
+    telephony_configuration_inactive?: boolean;
+    /**
+     * Telephony Trunk Name
+     */
+    telephony_trunk_name?: string | null;
+};
+
+/**
  * OrgRole
  *
  * A member's role WITHIN one organization.
@@ -8993,6 +9091,14 @@ export type WorkflowListResponse = {
      * Workflow Uuid
      */
     workflow_uuid?: string | null;
+    /**
+     * Released Version Number
+     */
+    released_version_number?: number | null;
+    /**
+     * Has Unpublished Draft
+     */
+    has_unpublished_draft?: boolean;
 };
 
 /**
@@ -15077,6 +15183,45 @@ export type UpdateTelephonyTrunkApiV1OrganizationsTelephonyConfigsConfigIdTrunks
 };
 
 export type UpdateTelephonyTrunkApiV1OrganizationsTelephonyConfigsConfigIdTrunksTrunkIdPutResponse = UpdateTelephonyTrunkApiV1OrganizationsTelephonyConfigsConfigIdTrunksTrunkIdPutResponses[keyof UpdateTelephonyTrunkApiV1OrganizationsTelephonyConfigsConfigIdTrunksTrunkIdPutResponses];
+
+export type ListOrganizationPhoneNumbersApiV1OrganizationsPhoneNumbersGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/organizations/phone-numbers';
+};
+
+export type ListOrganizationPhoneNumbersApiV1OrganizationsPhoneNumbersGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListOrganizationPhoneNumbersApiV1OrganizationsPhoneNumbersGetError = ListOrganizationPhoneNumbersApiV1OrganizationsPhoneNumbersGetErrors[keyof ListOrganizationPhoneNumbersApiV1OrganizationsPhoneNumbersGetErrors];
+
+export type ListOrganizationPhoneNumbersApiV1OrganizationsPhoneNumbersGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: OrgPhoneNumberListResponse;
+};
+
+export type ListOrganizationPhoneNumbersApiV1OrganizationsPhoneNumbersGetResponse = ListOrganizationPhoneNumbersApiV1OrganizationsPhoneNumbersGetResponses[keyof ListOrganizationPhoneNumbersApiV1OrganizationsPhoneNumbersGetResponses];
 
 export type ListPhoneNumbersApiV1OrganizationsTelephonyConfigsConfigIdPhoneNumbersGetData = {
     body?: never;

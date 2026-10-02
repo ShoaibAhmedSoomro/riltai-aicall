@@ -3,7 +3,7 @@
 import { format } from "date-fns";
 import { ArrowLeft, BookA, BookOpen, Brain, CalendarIcon, Clipboard, Download, ExternalLink, FileDown, Fingerprint, Loader2, Mic, Pause, PhoneOff, Play, Plus, Rocket, Settings, ShieldCheck, Trash2Icon, Upload, Variable, X } from "lucide-react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -63,6 +63,7 @@ import {
     type WorkflowConfigurations,
 } from "@/types/workflow-configurations";
 
+import { AgentTabs } from "../AgentTabs";
 import { EmbedDialog } from "../components/EmbedDialog";
 import { useWorkflowState } from "../hooks/useWorkflowState";
 import { GovernanceSection } from "./GovernanceSection";
@@ -1870,9 +1871,21 @@ function WorkflowSettingsInner({
     user: { id: string; email?: string };
 }) {
     const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
     const { dirtySections, confirmNavigate } = useUnsavedChangesContext();
 
     const [isEmbedDialogOpen, setIsEmbedDialogOpen] = useState(false);
+
+    // "Share" on the agents list lands here with ?embed=1. Open the dialog, then
+    // drop the param so a refresh does not reopen it. Same query-param-opens-a-
+    // dialog pattern as /telephony-configurations?add=1.
+    useEffect(() => {
+        if (searchParams.get("embed") === "1") {
+            setIsEmbedDialogOpen(true);
+            router.replace(pathname);
+        }
+    }, [searchParams, router, pathname]);
     const [activeSection, setActiveSection] = useState("general");
     const [modelConfigurationDefaults, setModelConfigurationDefaults] = useState<ModelConfigurationDefaultsV2 | null>(null);
     const [organizationModelConfiguration, setOrganizationModelConfiguration] = useState<OrganizationAiModelConfigurationResponse | null>(null);
@@ -1985,18 +1998,22 @@ function WorkflowSettingsInner({
     return (
         <div className="min-h-screen">
             {/* Sticky header */}
-            <header className="sticky top-0 z-10 flex items-center gap-3 border-b bg-background/95 px-6 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => confirmNavigate(() => router.push(`/workflow/${workflowId}`))}
-                >
-                    <ArrowLeft className="h-4 w-4" />
-                </Button>
-                <div>
-                    <p className="text-xs text-muted-foreground">Workflow Settings</p>
-                    <h1 className="text-sm font-semibold">{workflowName || workflow.name}</h1>
+            <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <div className="flex items-center gap-3 px-6 py-3">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => confirmNavigate(() => router.push(`/workflow/${workflowId}`))}
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <div>
+                        <p className="text-xs text-muted-foreground">Workflow Settings</p>
+                        <h1 className="text-sm font-semibold">{workflowName || workflow.name}</h1>
+                    </div>
                 </div>
+                {/* The name is already above; the tabs only move between the pages. */}
+                <AgentTabs workflowId={workflowId} name={null} className="border-b-0" />
             </header>
 
             {/* Main + right nav */}

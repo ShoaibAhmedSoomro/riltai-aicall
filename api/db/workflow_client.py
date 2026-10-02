@@ -311,6 +311,43 @@ class WorkflowClient(BaseDBClient):
             )
             return result.scalars().first()
 
+    async def get_draft_workflow_ids(self, workflow_ids: list[int]) -> set[int]:
+        """Which of these workflows have an unpublished draft. One query for the
+        whole list, served by ix_workflow_definitions_workflow_status."""
+        if not workflow_ids:
+            return set()
+        async with self.async_session() as session:
+            result = await session.execute(
+                select(WorkflowDefinitionModel.workflow_id)
+                .where(
+                    WorkflowDefinitionModel.workflow_id.in_(workflow_ids),
+                    WorkflowDefinitionModel.status == "draft",
+                )
+                .distinct()
+            )
+            return set(result.scalars().all())
+
+    async def get_released_version_numbers(
+        self, workflow_ids: list[int]
+    ) -> dict[int, int | None]:
+        """The live (published) version number of each workflow that has one.
+
+        A workflow that was never published has no entry. One query for the list.
+        """
+        if not workflow_ids:
+            return {}
+        async with self.async_session() as session:
+            result = await session.execute(
+                select(
+                    WorkflowDefinitionModel.workflow_id,
+                    WorkflowDefinitionModel.version_number,
+                ).where(
+                    WorkflowDefinitionModel.workflow_id.in_(workflow_ids),
+                    WorkflowDefinitionModel.status == "published",
+                )
+            )
+            return {wid: number for wid, number in result.all()}
+
     async def get_definition_configurations(
         self,
         definition_id: int | None,

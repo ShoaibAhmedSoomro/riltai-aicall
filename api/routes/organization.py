@@ -58,6 +58,8 @@ from api.schemas.telephony_config import (
 )
 from api.schemas.telephony_phone_number import (
     PhoneNumberCreateRequest,
+    OrgPhoneNumberListResponse,
+    OrgPhoneNumberResponse,
     PhoneNumberListResponse,
     PhoneNumberResponse,
     PhoneNumberUpdateRequest,
@@ -1440,6 +1442,38 @@ async def _ensure_workflow_belongs_to_org(workflow_id: int, organization_id: int
     if not workflow:
         raise HTTPException(status_code=404, detail="Workflow not found")
     return workflow
+
+
+@router.get("/phone-numbers", response_model=OrgPhoneNumberListResponse)
+async def list_organization_phone_numbers(
+    user: UserModel = Depends(get_user),
+):
+    """Every phone number in the organization with its inbound agent.
+
+    Read-only on purpose. Creating, assigning and removing numbers stay on the
+    per-configuration routes, which own provider validation and the
+    inbound-routing conflict checks; repeating them here would be a second
+    mechanism that could disagree with the first.
+    """
+    if not user.selected_organization_id:
+        raise HTTPException(status_code=400, detail="No organization selected")
+
+    rows = await db_client.list_phone_numbers_for_organization(
+        user.selected_organization_id
+    )
+    out = []
+    for number, workflow_name, config, trunk_name in rows:
+        base = _phone_number_to_response(number, workflow_name)
+        out.append(
+            OrgPhoneNumberResponse(
+                **base.model_dump(),
+                telephony_configuration_name=config.name,
+                telephony_provider=config.provider,
+                telephony_configuration_inactive=bool(config.inactive),
+                telephony_trunk_name=trunk_name,
+            )
+        )
+    return OrgPhoneNumberListResponse(phone_numbers=out)
 
 
 @router.get(
