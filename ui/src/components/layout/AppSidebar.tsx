@@ -18,6 +18,7 @@ import {
   Settings,
   TrendingUp,
   UserRound,
+  Users,
   Workflow,
   Wrench,
 } from "lucide-react";
@@ -94,6 +95,11 @@ const NAV_SECTIONS: SidebarNavSection[] = [
         title: "Campaigns",
         url: "/campaigns",
         icon: Megaphone,
+      },
+      {
+        title: "Contacts",
+        url: "/contacts",
+        icon: Users,
       },
       {
         title: "Models",

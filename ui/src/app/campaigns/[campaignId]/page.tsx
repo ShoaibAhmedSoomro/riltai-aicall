@@ -2,6 +2,7 @@
 
 import { format } from 'date-fns';
 import { AlertCircle, AlertTriangle, ArrowLeft, CalendarIcon, Check, Clock, Download, Info, Pause, Pencil, Phone, Play, RefreshCw, X } from 'lucide-react';
+import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -618,7 +619,11 @@ export default function CampaignDetailPage() {
                             </div>
                             <div>
                                 <dt className="text-sm font-medium">
-                                    {campaign.source_type === 'csv' ? 'Source File' : 'Source Sheet'}
+                                    {campaign.source_type === 'csv'
+                                        ? 'Source File'
+                                        : campaign.source_type === 'contact_list'
+                                          ? 'Contact List'
+                                          : 'Source Sheet'}
                                 </dt>
                                 <dd className="mt-1">
                                     {campaign.source_type === 'csv' ? (
@@ -628,6 +633,13 @@ export default function CampaignDetailPage() {
                                         >
                                             {campaign.source_id.split('/').pop()}
                                         </button>
+                                    ) : campaign.source_type === 'contact_list' ? (
+                                        <Link
+                                            href={`/contacts?list=${campaign.source_id}`}
+                                            className="text-blue-600 hover:text-blue-800 hover:underline text-sm"
+                                        >
+                                            View the list in Contacts
+                                        </Link>
                                     ) : (
                                         <a
                                             href={campaign.source_id}

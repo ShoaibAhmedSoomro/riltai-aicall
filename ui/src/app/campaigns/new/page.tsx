@@ -30,6 +30,7 @@ import { useAuth } from '@/lib/auth';
 
 import CampaignAdvancedSettings, { getTimezoneValue, type TimeSlot } from '../CampaignAdvancedSettings';
 import CsvUploadSelector from '../CsvUploadSelector';
+import { ContactListPicker } from './ContactListPicker';
 
 export default function NewCampaignPage() {
     const { user, getAccessToken, redirectToLogin, loading } = useAuth();
@@ -38,7 +39,7 @@ export default function NewCampaignPage() {
     // Form state
     const [campaignName, setCampaignName] = useState('');
     const [selectedWorkflowId, setSelectedWorkflowId] = useState<string>('');
-    const [sourceType, setSourceType] = useState<'csv'>('csv');
+    const [sourceType, setSourceType] = useState<'csv' | 'contact_list'>('csv');
     const [sourceId, setSourceId] = useState('');
     const [selectedFileName, setSelectedFileName] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -472,7 +473,7 @@ export default function NewCampaignPage() {
                                 <Select
                                     value={sourceType}
                                     onValueChange={(value) => {
-                                        setSourceType(value as 'csv');
+                                        setSourceType(value as 'csv' | 'contact_list');
                                         setSourceId('');
                                         setSelectedFileName('');
                                     }}
@@ -483,6 +484,7 @@ export default function NewCampaignPage() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="csv">CSV File</SelectItem>
+                                        <SelectItem value="contact_list">Contact list</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <p className="text-sm text-muted-foreground">
@@ -490,10 +492,14 @@ export default function NewCampaignPage() {
                                 </p>
                             </div>
 
-                            <CsvUploadSelector
-                                onFileUploaded={handleFileUploaded}
-                                selectedFileName={selectedFileName}
-                            />
+                            {sourceType === 'csv' ? (
+                                <CsvUploadSelector
+                                    onFileUploaded={handleFileUploaded}
+                                    selectedFileName={selectedFileName}
+                                />
+                            ) : (
+                                <ContactListPicker value={sourceId} onChange={setSourceId} />
+                            )}
 
                             {/* Advanced Settings */}
                             <Collapsible

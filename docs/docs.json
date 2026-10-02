@@ -44,7 +44,8 @@
               "core-concepts/workflows-and-agents",
               "core-concepts/calls-and-runs",
               "core-concepts/context-and-variables",
-              "core-concepts/campaigns"
+              "core-concepts/campaigns",
+              "core-concepts/contacts"
             ]
           },
           {

@@ -9,6 +9,7 @@ These tests verify:
 
 import asyncio
 import uuid
+from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import List
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -31,6 +32,34 @@ from api.services.campaign.campaign_call_dispatcher import CampaignCallDispatche
 # =============================================================================
 # Test-specific fixtures
 # =============================================================================
+
+_shared_patches: dict = {}
+
+
+@contextmanager
+def _shared_patch(target: str):
+    """``patch(target)`` that is safe to enter from several concurrent coroutines.
+
+    Plain ``patch`` replaces a module attribute and restores "the original" it saw
+    on entry. Two coroutines that overlap each save the OTHER's mock as the
+    original, so on exit the real object can be put back while a sibling is still
+    running, and which happens depends on how many awaits each path has. These
+    tests passed or failed on that, and failed the moment a bare ``await`` was added
+    to ``process_batch``. Here the first entrant installs the mock and the last one
+    out removes it, so every coroutine sees the same mock throughout.
+    """
+    entry = _shared_patches.get(target)
+    if entry is None:
+        patcher = patch(target)
+        entry = _shared_patches[target] = {"patcher": patcher, "mock": patcher.start(), "users": 0}
+    entry["users"] += 1
+    try:
+        yield entry["mock"]
+    finally:
+        entry["users"] -= 1
+        if entry["users"] == 0:
+            entry["patcher"].stop()
+            del _shared_patches[target]
 
 
 @pytest.fixture(scope="module")
@@ -296,9 +325,9 @@ class TestProcessBatchBasic:
         """Test that process_batch processes queued runs and marks them as processed."""
         mock_dispatch, processed_runs = mock_dispatch_call
 
-        with patch(
-            "api.services.campaign.campaign_call_dispatcher.rate_limiter"
-        ) as mock_rl:
+        with _shared_patch(
+                "api.services.campaign.campaign_call_dispatcher.rate_limiter"
+            ) as mock_rl:
             # Setup rate limiter mocks
             mock_rl.acquire_token = AsyncMock(
                 side_effect=mock_rate_limiter["acquire_token"]
@@ -380,7 +409,7 @@ class TestProcessBatchConcurrency:
 
         async def run_process_batch():
             """Helper to run process_batch with mocked dependencies."""
-            with patch(
+            with _shared_patch(
                 "api.services.campaign.campaign_call_dispatcher.rate_limiter"
             ) as mock_rl:
                 mock_rl.acquire_token = AsyncMock(
@@ -470,7 +499,7 @@ class TestProcessBatchConcurrency:
             await session.commit()
 
         async def run_process_batch(batch_size: int):
-            with patch(
+            with _shared_patch(
                 "api.services.campaign.campaign_call_dispatcher.rate_limiter"
             ) as mock_rl:
                 mock_rl.acquire_token = AsyncMock(
@@ -559,7 +588,7 @@ class TestProcessBatchConcurrency:
             await session.commit()
 
         async def run_process_batch():
-            with patch(
+            with _shared_patch(
                 "api.services.campaign.campaign_call_dispatcher.rate_limiter"
             ) as mock_rl:
                 mock_rl.acquire_token = AsyncMock(
@@ -640,9 +669,9 @@ class TestProcessBatchConcurrency:
             )
             await session.commit()
 
-        with patch(
-            "api.services.campaign.campaign_call_dispatcher.rate_limiter"
-        ) as mock_rl:
+        with _shared_patch(
+                "api.services.campaign.campaign_call_dispatcher.rate_limiter"
+            ) as mock_rl:
             mock_rl.acquire_token = AsyncMock(
                 side_effect=mock_rate_limiter["acquire_token"]
             )
@@ -830,9 +859,9 @@ class TestProcessBatchEdgeCases:
             )
             await session.commit()
 
-        with patch(
-            "api.services.campaign.campaign_call_dispatcher.rate_limiter"
-        ) as mock_rl:
+        with _shared_patch(
+                "api.services.campaign.campaign_call_dispatcher.rate_limiter"
+            ) as mock_rl:
             mock_rl.acquire_token = AsyncMock(
                 side_effect=mock_rate_limiter["acquire_token"]
             )

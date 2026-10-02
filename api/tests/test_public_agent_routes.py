@@ -30,6 +30,15 @@ def outbound_configuration_is_ready():
         yield guard
 
 
+@pytest.fixture(autouse=True)
+def number_is_not_on_the_do_not_call_list():
+    """These tests are about routing and setup, not the do-not-call list, which has
+    its own tests (test_contact_suppression.py). Without this the check would reach
+    for a real database."""
+    with patch("api.routes.public_agent.is_suppressed", new=AsyncMock(return_value=False)):
+        yield
+
+
 def _make_test_app() -> FastAPI:
     app = FastAPI()
     app.include_router(router)

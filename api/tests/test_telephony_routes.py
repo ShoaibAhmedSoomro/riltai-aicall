@@ -12,6 +12,14 @@ from api.services.auth.depends import get_user
 from api.services.call_concurrency import CallConcurrencyLimitError
 
 
+@pytest.fixture(autouse=True)
+def number_is_not_on_the_do_not_call_list():
+    """These tests are about call setup, not the do-not-call list, which has its own
+    tests (test_contact_suppression.py)."""
+    with patch("api.routes.telephony.is_suppressed", new=AsyncMock(return_value=False)):
+        yield
+
+
 def _make_test_app() -> FastAPI:
     app = FastAPI()
     app.include_router(router)

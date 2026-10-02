@@ -4,21 +4,22 @@ sidebarTitle: "Campaigns (Bulk Outbound Calls)"
 description: "Running a voice agent against a list of contacts at scale"
 ---
 
-A campaign is how you run a workflow against many contacts automatically. Instead of triggering calls one by one via the API, you upload a list of phone numbers and AICall dials them for you — respecting scheduling windows, concurrency limits, and retry rules.
+A campaign is how you run a workflow against many contacts automatically. Instead of triggering calls one by one via the API, you give it a list of phone numbers (a saved [contact list](/core-concepts/contacts) or a CSV) and AICall dials them for you — respecting scheduling windows, concurrency limits, and retry rules.
 
 ## How a campaign works
 
 ```mermaid
 flowchart LR
+    List[Contact list] --> Campaign[Create Campaign]
     CSV[Contacts CSV] --> Upload[Upload to AICall]
-    Upload --> Campaign[Create Campaign]
+    Upload --> Campaign
     Campaign --> Schedule[Scheduling & Concurrency]
     Schedule --> Calls[Outbound Calls]
     Calls --> Runs[Run Records]
     Runs --> Results[Progress & Reports]
 ```
 
-1. **Upload a contacts CSV** — must have a `phone_number` column; any extra columns become `initial_context` for each call
+1. **Choose your contacts** — pick a saved [contact list](/core-concepts/contacts), or upload a CSV that has a `phone_number` column; any extra columns become `initial_context` for each call. Numbers on your [do-not-call list](/core-concepts/contacts#do-not-call) are never dialled
 2. **Create the campaign** — link it to a workflow, set concurrency, time slots, and retry behaviour
 3. **Start it** — AICall begins dialing contacts up to your concurrency limit
 4. **Monitor progress** — track processed, completed, failed, and pending counts in real time

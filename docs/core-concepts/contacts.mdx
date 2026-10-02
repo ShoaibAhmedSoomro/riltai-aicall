@@ -1,0 +1,82 @@
+---
+title: "Contacts"
+sidebarTitle: "Contacts"
+description: "The people your agents call, reusable lists, CSV import and the do-not-call list"
+---
+
+**Contacts** is where the people your agents call live. Instead of uploading a spreadsheet for every campaign, you keep your contacts once, group them into **lists**, and run a campaign from a list. A **do-not-call list** keeps the numbers you must never dial.
+
+Open it from **Contacts** in the sidebar.
+
+## A contact
+
+A contact is a person, identified by their phone number. It holds:
+
+| Field | Notes |
+| --- | --- |
+| Phone number | Required. The contact's identity; it cannot be edited. |
+| First name, last name, email | Optional. |
+| Custom fields | Any extra details, such as `company` or `plan`. |
+| Last called, last outcome, call count | Filled in automatically after each outbound call. |
+
+### One person, one contact
+
+Contacts are matched on the phone number in international form. `+14155551234`, `+1 (415) 555-1234` and `14155551234` are the same person, so importing the same number twice never creates a duplicate.
+
+A number written locally, such as `050 123 4567`, has no country, so it needs one. Give the country when you import or add it (for example `AE`). A number that starts with `+` never needs one.
+
+### Custom fields
+
+Custom fields are available to the agent as template variables, exactly like extra columns in a campaign CSV. A contact with `company` set to `Acme` lets a prompt say `{{company}}`.
+
+Field names use letters, digits and underscores and start with a letter. `phone_number`, `first_name`, `last_name`, `email` and `contact_uuid` are standard fields and cannot be reused.
+
+## Importing from a CSV
+
+**Contacts → Import CSV**, then:
+
+1. **Upload** a CSV with a header row (up to 10 MB).
+2. **Map the columns.** Phone, names and email are suggested for you. Other columns can be kept as custom fields, each with a name you can change. Optionally add everyone to a list, or create a new one.
+3. **Choose what happens to existing contacts:** leave them as they are, or fill in anything new and update their custom fields. An empty cell never erases a value that is already there.
+
+The import runs in the background, so you can leave the page. When it finishes you see how many were new, updated, already there, and rejected.
+
+### Rejected rows
+
+A row with no phone number, or one that cannot be read as a phone number, is **rejected**, and the rest of the file carries on. The rejected rows are saved as a CSV, with a column saying why, so you can correct them and import that file again.
+
+## Lists
+
+A list is a named group of contacts. Create lists under **Contacts → Lists**, add contacts from the Contacts page, or choose a list when you import. Deleting a list never deletes the contacts in it.
+
+## Campaigns from a list
+
+When you create a [campaign](/core-concepts/campaigns), choose **Contact list** as the data source instead of uploading a CSV. Everyone in the list is queued once, with their name, email and custom fields available to the agent.
+
+If the agent's prompt uses a variable the list cannot supply, for example `{{plan}}` when no contact has a `plan` field, creating the campaign is refused with a message naming it.
+
+## Do not call
+
+**Contacts → Do not call** holds numbers your agents must never dial.
+
+- Add numbers by hand, import a file (a regulator's list, for example), or tick contacts and choose **Do not call**.
+- A number can be on the list without ever having been a contact, and it **stays on the list if the contact is deleted**.
+- Under **Automatic opt-outs**, list the call outcomes that mean "don't call me again". When a call ends with one of them, its number is added for you.
+
+### Where it is enforced
+
+| Path | What happens |
+| --- | --- |
+| Campaign calls | The number is skipped before any phone line or capacity is used, and the skip is recorded in the campaign's log. It is never retried. |
+| The public trigger API | The request is refused (`403`). |
+| Test calls from the dashboard | The call is refused. To test against a number, remove it from the list first. |
+
+The check is made at the moment of dialling, so a number added after a campaign was created is still not called. If the list cannot be read, **nothing is dialled** rather than risk a call.
+
+<Note>
+  The list matches phone numbers only. It does not stop a person from contacting you, and it does not cover SIP addresses.
+</Note>
+
+## Call history
+
+A contact's page shows every call made to their number, across all your agents, with the outcome, duration and cost.

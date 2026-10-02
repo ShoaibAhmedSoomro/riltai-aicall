@@ -1375,6 +1375,443 @@ export type CloudonixConfigurationRequest = {
 };
 
 /**
+ * ColumnMapping
+ *
+ * Which CSV column holds what. Values are CSV header names.
+ */
+export type ColumnMapping = {
+    /**
+     * Phone Number
+     */
+    phone_number: string;
+    /**
+     * First Name
+     */
+    first_name?: string | null;
+    /**
+     * Last Name
+     */
+    last_name?: string | null;
+    /**
+     * Email
+     */
+    email?: string | null;
+    /**
+     * Attributes
+     */
+    attributes?: {
+        [key: string]: string;
+    };
+    /**
+     * Country Hint
+     */
+    country_hint?: string | null;
+};
+
+/**
+ * ContactBulkRequest
+ */
+export type ContactBulkRequest = {
+    /**
+     * Contact Uuids
+     */
+    contact_uuids: Array<string>;
+};
+
+/**
+ * ContactBulkResult
+ */
+export type ContactBulkResult = {
+    /**
+     * Affected
+     */
+    affected: number;
+};
+
+/**
+ * ContactCreateRequest
+ */
+export type ContactCreateRequest = {
+    /**
+     * Phone Number
+     */
+    phone_number: string;
+    /**
+     * Country Hint
+     */
+    country_hint?: string | null;
+    /**
+     * First Name
+     */
+    first_name?: string | null;
+    /**
+     * Last Name
+     */
+    last_name?: string | null;
+    /**
+     * Email
+     */
+    email?: string | null;
+    /**
+     * Attributes
+     */
+    attributes?: {
+        [key: string]: unknown;
+    };
+};
+
+/**
+ * ContactImportRequest
+ */
+export type ContactImportRequest = {
+    /**
+     * Source Key
+     */
+    source_key: string;
+    column_mapping: ColumnMapping;
+    /**
+     * Contact List Uuid
+     */
+    contact_list_uuid?: string | null;
+    /**
+     * Dedupe Strategy
+     */
+    dedupe_strategy?: 'skip' | 'update';
+};
+
+/**
+ * ContactImportResponse
+ */
+export type ContactImportResponse = {
+    /**
+     * Import Uuid
+     */
+    import_uuid: string;
+    /**
+     * Mode
+     */
+    mode?: 'contacts' | 'suppression';
+    /**
+     * Status
+     */
+    status: 'pending' | 'processing' | 'completed' | 'failed';
+    /**
+     * Total Rows
+     */
+    total_rows?: number;
+    /**
+     * Created Count
+     */
+    created_count?: number;
+    /**
+     * Updated Count
+     */
+    updated_count?: number;
+    /**
+     * Skipped Count
+     */
+    skipped_count?: number;
+    /**
+     * Invalid Count
+     */
+    invalid_count?: number;
+    /**
+     * Has Error Report
+     */
+    has_error_report?: boolean;
+    /**
+     * Processing Error
+     */
+    processing_error?: string | null;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+};
+
+/**
+ * ContactListCreateRequest
+ */
+export type ContactListCreateRequest = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+};
+
+/**
+ * ContactListResponse
+ */
+export type ContactListResponse = {
+    /**
+     * List Uuid
+     */
+    list_uuid: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Contact Count
+     */
+    contact_count?: number;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+};
+
+/**
+ * ContactListSummary
+ */
+export type ContactListSummary = {
+    /**
+     * List Uuid
+     */
+    list_uuid: string;
+    /**
+     * Name
+     */
+    name: string;
+};
+
+/**
+ * ContactListUpdateRequest
+ */
+export type ContactListUpdateRequest = {
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Description
+     */
+    description?: string | null;
+};
+
+/**
+ * ContactPageResponse
+ */
+export type ContactPageResponse = {
+    /**
+     * Contacts
+     */
+    contacts: Array<ContactResponse>;
+    /**
+     * Total Count
+     */
+    total_count: number;
+    /**
+     * Page
+     */
+    page: number;
+    /**
+     * Limit
+     */
+    limit: number;
+    /**
+     * Total Pages
+     */
+    total_pages: number;
+};
+
+/**
+ * ContactResponse
+ */
+export type ContactResponse = {
+    /**
+     * Contact Uuid
+     */
+    contact_uuid: string;
+    /**
+     * Phone Number
+     */
+    phone_number: string;
+    /**
+     * Phone E164
+     */
+    phone_e164: string;
+    /**
+     * Country Code
+     */
+    country_code?: string | null;
+    /**
+     * First Name
+     */
+    first_name?: string | null;
+    /**
+     * Last Name
+     */
+    last_name?: string | null;
+    /**
+     * Email
+     */
+    email?: string | null;
+    /**
+     * Attributes
+     */
+    attributes?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Last Called At
+     */
+    last_called_at?: string | null;
+    /**
+     * Last Disposition
+     */
+    last_disposition?: string | null;
+    /**
+     * Call Count
+     */
+    call_count?: number;
+    /**
+     * Suppressed
+     */
+    suppressed?: boolean;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+    /**
+     * Updated At
+     */
+    updated_at?: string | null;
+    /**
+     * Lists
+     *
+     * Only on the detail view.
+     */
+    lists?: Array<ContactListSummary> | null;
+};
+
+/**
+ * ContactRunResponse
+ */
+export type ContactRunResponse = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Workflow Id
+     */
+    workflow_id: number;
+    /**
+     * Workflow Name
+     */
+    workflow_name?: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Call Duration Seconds
+     */
+    call_duration_seconds?: number;
+    /**
+     * Disposition
+     */
+    disposition?: string | null;
+    /**
+     * Call Type
+     */
+    call_type?: string | null;
+    /**
+     * Charge Usd
+     */
+    charge_usd?: number | null;
+};
+
+/**
+ * ContactRunsResponse
+ */
+export type ContactRunsResponse = {
+    /**
+     * Runs
+     */
+    runs: Array<ContactRunResponse>;
+    /**
+     * Total Count
+     */
+    total_count: number;
+    /**
+     * Page
+     */
+    page: number;
+    /**
+     * Limit
+     */
+    limit: number;
+    /**
+     * Total Pages
+     */
+    total_pages: number;
+};
+
+/**
+ * ContactSummaryResponse
+ */
+export type ContactSummaryResponse = {
+    /**
+     * Total
+     */
+    total: number;
+    /**
+     * Suppressed
+     */
+    suppressed: number;
+    /**
+     * Never Called
+     */
+    never_called: number;
+    /**
+     * Added This Month
+     */
+    added_this_month: number;
+    /**
+     * List Count
+     */
+    list_count: number;
+    /**
+     * Last Import At
+     */
+    last_import_at?: string | null;
+};
+
+/**
+ * ContactUpdateRequest
+ */
+export type ContactUpdateRequest = {
+    /**
+     * First Name
+     */
+    first_name?: string | null;
+    /**
+     * Last Name
+     */
+    last_name?: string | null;
+    /**
+     * Email
+     */
+    email?: string | null;
+    /**
+     * Attributes
+     */
+    attributes?: {
+        [key: string]: unknown;
+    } | null;
+};
+
+/**
  * ContextDestinationMappingConfig
  *
  * Resolve a transfer destination from gathered or initial context.
@@ -2570,6 +3007,16 @@ export type EndTextChatSessionRequest = {
 };
 
 /**
+ * ErrorReportUrlResponse
+ */
+export type ErrorReportUrlResponse = {
+    /**
+     * Url
+     */
+    url: string;
+};
+
+/**
  * ExternalPBXFieldMapping
  *
  * Map one gathered-context value to a provider-native field.
@@ -2942,6 +3389,44 @@ export type GoogleVertexRealtimeLlmConfiguration = {
 };
 
 /**
+ * GovernanceConfigurationDefaults
+ *
+ * Per-agent data handling. Versioned with the agent, like every dial here.
+ *
+ * ``storage_mode`` and ``retention_days`` are None to INHERIT the
+ * organization default; ``retention_days = 0`` means keep forever on purpose
+ * (distinct from "inherit", which is what None means).
+ */
+export type GovernanceConfigurationDefaults = {
+    /**
+     * Storage Mode
+     */
+    storage_mode?: 'everything' | 'except_pii' | 'basic_only' | null;
+    /**
+     * Retention Days
+     */
+    retention_days?: number | null;
+    /**
+     * Record Audio
+     */
+    record_audio?: boolean;
+    /**
+     * Store Transcript
+     */
+    store_transcript?: boolean;
+    /**
+     * Redaction Categories
+     */
+    redaction_categories?: Array<'phone' | 'email' | 'card' | 'national_id' | 'address' | 'dob'>;
+    /**
+     * Redact Gathered Context
+     */
+    redact_gathered_context?: boolean;
+    guardrails?: GuardrailConfigurationDefaults;
+    [key: string]: unknown;
+};
+
+/**
  * GraphConstraints
  *
  * Per-node-type graph rules. WorkflowGraph enforces these at validation.
@@ -3023,6 +3508,27 @@ export type GroqLlmService = {
      * Sampling temperature. Lower values give more deterministic replies and better tool-call accuracy. Leave empty to keep this provider's default. Ignored by OpenAI reasoning models (gpt-5*), which do not accept it.
      */
     temperature?: number | null;
+};
+
+/**
+ * GuardrailConfigurationDefaults
+ *
+ * What is screened, and what happens when something trips.
+ */
+export type GuardrailConfigurationDefaults = {
+    /**
+     * Input Jailbreak
+     */
+    input_jailbreak?: boolean;
+    /**
+     * Output Categories
+     */
+    output_categories?: Array<'hate' | 'harassment' | 'self_harm' | 'sexual_content' | 'violence' | 'illegal_activity' | 'medical_advice' | 'legal_advice' | 'financial_advice'>;
+    /**
+     * On Violation
+     */
+    on_violation?: 'deflect' | 'end_call' | 'log_only';
+    [key: string]: unknown;
 };
 
 /**
@@ -3361,6 +3867,20 @@ export type ImpersonateResponse = {
      * Access Token
      */
     access_token: string;
+};
+
+/**
+ * ImportPreviewResponse
+ */
+export type ImportPreviewResponse = {
+    /**
+     * Headers
+     */
+    headers: Array<string>;
+    /**
+     * Rows
+     */
+    rows: Array<Array<string>>;
 };
 
 /**
@@ -4651,14 +5171,16 @@ export type OrganizationPreferences = {
     external_pbx_integrations_enabled?: boolean;
     /**
      * Data Retention Days
-     *
-     * Days to keep a call's recording, transcript and logs. Absent means keep forever.
      */
     data_retention_days?: number | null;
     /**
      * Default Storage Mode
      */
     default_storage_mode?: 'everything' | 'except_pii' | 'basic_only';
+    /**
+     * Do Not Call Dispositions
+     */
+    do_not_call_dispositions?: Array<string>;
 };
 
 /**
@@ -6399,6 +6921,114 @@ export type SuperuserWorkflowRunsListResponse = {
      * Total Pages
      */
     total_pages: number;
+};
+
+/**
+ * SuppressionCreateRequest
+ */
+export type SuppressionCreateRequest = {
+    /**
+     * Phone Numbers
+     */
+    phone_numbers: Array<string>;
+    /**
+     * Country Hint
+     */
+    country_hint?: string | null;
+    /**
+     * Reason
+     */
+    reason?: string | null;
+};
+
+/**
+ * SuppressionCreateResponse
+ */
+export type SuppressionCreateResponse = {
+    /**
+     * Added
+     */
+    added: number;
+    /**
+     * Already Suppressed
+     */
+    already_suppressed: number;
+    /**
+     * Invalid
+     *
+     * Entries that are not phone numbers.
+     */
+    invalid?: Array<string>;
+};
+
+/**
+ * SuppressionImportRequest
+ */
+export type SuppressionImportRequest = {
+    /**
+     * Source Key
+     */
+    source_key: string;
+    /**
+     * Phone Column
+     */
+    phone_column: string;
+    /**
+     * Country Hint
+     */
+    country_hint?: string | null;
+    /**
+     * Reason
+     */
+    reason?: string | null;
+};
+
+/**
+ * SuppressionPageResponse
+ */
+export type SuppressionPageResponse = {
+    /**
+     * Suppressions
+     */
+    suppressions: Array<SuppressionResponse>;
+    /**
+     * Total Count
+     */
+    total_count: number;
+    /**
+     * Page
+     */
+    page: number;
+    /**
+     * Limit
+     */
+    limit: number;
+    /**
+     * Total Pages
+     */
+    total_pages: number;
+};
+
+/**
+ * SuppressionResponse
+ */
+export type SuppressionResponse = {
+    /**
+     * Phone E164
+     */
+    phone_e164: string;
+    /**
+     * Reason
+     */
+    reason?: string | null;
+    /**
+     * Source
+     */
+    source: string;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
 };
 
 /**
@@ -8238,6 +8868,7 @@ export type WorkflowConfigurationDefaults = {
     vad_configuration?: VadConfigurationDefaults;
     stt_turn_configuration?: SttTurnConfigurationDefaults;
     knowledge_base_configuration?: KnowledgeBaseConfigurationDefaults;
+    governance_configuration?: GovernanceConfigurationDefaults;
     /**
      * Max Call Duration
      */
@@ -8580,8 +9211,6 @@ export type WorkflowRunResponseSchema = {
     } | null;
     /**
      * Retention Expires At
-     *
-     * When this call's recording, transcript and logs are deleted. Absent means kept.
      */
     retention_expires_at?: string | null;
     /**
@@ -11957,6 +12586,977 @@ export type DownloadCampaignReportApiV1CampaignCampaignIdReportGetResponses = {
      */
     200: unknown;
 };
+
+export type GetContactsSummaryApiV1ContactsSummaryGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/contacts/summary';
+};
+
+export type GetContactsSummaryApiV1ContactsSummaryGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetContactsSummaryApiV1ContactsSummaryGetError = GetContactsSummaryApiV1ContactsSummaryGetErrors[keyof GetContactsSummaryApiV1ContactsSummaryGetErrors];
+
+export type GetContactsSummaryApiV1ContactsSummaryGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ContactSummaryResponse;
+};
+
+export type GetContactsSummaryApiV1ContactsSummaryGetResponse = GetContactsSummaryApiV1ContactsSummaryGetResponses[keyof GetContactsSummaryApiV1ContactsSummaryGetResponses];
+
+export type ListContactListsApiV1ContactsListsGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/contacts/lists';
+};
+
+export type ListContactListsApiV1ContactsListsGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListContactListsApiV1ContactsListsGetError = ListContactListsApiV1ContactsListsGetErrors[keyof ListContactListsApiV1ContactsListsGetErrors];
+
+export type ListContactListsApiV1ContactsListsGetResponses = {
+    /**
+     * Response List Contact Lists Api V1 Contacts Lists Get
+     *
+     * Successful Response
+     */
+    200: Array<ContactListResponse>;
+};
+
+export type ListContactListsApiV1ContactsListsGetResponse = ListContactListsApiV1ContactsListsGetResponses[keyof ListContactListsApiV1ContactsListsGetResponses];
+
+export type CreateContactListApiV1ContactsListsPostData = {
+    body: ContactListCreateRequest;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/contacts/lists';
+};
+
+export type CreateContactListApiV1ContactsListsPostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateContactListApiV1ContactsListsPostError = CreateContactListApiV1ContactsListsPostErrors[keyof CreateContactListApiV1ContactsListsPostErrors];
+
+export type CreateContactListApiV1ContactsListsPostResponses = {
+    /**
+     * Successful Response
+     */
+    201: ContactListResponse;
+};
+
+export type CreateContactListApiV1ContactsListsPostResponse = CreateContactListApiV1ContactsListsPostResponses[keyof CreateContactListApiV1ContactsListsPostResponses];
+
+export type DeleteContactListApiV1ContactsListsListUuidDeleteData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * List Uuid
+         */
+        list_uuid: string;
+    };
+    query?: never;
+    url: '/api/v1/contacts/lists/{list_uuid}';
+};
+
+export type DeleteContactListApiV1ContactsListsListUuidDeleteErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteContactListApiV1ContactsListsListUuidDeleteError = DeleteContactListApiV1ContactsListsListUuidDeleteErrors[keyof DeleteContactListApiV1ContactsListsListUuidDeleteErrors];
+
+export type DeleteContactListApiV1ContactsListsListUuidDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteContactListApiV1ContactsListsListUuidDeleteResponse = DeleteContactListApiV1ContactsListsListUuidDeleteResponses[keyof DeleteContactListApiV1ContactsListsListUuidDeleteResponses];
+
+export type UpdateContactListApiV1ContactsListsListUuidPatchData = {
+    body: ContactListUpdateRequest;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * List Uuid
+         */
+        list_uuid: string;
+    };
+    query?: never;
+    url: '/api/v1/contacts/lists/{list_uuid}';
+};
+
+export type UpdateContactListApiV1ContactsListsListUuidPatchErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateContactListApiV1ContactsListsListUuidPatchError = UpdateContactListApiV1ContactsListsListUuidPatchErrors[keyof UpdateContactListApiV1ContactsListsListUuidPatchErrors];
+
+export type UpdateContactListApiV1ContactsListsListUuidPatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: ContactListResponse;
+};
+
+export type UpdateContactListApiV1ContactsListsListUuidPatchResponse = UpdateContactListApiV1ContactsListsListUuidPatchResponses[keyof UpdateContactListApiV1ContactsListsListUuidPatchResponses];
+
+export type RemoveListMembersApiV1ContactsListsListUuidMembersDeleteData = {
+    body: ContactBulkRequest;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * List Uuid
+         */
+        list_uuid: string;
+    };
+    query?: never;
+    url: '/api/v1/contacts/lists/{list_uuid}/members';
+};
+
+export type RemoveListMembersApiV1ContactsListsListUuidMembersDeleteErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RemoveListMembersApiV1ContactsListsListUuidMembersDeleteError = RemoveListMembersApiV1ContactsListsListUuidMembersDeleteErrors[keyof RemoveListMembersApiV1ContactsListsListUuidMembersDeleteErrors];
+
+export type RemoveListMembersApiV1ContactsListsListUuidMembersDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    200: ContactBulkResult;
+};
+
+export type RemoveListMembersApiV1ContactsListsListUuidMembersDeleteResponse = RemoveListMembersApiV1ContactsListsListUuidMembersDeleteResponses[keyof RemoveListMembersApiV1ContactsListsListUuidMembersDeleteResponses];
+
+export type AddListMembersApiV1ContactsListsListUuidMembersPostData = {
+    body: ContactBulkRequest;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * List Uuid
+         */
+        list_uuid: string;
+    };
+    query?: never;
+    url: '/api/v1/contacts/lists/{list_uuid}/members';
+};
+
+export type AddListMembersApiV1ContactsListsListUuidMembersPostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AddListMembersApiV1ContactsListsListUuidMembersPostError = AddListMembersApiV1ContactsListsListUuidMembersPostErrors[keyof AddListMembersApiV1ContactsListsListUuidMembersPostErrors];
+
+export type AddListMembersApiV1ContactsListsListUuidMembersPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ContactBulkResult;
+};
+
+export type AddListMembersApiV1ContactsListsListUuidMembersPostResponse = AddListMembersApiV1ContactsListsListUuidMembersPostResponses[keyof AddListMembersApiV1ContactsListsListUuidMembersPostResponses];
+
+export type RemoveSuppressionApiV1ContactsSuppressionsDeleteData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query: {
+        /**
+         * Phone E164
+         *
+         * The number, in E.164 form, e.g. +971501234567
+         */
+        phone_e164: string;
+    };
+    url: '/api/v1/contacts/suppressions';
+};
+
+export type RemoveSuppressionApiV1ContactsSuppressionsDeleteErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RemoveSuppressionApiV1ContactsSuppressionsDeleteError = RemoveSuppressionApiV1ContactsSuppressionsDeleteErrors[keyof RemoveSuppressionApiV1ContactsSuppressionsDeleteErrors];
+
+export type RemoveSuppressionApiV1ContactsSuppressionsDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type RemoveSuppressionApiV1ContactsSuppressionsDeleteResponse = RemoveSuppressionApiV1ContactsSuppressionsDeleteResponses[keyof RemoveSuppressionApiV1ContactsSuppressionsDeleteResponses];
+
+export type ListSuppressionsApiV1ContactsSuppressionsGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: {
+        /**
+         * Q
+         */
+        q?: string | null;
+        /**
+         * Page
+         */
+        page?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/contacts/suppressions';
+};
+
+export type ListSuppressionsApiV1ContactsSuppressionsGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListSuppressionsApiV1ContactsSuppressionsGetError = ListSuppressionsApiV1ContactsSuppressionsGetErrors[keyof ListSuppressionsApiV1ContactsSuppressionsGetErrors];
+
+export type ListSuppressionsApiV1ContactsSuppressionsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: SuppressionPageResponse;
+};
+
+export type ListSuppressionsApiV1ContactsSuppressionsGetResponse = ListSuppressionsApiV1ContactsSuppressionsGetResponses[keyof ListSuppressionsApiV1ContactsSuppressionsGetResponses];
+
+export type AddSuppressionsApiV1ContactsSuppressionsPostData = {
+    body: SuppressionCreateRequest;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/contacts/suppressions';
+};
+
+export type AddSuppressionsApiV1ContactsSuppressionsPostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AddSuppressionsApiV1ContactsSuppressionsPostError = AddSuppressionsApiV1ContactsSuppressionsPostErrors[keyof AddSuppressionsApiV1ContactsSuppressionsPostErrors];
+
+export type AddSuppressionsApiV1ContactsSuppressionsPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: SuppressionCreateResponse;
+};
+
+export type AddSuppressionsApiV1ContactsSuppressionsPostResponse = AddSuppressionsApiV1ContactsSuppressionsPostResponses[keyof AddSuppressionsApiV1ContactsSuppressionsPostResponses];
+
+export type ImportSuppressionsApiV1ContactsSuppressionsImportPostData = {
+    body: SuppressionImportRequest;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/contacts/suppressions/import';
+};
+
+export type ImportSuppressionsApiV1ContactsSuppressionsImportPostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ImportSuppressionsApiV1ContactsSuppressionsImportPostError = ImportSuppressionsApiV1ContactsSuppressionsImportPostErrors[keyof ImportSuppressionsApiV1ContactsSuppressionsImportPostErrors];
+
+export type ImportSuppressionsApiV1ContactsSuppressionsImportPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ContactImportResponse;
+};
+
+export type ImportSuppressionsApiV1ContactsSuppressionsImportPostResponse = ImportSuppressionsApiV1ContactsSuppressionsImportPostResponses[keyof ImportSuppressionsApiV1ContactsSuppressionsImportPostResponses];
+
+export type PreviewImportApiV1ContactsImportPreviewGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query: {
+        /**
+         * Source Key
+         *
+         * The key returned by the CSV upload
+         */
+        source_key: string;
+    };
+    url: '/api/v1/contacts/import/preview';
+};
+
+export type PreviewImportApiV1ContactsImportPreviewGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PreviewImportApiV1ContactsImportPreviewGetError = PreviewImportApiV1ContactsImportPreviewGetErrors[keyof PreviewImportApiV1ContactsImportPreviewGetErrors];
+
+export type PreviewImportApiV1ContactsImportPreviewGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ImportPreviewResponse;
+};
+
+export type PreviewImportApiV1ContactsImportPreviewGetResponse = PreviewImportApiV1ContactsImportPreviewGetResponses[keyof PreviewImportApiV1ContactsImportPreviewGetResponses];
+
+export type ImportContactsApiV1ContactsImportPostData = {
+    body: ContactImportRequest;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/contacts/import';
+};
+
+export type ImportContactsApiV1ContactsImportPostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ImportContactsApiV1ContactsImportPostError = ImportContactsApiV1ContactsImportPostErrors[keyof ImportContactsApiV1ContactsImportPostErrors];
+
+export type ImportContactsApiV1ContactsImportPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ContactImportResponse;
+};
+
+export type ImportContactsApiV1ContactsImportPostResponse = ImportContactsApiV1ContactsImportPostResponses[keyof ImportContactsApiV1ContactsImportPostResponses];
+
+export type GetImportApiV1ContactsImportsImportUuidGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Import Uuid
+         */
+        import_uuid: string;
+    };
+    query?: never;
+    url: '/api/v1/contacts/imports/{import_uuid}';
+};
+
+export type GetImportApiV1ContactsImportsImportUuidGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetImportApiV1ContactsImportsImportUuidGetError = GetImportApiV1ContactsImportsImportUuidGetErrors[keyof GetImportApiV1ContactsImportsImportUuidGetErrors];
+
+export type GetImportApiV1ContactsImportsImportUuidGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ContactImportResponse;
+};
+
+export type GetImportApiV1ContactsImportsImportUuidGetResponse = GetImportApiV1ContactsImportsImportUuidGetResponses[keyof GetImportApiV1ContactsImportsImportUuidGetResponses];
+
+export type GetImportErrorReportUrlApiV1ContactsImportsImportUuidErrorReportUrlGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Import Uuid
+         */
+        import_uuid: string;
+    };
+    query?: never;
+    url: '/api/v1/contacts/imports/{import_uuid}/error-report-url';
+};
+
+export type GetImportErrorReportUrlApiV1ContactsImportsImportUuidErrorReportUrlGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetImportErrorReportUrlApiV1ContactsImportsImportUuidErrorReportUrlGetError = GetImportErrorReportUrlApiV1ContactsImportsImportUuidErrorReportUrlGetErrors[keyof GetImportErrorReportUrlApiV1ContactsImportsImportUuidErrorReportUrlGetErrors];
+
+export type GetImportErrorReportUrlApiV1ContactsImportsImportUuidErrorReportUrlGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ErrorReportUrlResponse;
+};
+
+export type GetImportErrorReportUrlApiV1ContactsImportsImportUuidErrorReportUrlGetResponse = GetImportErrorReportUrlApiV1ContactsImportsImportUuidErrorReportUrlGetResponses[keyof GetImportErrorReportUrlApiV1ContactsImportsImportUuidErrorReportUrlGetResponses];
+
+export type BulkDeleteContactsApiV1ContactsBulkDeletePostData = {
+    body: ContactBulkRequest;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/contacts/bulk-delete';
+};
+
+export type BulkDeleteContactsApiV1ContactsBulkDeletePostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type BulkDeleteContactsApiV1ContactsBulkDeletePostError = BulkDeleteContactsApiV1ContactsBulkDeletePostErrors[keyof BulkDeleteContactsApiV1ContactsBulkDeletePostErrors];
+
+export type BulkDeleteContactsApiV1ContactsBulkDeletePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ContactBulkResult;
+};
+
+export type BulkDeleteContactsApiV1ContactsBulkDeletePostResponse = BulkDeleteContactsApiV1ContactsBulkDeletePostResponses[keyof BulkDeleteContactsApiV1ContactsBulkDeletePostResponses];
+
+export type ListContactsApiV1ContactsGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: {
+        /**
+         * Q
+         */
+        q?: string | null;
+        /**
+         * List Uuid
+         */
+        list_uuid?: string | null;
+        /**
+         * Suppressed
+         */
+        suppressed?: boolean | null;
+        /**
+         * Sort
+         */
+        sort?: string;
+        /**
+         * Page
+         */
+        page?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/contacts';
+};
+
+export type ListContactsApiV1ContactsGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListContactsApiV1ContactsGetError = ListContactsApiV1ContactsGetErrors[keyof ListContactsApiV1ContactsGetErrors];
+
+export type ListContactsApiV1ContactsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ContactPageResponse;
+};
+
+export type ListContactsApiV1ContactsGetResponse = ListContactsApiV1ContactsGetResponses[keyof ListContactsApiV1ContactsGetResponses];
+
+export type CreateContactApiV1ContactsPostData = {
+    body: ContactCreateRequest;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/contacts';
+};
+
+export type CreateContactApiV1ContactsPostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateContactApiV1ContactsPostError = CreateContactApiV1ContactsPostErrors[keyof CreateContactApiV1ContactsPostErrors];
+
+export type CreateContactApiV1ContactsPostResponses = {
+    /**
+     * Successful Response
+     */
+    201: ContactResponse;
+};
+
+export type CreateContactApiV1ContactsPostResponse = CreateContactApiV1ContactsPostResponses[keyof CreateContactApiV1ContactsPostResponses];
+
+export type DeleteContactApiV1ContactsContactUuidDeleteData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Contact Uuid
+         */
+        contact_uuid: string;
+    };
+    query?: never;
+    url: '/api/v1/contacts/{contact_uuid}';
+};
+
+export type DeleteContactApiV1ContactsContactUuidDeleteErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteContactApiV1ContactsContactUuidDeleteError = DeleteContactApiV1ContactsContactUuidDeleteErrors[keyof DeleteContactApiV1ContactsContactUuidDeleteErrors];
+
+export type DeleteContactApiV1ContactsContactUuidDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteContactApiV1ContactsContactUuidDeleteResponse = DeleteContactApiV1ContactsContactUuidDeleteResponses[keyof DeleteContactApiV1ContactsContactUuidDeleteResponses];
+
+export type GetContactApiV1ContactsContactUuidGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Contact Uuid
+         */
+        contact_uuid: string;
+    };
+    query?: never;
+    url: '/api/v1/contacts/{contact_uuid}';
+};
+
+export type GetContactApiV1ContactsContactUuidGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetContactApiV1ContactsContactUuidGetError = GetContactApiV1ContactsContactUuidGetErrors[keyof GetContactApiV1ContactsContactUuidGetErrors];
+
+export type GetContactApiV1ContactsContactUuidGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ContactResponse;
+};
+
+export type GetContactApiV1ContactsContactUuidGetResponse = GetContactApiV1ContactsContactUuidGetResponses[keyof GetContactApiV1ContactsContactUuidGetResponses];
+
+export type UpdateContactApiV1ContactsContactUuidPatchData = {
+    body: ContactUpdateRequest;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Contact Uuid
+         */
+        contact_uuid: string;
+    };
+    query?: never;
+    url: '/api/v1/contacts/{contact_uuid}';
+};
+
+export type UpdateContactApiV1ContactsContactUuidPatchErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateContactApiV1ContactsContactUuidPatchError = UpdateContactApiV1ContactsContactUuidPatchErrors[keyof UpdateContactApiV1ContactsContactUuidPatchErrors];
+
+export type UpdateContactApiV1ContactsContactUuidPatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: ContactResponse;
+};
+
+export type UpdateContactApiV1ContactsContactUuidPatchResponse = UpdateContactApiV1ContactsContactUuidPatchResponses[keyof UpdateContactApiV1ContactsContactUuidPatchResponses];
+
+export type GetContactRunsApiV1ContactsContactUuidRunsGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Contact Uuid
+         */
+        contact_uuid: string;
+    };
+    query?: {
+        /**
+         * Page
+         */
+        page?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/contacts/{contact_uuid}/runs';
+};
+
+export type GetContactRunsApiV1ContactsContactUuidRunsGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetContactRunsApiV1ContactsContactUuidRunsGetError = GetContactRunsApiV1ContactsContactUuidRunsGetErrors[keyof GetContactRunsApiV1ContactsContactUuidRunsGetErrors];
+
+export type GetContactRunsApiV1ContactsContactUuidRunsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ContactRunsResponse;
+};
+
+export type GetContactRunsApiV1ContactsContactUuidRunsGetResponse = GetContactRunsApiV1ContactsContactUuidRunsGetResponses[keyof GetContactRunsApiV1ContactsContactUuidRunsGetResponses];
 
 export type ListCredentialsApiV1CredentialsGetData = {
     body?: never;
