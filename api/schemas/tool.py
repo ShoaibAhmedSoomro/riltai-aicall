@@ -13,6 +13,8 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from pipecat.audio.dtmf.types import KeypadEntry
+
 from api.enums import ToolCategory
 
 DEFAULT_MCP_TIMEOUT_SECS = 30
@@ -28,6 +30,7 @@ ToolCategoryValue = Literal[
     "native",
     "integration",
     "mcp",
+    "press_digit",
 ]
 
 
@@ -161,6 +164,45 @@ class HttpApiConfig(BaseModel):
         if method not in {"GET", "POST", "PUT", "PATCH", "DELETE"}:
             raise ValueError("method must be one of GET, POST, PUT, PATCH, DELETE")
         return method
+
+
+MAX_PRESS_DIGITS = 32
+
+
+class PressDigitConfig(BaseModel):
+    """Configuration for Press Digit tools: keys the agent presses on the call.
+
+    The keys are fixed here, not chosen by the model. A tool that lets the model
+    type arbitrary tones could be talked into dialling an extension or entering a
+    code nobody approved.
+    """
+
+    digits: str = Field(
+        description="The keys to press, in order, e.g. '1', '0' or '123#'.",
+        json_schema_extra=_llm_hint(
+            "Digits 0-9 plus * and #. Fixed per tool: make one tool per thing the "
+            "agent may need to press."
+        ),
+    )
+    urgent: bool = Field(
+        default=False,
+        description="Send the tones immediately, ahead of any speech already queued.",
+    )
+
+    @field_validator("digits")
+    @classmethod
+    def digits_must_be_keys(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("digits must not be empty")
+        if len(v) > MAX_PRESS_DIGITS:
+            raise ValueError(f"at most {MAX_PRESS_DIGITS} keys")
+        for ch in v:
+            try:
+                KeypadEntry(ch)
+            except ValueError:
+                raise ValueError(f"'{ch}' is not a phone key") from None
+        return v
 
 
 class EndCallConfig(BaseModel):
@@ -511,6 +553,14 @@ class TransferCallToolDefinition(BaseModel):
     config: TransferCallConfig = Field(description="Transfer Call configuration.")
 
 
+class PressDigitToolDefinition(BaseModel):
+    """Tool definition for Press Digit tools."""
+
+    schema_version: int = Field(default=1, description="Schema version.")
+    type: Literal["press_digit"] = Field(description="Tool type.")
+    config: PressDigitConfig = Field(description="Press Digit configuration.")
+
+
 class CalculatorToolDefinition(BaseModel):
     """Tool definition for Calculator tools."""
 
@@ -531,6 +581,7 @@ ToolDefinition = Annotated[
     | EndCallToolDefinition
     | TransferCallToolDefinition
     | CalculatorToolDefinition
+    | PressDigitToolDefinition
     | McpToolDefinition,
     Field(discriminator="type"),
 ]

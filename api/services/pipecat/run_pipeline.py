@@ -13,7 +13,11 @@ from api.schemas.workflow_configurations import (
     DEFAULT_PROVISIONAL_VAD_PAUSE_SECS,
     DEFAULT_SMART_TURN_STOP_SECS,
     DEFAULT_TURN_START_MIN_WORDS,
+    DEFAULT_DENOISING_MODE,
+    DEFAULT_DTMF_INPUT_ENABLED,
+    DEFAULT_DTMF_INPUT_TIMEOUT_SECS,
     DEFAULT_TURN_START_STRATEGY,
+    IVRDetectionConfigurationDefaults,
     STTTurnConfigurationDefaults,
     VADConfigurationDefaults,
     resolve_knowledge_base_configuration,
@@ -53,6 +57,14 @@ from api.services.pipecat.pre_call_fetch import execute_pre_call_fetch
 from api.services.pipecat.realtime_feedback_events import (
     build_node_transition_event,
 )
+from api.services.configuration.tts_fallback import (
+    build_runtime_config as build_tts_fallback_config,
+)
+from api.services.pipecat.dtmf_turn_start import DTMFUserTurnStartStrategy
+from api.services.pipecat.run_event_bus import get_redis
+from api.services.telephony.providers.ari.dtmf_bridge import run_dtmf_bridge
+from api.services.workflow.disposition_codes import IVR_DETECTED_DISPOSITION
+from api.services.pipecat.ivr_detector import IVRDetectionProcessor
 from api.services.pipecat.realtime_feedback_observer import (
     RealtimeFeedbackObserver,
     register_turn_log_handlers,
@@ -67,7 +79,7 @@ from api.services.pipecat.service_factory import (
     create_llm_service_from_provider,
     create_realtime_llm_service,
     create_stt_service,
-    create_tts_service,
+    create_tts_services,
     stt_uses_external_turns,
 )
 from api.services.pipecat.tracing_config import (
@@ -87,6 +99,10 @@ from pipecat.audio.turn.smart_turn.local_smart_turn_v3 import LocalSmartTurnAnal
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.audio.vad.vad_analyzer import VADParams
 from pipecat.extensions.voicemail.voicemail_detector import VoicemailDetector
+from pipecat.pipeline.service_switcher import (
+    ServiceSwitcher,
+    ServiceSwitcherStrategyFailover,
+)
 from pipecat.processors.aggregators.llm_response_universal import (
     LLMAssistantAggregatorParams,
     LLMContextAggregatorPair,
@@ -172,6 +188,50 @@ def _resolve_vad_params(run_configs: dict) -> VADParams:
         confidence=vad.confidence,
         start_secs=vad.start_secs,
     )
+
+
+def _resolve_denoising_mode(configs: dict | None) -> str:
+    """"rnnoise" or "none". Anything else is "none": a bad dial must not stop a call."""
+    mode = (configs or {}).get("denoising_mode", DEFAULT_DENOISING_MODE)
+    return mode if mode in ("none", "rnnoise") else DEFAULT_DENOISING_MODE
+
+
+def _resolve_dtmf_input(run_configs: dict) -> tuple[bool, float]:
+    """Whether caller keypresses reach the agent, and how long a sequence may idle."""
+    enabled = run_configs.get("dtmf_input_enabled", DEFAULT_DTMF_INPUT_ENABLED)
+    try:
+        timeout = float(
+            run_configs.get("dtmf_input_timeout_secs", DEFAULT_DTMF_INPUT_TIMEOUT_SECS)
+        )
+    except (TypeError, ValueError):
+        timeout = DEFAULT_DTMF_INPUT_TIMEOUT_SECS
+    return bool(enabled), min(10.0, max(0.5, timeout))
+
+
+def _ivr_detection_enabled(run_configs: dict) -> bool:
+    try:
+        return IVRDetectionConfigurationDefaults(
+            **(run_configs.get("ivr_detection") or {})
+        ).enabled
+    except Exception:
+        logger.warning("Invalid ivr_detection; treating it as off")
+        return False
+
+
+def _wrap_tts_with_failover(services: list):
+    """The pipeline's voice, and the switcher when there is a backup to switch to.
+
+    One service is used as it always was. With a backup, both sit behind a failover
+    switcher: a non-fatal error from the active voice moves the call to the other, so
+    a provider outage degrades the voice instead of ending the call. The call survives
+    because event_handlers already ignores non-fatal ErrorFrames.
+    """
+    if len(services) == 1:
+        return services[0], None
+    switcher = ServiceSwitcher(
+        services=services, strategy_type=ServiceSwitcherStrategyFailover
+    )
+    return switcher, switcher
 
 
 def _resolve_stt_turn_config(run_configs: dict) -> dict:
@@ -419,6 +479,7 @@ async def _run_pipeline_telephony_impl(
         audio_config,
         workflow.organization_id,
         ambient_noise_config=ambient_noise_config,
+        denoising_mode=_resolve_denoising_mode(workflow.workflow_configurations),
         telephony_configuration_id=telephony_configuration_id,
         is_realtime=is_realtime,
         **transport_kwargs,
@@ -546,6 +607,9 @@ async def _run_pipeline_smallwebrtc_impl(
         audio_config,
         ambient_noise_config,
         is_realtime=is_realtime,
+        denoising_mode=_resolve_denoising_mode(
+            workflow.workflow_configurations if workflow else None
+        ),
     )
     await _run_pipeline_impl(
         transport,
@@ -727,6 +791,7 @@ async def _run_pipeline_impl(
         llm = create_realtime_llm_service(user_config, audio_config)
         stt = None
         tts = None
+        tts_switcher = None
         # Realtime services don't implement run_inference, so create a
         # separate text LLM for variable extraction and other out-of-band
         # inference calls.
@@ -742,11 +807,13 @@ async def _run_pipeline_impl(
             correlation_id=mps_correlation_id,
             turn_config=_resolve_stt_turn_config(run_configs),
         )
-        tts = create_tts_service(
+        tts_services = create_tts_services(
             user_config,
             audio_config,
+            fallback=build_tts_fallback_config(run_configs),
             correlation_id=mps_correlation_id,
         )
+        tts, tts_switcher = _wrap_tts_with_failover(tts_services)
         llm = create_llm_service(user_config, correlation_id=mps_correlation_id)
         inference_llm = None
 
@@ -959,6 +1026,8 @@ async def _run_pipeline_impl(
     ]
     user_vad_analyzer = SileroVADAnalyzer(params=_resolve_vad_params(run_configs))
 
+    dtmf_input_enabled, dtmf_input_timeout_secs = _resolve_dtmf_input(run_configs)
+
     # Configure turn strategies based on STT provider, model, and workflow configuration
     if is_realtime:
         uses_external_turns = False
@@ -976,6 +1045,13 @@ async def _run_pipeline_impl(
             run_configs,
             uses_external_turns=uses_external_turns,
         )
+        if dtmf_input_enabled:
+            # A keypress says nothing, so a transcriber-driven turn would never
+            # open for it. First, so it wins before the others are consulted.
+            user_turn_start_strategies = [
+                DTMFUserTurnStartStrategy(),
+                *user_turn_start_strategies,
+            ]
         turn_start_strategy = run_configs.get(
             "turn_start_strategy", DEFAULT_TURN_START_STRATEGY
         )
@@ -1091,6 +1167,32 @@ async def _run_pipeline_impl(
                 abort_immediately=True,
             )
 
+    # Phone-menu hang-up. Non-realtime only: it reads the transcript stream, and a
+    # speech-to-speech model has none to read. Uses the agent's own LLM.
+    ivr_detector = None
+    if _ivr_detection_enabled(run_configs) and not is_realtime:
+        try:
+            ivr_detector = IVRDetectionProcessor(
+                create_llm_service(
+                    user_config,
+                    correlation_id=mps_correlation_id,
+                    usage_context="ivr_detection",
+                )
+            )
+
+            @ivr_detector.event_handler("on_ivr_detected")
+            async def _on_ivr_detected(_processor):
+                logger.info(f"IVR menu detected for workflow run {workflow_run_id}")
+                await engine.end_call_with_reason(
+                    reason=IVR_DETECTED_DISPOSITION,
+                    abort_immediately=True,
+                )
+
+        except Exception as e:
+            # Never let an optional feature stop a call from connecting.
+            logger.error(f"IVR detection unavailable for run {workflow_run_id}: {e}")
+            ivr_detector = None
+
     # Recording router is only meaningful in non-realtime mode (it routes between
     # pre-recorded audio playback and dynamic TTS; realtime LLMs produce audio
     # directly).
@@ -1151,6 +1253,8 @@ async def _run_pipeline_impl(
             pipeline_engine_callback_processor,
             pipeline_metrics_aggregator,
             voicemail_detector=voicemail_detector,
+            dtmf_input_enabled=dtmf_input_enabled,
+            dtmf_input_timeout_secs=dtmf_input_timeout_secs,
         )
     else:
         pipeline = build_pipeline(
@@ -1166,6 +1270,9 @@ async def _run_pipeline_impl(
             voicemail_detector=voicemail_detector,
             recording_router=recording_router,
             guardrail=guardrail,
+            dtmf_input_enabled=dtmf_input_enabled,
+            dtmf_input_timeout_secs=dtmf_input_timeout_secs,
+            ivr_detector=ivr_detector,
         )
 
     # Create pipeline task with audio configuration
@@ -1188,6 +1295,32 @@ async def _run_pipeline_impl(
     # Now set the task and transport output on the engine
     engine.set_task(task)
     engine.set_transport_output(transport.output())
+
+    if tts_switcher is not None:
+
+        @tts_switcher.strategy.event_handler("on_service_switched")
+        async def _on_tts_switched(_strategy, service):
+            logger.warning(
+                f"Voice provider failed on run {workflow_run_id}; "
+                f"switched to {getattr(service, 'name', 'backup voice')}"
+            )
+            # Leave a trace the run can be filtered on afterwards.
+            tags = engine._gathered_context.get("call_tags", [])
+            if "tts_failover" not in tags:
+                engine._gathered_context["call_tags"] = [*tags, "tts_failover"]
+
+    # Asterisk delivers keypresses on a socket owned by another process; bring them
+    # into this call. Other providers carry them in the audio stream already.
+    dtmf_bridge_task = None
+    if (
+        dtmf_input_enabled
+        and not is_realtime
+        and workflow_run is not None
+        and workflow_run.mode == WorkflowRunMode.ARI.value
+    ):
+        dtmf_bridge_task = asyncio.create_task(
+            run_dtmf_bridge(get_redis(), workflow_run_id, task.queue_frame)
+        )
 
     # Add the observer before initialization so early ErrorFrames are not missed.
     feedback_observer = RealtimeFeedbackObserver(
@@ -1278,4 +1411,6 @@ async def _run_pipeline_impl(
         await engine.close_mcp_sessions()
         await feedback_observer.cleanup()
         release_bus(workflow_run_id)
+        if dtmf_bridge_task is not None:
+            dtmf_bridge_task.cancel()
         logger.debug(f"Cleaned up context providers for workflow run {workflow_run_id}")

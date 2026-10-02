@@ -165,6 +165,10 @@ def mask_workflow_configurations(config: Optional[Dict]) -> Optional[Dict]:
     if isinstance(v2_override, dict):
         _mask_nested_service_secrets(v2_override)
 
+    from api.services.configuration.tts_fallback import mask_in_place
+
+    mask_in_place(masked)
+
     return masked
 
 

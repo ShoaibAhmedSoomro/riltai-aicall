@@ -48,6 +48,7 @@ import {
     contextMappingToRuleRows,
     createContextDestinationRuleRow,
     createMcpDefinition,
+    createPressDigitDefinition,
     DEFAULT_END_CALL_REASON_DESCRIPTION,
     type EndCallMessageType,
     type ExtendedTransferCallConfig,
@@ -59,12 +60,14 @@ import {
     type ToolCategory,
     type TransferDestinationSource,
 } from "../config";
+import { validatePressDigits } from "../pressDigit";
 import {
     buildHttpToolTestSnapshot,
     BuiltinToolConfig,
     EndCallToolConfig,
     HttpApiToolConfig,
     HttpToolTestDialog,
+    PressDigitToolConfig,
     TransferCallToolConfig,
 } from "./components";
 
@@ -91,6 +94,8 @@ export default function ToolDetailPage() {
     const router = useRouter();
 
     const [tool, setTool] = useState<ToolResponse | null>(null);
+    const [pressDigits, setPressDigits] = useState("");
+    const [pressUrgent, setPressUrgent] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -279,6 +284,10 @@ export default function ToolDetailPage() {
                 setTransferContextDestinationRules([]);
                 setTransferFallbackDestination("");
             }
+        } else if (tool.category === "press_digit") {
+            const config = tool.definition?.config as { digits?: string; urgent?: boolean } | undefined;
+            setPressDigits(config?.digits || "");
+            setPressUrgent(config?.urgent ?? false);
         } else if (tool.category === "mcp") {
             // Populate MCP specific fields
             const config = tool.definition?.config as
@@ -477,6 +486,12 @@ export default function ToolDetailPage() {
                     }
                 }
             }
+        } else if (tool.category === "press_digit") {
+            const problem = validatePressDigits(pressDigits);
+            if (problem) {
+                setError(problem);
+                return;
+            }
         } else if (tool.category === "mcp") {
             // Validate MCP server URL (must be http(s))
             if (!mcpUrl.trim()) {
@@ -625,6 +640,12 @@ export default function ToolDetailPage() {
                         type: "transfer_call",
                         config: transferConfig,
                     } as UpdateToolRequest["definition"],
+                };
+            } else if (tool.category === "press_digit") {
+                requestBody = {
+                    name,
+                    description: description || undefined,
+                    definition: createPressDigitDefinition(pressDigits, pressUrgent),
                 };
             } else if (tool.category === "mcp") {
                 requestBody = {
@@ -821,6 +842,7 @@ const data = await response.json();`;
     const isTransferCallTool = tool.category === "transfer_call";
     const isBuiltinTool = tool.category === "calculator";
     const isMcpTool = tool.category === "mcp";
+    const isPressDigitTool = tool.category === "press_digit";
     const isHttpApiTool = tool.category === "http_api";
     const hasUnsavedHttpChanges =
         isHttpApiTool &&
@@ -963,6 +985,17 @@ const data = await response.json();`;
                             onContextDestinationRulesChange={setTransferContextDestinationRules}
                             fallbackDestination={transferFallbackDestination}
                             onFallbackDestinationChange={setTransferFallbackDestination}
+                        />
+                    ) : isPressDigitTool ? (
+                        <PressDigitToolConfig
+                            name={name}
+                            onNameChange={setName}
+                            description={description}
+                            onDescriptionChange={setDescription}
+                            digits={pressDigits}
+                            onDigitsChange={setPressDigits}
+                            urgent={pressUrgent}
+                            onUrgentChange={setPressUrgent}
                         />
                     ) : isMcpTool ? (
                         <Card>

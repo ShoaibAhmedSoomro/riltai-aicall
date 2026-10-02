@@ -40,6 +40,7 @@ from api.services.call_concurrency import (
     call_concurrency,
 )
 from api.services.organization_preferences import external_pbx_integrations_enabled
+from api.services.telephony.providers.ari.dtmf_bridge import publish_digit
 from api.services.quota_service import authorize_workflow_run_start
 from api.services.telephony import ws_auth
 from api.services.telephony.call_transfer_manager import get_call_transfer_manager
@@ -598,6 +599,10 @@ class ARIConnection:
                 f"[ARI org={self.organization_id}] DTMF: "
                 f"channel={channel_id}, digit={digit}"
             )
+            # The call's pipeline runs in another process; hand it the keypress.
+            run_id = await self._get_channel_run(channel_id)
+            if run_id and digit:
+                await publish_digit(await self._get_redis(), run_id, digit)
 
         else:
             logger.trace(

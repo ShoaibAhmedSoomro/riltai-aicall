@@ -264,6 +264,8 @@ export default function ToolsPage() {
                 return <Badge variant="outline">Integration</Badge>;
             case "mcp":
                 return <Badge variant="outline">MCP</Badge>;
+            case "press_digit":
+                return <Badge variant="secondary">Press Digit</Badge>;
             default:
                 return <Badge variant="outline">{category}</Badge>;
         }

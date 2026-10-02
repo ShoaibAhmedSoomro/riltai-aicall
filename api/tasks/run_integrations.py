@@ -51,6 +51,12 @@ def _should_skip_qa(
 
     Returns a reason string if the call should be skipped, or None if it should proceed.
     """
+    # A simulated chat is over in seconds by design; judging it by call length or
+    # sampling it out would mean a simulation is never scored.
+    tester = (workflow_run.annotations or {}).get("tester") or {}
+    if tester.get("ui_mode") == "simulated":
+        return None
+
     usage_info = workflow_run.usage_info or {}
     call_duration = usage_info.get("call_duration_seconds")
     if call_duration is not None and call_duration < qa_data.qa_min_call_duration:

@@ -43,6 +43,15 @@ class AppendTextChatMessageRequest(BaseModel):
     expected_revision: int | None = None
 
 
+class SimulateTextChatRequest(BaseModel):
+    persona: str = Field(
+        min_length=1,
+        max_length=2000,
+        description="Who the pretend caller is and what they want.",
+    )
+    max_turns: int = Field(default=8, ge=1, le=20)
+
+
 class RewindTextChatSessionRequest(BaseModel):
     cursor_turn_id: str | None = None
     expected_revision: int | None = None
@@ -302,6 +311,60 @@ async def end_text_chat_session(
         raise HTTPException(status_code=409, detail=_revision_conflict_detail(e))
 
     return _build_response(text_session)
+
+
+@router.post(
+    "/{workflow_id}/text-chat/sessions/{run_id}/simulate",
+    response_model=WorkflowRunTextSessionResponse,
+)
+async def simulate_text_chat_session(
+    workflow_id: int,
+    run_id: int,
+    request: SimulateTextChatRequest,
+    user: UserModel = Depends(get_user_with_selected_organization),
+) -> WorkflowRunTextSessionResponse:
+    """Let a pretend caller talk to the agent in this session, in the background.
+
+    Only a fresh session qualifies (the agent has spoken, no one has replied): a
+    simulation that took over a conversation someone was having would be a surprise.
+    The caller polls the session to watch it unfold.
+    """
+    text_session = await _load_text_session_or_404(workflow_id, run_id, user)
+    data = normalize_text_chat_session_data(text_session.session_data)
+    if text_session.workflow_run.is_completed or data["status"] == "completed":
+        raise HTTPException(status_code=400, detail="Text chat session has ended")
+    if any((t.get("user_message") or {}).get("text") for t in data["turns"]):
+        raise HTTPException(
+            status_code=409,
+            detail="This session already has a conversation. Start a new one to simulate.",
+        )
+    await _ensure_text_chat_quota(user, workflow_id, run_id)
+
+    annotations = dict(text_session.workflow_run.annotations or {})
+    annotations["tester"] = {
+        **(annotations.get("tester") or {}),
+        "source": "workflow_editor",
+        "modality": "text",
+        "ui_mode": "simulated",
+        "persona": request.persona,
+        "max_turns": request.max_turns,
+    }
+    await db_client.update_workflow_run(run_id, annotations=annotations)
+
+    # Lazy import: route modules must not load the ARQ worker task graph eagerly.
+    from api.tasks.arq import enqueue_job
+    from api.tasks.function_names import FunctionNames
+
+    await enqueue_job(
+        FunctionNames.SIMULATE_TEXT_CHAT,
+        workflow_id,
+        run_id,
+        user.selected_organization_id,
+        request.persona,
+        request.max_turns,
+        _job_id=f"simulate-text-chat-{run_id}",
+    )
+    return _build_response(await _load_text_session_or_404(workflow_id, run_id, user))
 
 
 @router.post(

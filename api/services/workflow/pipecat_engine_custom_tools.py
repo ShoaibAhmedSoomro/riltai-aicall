@@ -15,6 +15,8 @@ from loguru import logger
 from pipecat.adapters.schemas.function_schema import FunctionSchema
 from pipecat.frames.frames import (
     FunctionCallResultProperties,
+    OutputDTMFFrame,
+    OutputDTMFUrgentFrame,
     TTSSpeakFrame,
 )
 from pipecat.services.llm_service import FunctionCallParams
@@ -335,6 +337,10 @@ class CustomToolManager:
         elif tool.category == ToolCategory.TRANSFER_CALL.value:
             timeout_secs = self._transfer_handler_timeout_secs(tool)
             handler = self._create_transfer_call_handler(tool, function_name)
+        elif tool.category == ToolCategory.PRESS_DIGIT.value:
+            # An explicit branch: the else below sends everything to the HTTP
+            # handler, so a new category without one would be mis-dispatched.
+            handler = self._create_press_digit_handler(tool, function_name)
         else:
             timeout_ms = ((tool.definition or {}).get("config", {}) or {}).get(
                 "timeout_ms", 5000
@@ -554,6 +560,34 @@ class CustomToolManager:
                 )
 
         return end_call_handler
+
+    def _create_press_digit_handler(self, tool: Any, function_name: str):
+        """Press fixed phone keys on the call, then let the agent carry on.
+
+        Sent as in-band tones on every transport here, not as carrier-signalled
+        RFC 2833, so a far end that only listens for signalled digits will not hear
+        them.
+        """
+        properties = FunctionCallResultProperties(run_llm=True)
+
+        async def press_digit_handler(function_call_params: FunctionCallParams) -> None:
+            config = (tool.definition or {}).get("config", {}) or {}
+            digits = str(config.get("digits", ""))
+            try:
+                frame_cls = (
+                    OutputDTMFUrgentFrame if config.get("urgent") else OutputDTMFFrame
+                )
+                await self._engine._transport_output.queue_frame(
+                    frame_cls.from_string(digits)
+                )
+                logger.info(f"Press Digit tool EXECUTED: {function_name} ({len(digits)} keys)")
+                result = {"status": "success", "pressed": digits}
+            except Exception as e:
+                logger.error(f"Press Digit tool '{function_name}' failed: {e}")
+                result = {"status": "error", "message": "Could not press the keys"}
+            await function_call_params.result_callback(result, properties=properties)
+
+        return press_digit_handler
 
     def _create_transfer_call_handler(self, tool: Any, function_name: str):
         """Create a handler function for a transfer call tool.

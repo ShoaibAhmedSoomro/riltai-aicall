@@ -35,6 +35,7 @@ from api.services.configuration.ai_model_configuration import (
     get_resolved_ai_model_configuration,
     merge_ai_model_configuration_v2_secrets,
 )
+from api.services.configuration import tts_fallback
 from api.services.configuration.check_validity import UserConfigurationValidator
 from api.services.configuration.masking import (
     mask_workflow_configurations,
@@ -1296,6 +1297,44 @@ async def update_workflow(
                     **workflow_configurations,
                     "model_overrides": enriched_overrides,
                 }
+
+        # The backup voice: restore its key if the page sent the mask, then validate
+        # it and fill a missing key from the main voice when it is the same provider.
+        if workflow_configurations and tts_fallback.KEY in workflow_configurations:
+            existing_workflow = await db_client.get_workflow(
+                workflow_id, organization_id=user.selected_organization_id
+            )
+            if existing_workflow is None:
+                raise HTTPException(
+                    status_code=404, detail=f"Workflow with id {workflow_id} not found"
+                )
+            existing_draft = await db_client.get_draft_version(workflow_id)
+            existing_configs = (
+                existing_draft.workflow_configurations
+                if existing_draft
+                else existing_workflow.released_definition.workflow_configurations
+            )
+            workflow_configurations = tts_fallback.restore_secret(
+                workflow_configurations, existing_configs
+            )
+            main_voice = (
+                await get_resolved_ai_model_configuration(
+                    organization_id=user.selected_organization_id
+                )
+            ).effective.tts
+            try:
+                cleaned = tts_fallback.validate_for_save(
+                    workflow_configurations.get(tts_fallback.KEY),
+                    primary_provider=getattr(main_voice, "provider", None),
+                    primary_api_key=getattr(main_voice, "api_key", None),
+                )
+            except ValueError as e:
+                raise HTTPException(status_code=422, detail=str(e))
+            workflow_configurations = {
+                k: v for k, v in workflow_configurations.items() if k != tts_fallback.KEY
+            }
+            if cleaned:
+                workflow_configurations[tts_fallback.KEY] = cleaned
 
         # Reject upfront if any new trigger path collides with another
         # workflow's trigger — keeps the workflow record from

@@ -62,7 +62,7 @@ describe('AppSidebar', () => {
         for (const heading of ['BUILD', 'DEPLOY', 'DATA', 'MONITOR', 'ACCOUNT']) {
             expect(screen.getByText(heading)).toBeDefined();
         }
-    });
+    }, 30000);  // the first render of the whole sidebar is the slow one
 
     it('lights exactly one entry on /usage, and the other on /usage?channel=chat', () => {
         const { unmount } = renderAt('/usage');

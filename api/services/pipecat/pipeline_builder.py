@@ -39,6 +39,9 @@ def build_pipeline(
     voicemail_detector=None,
     recording_router=None,
     guardrail=None,
+    dtmf_input_enabled=True,
+    dtmf_input_timeout_secs=2.0,
+    ivr_detector=None,
 ):
     """Build the main pipeline with all components.
 
@@ -63,12 +66,17 @@ def build_pipeline(
         # and interrupts the bot on the first digit, which is what pressing a
         # key during speech means.
         #
-        # ponytail: pipecat's defaults -- 2s idle flush, "#" terminates. No
-        # per-agent dial, because there is no agent for which dropping the
-        # caller's keypresses is the right behaviour. Add one if a real
-        # workflow ever needs a different terminator.
-        DTMFAggregator(),
+        # Per-agent: on by default (it has always been on), with the idle flush
+        # adjustable; "#" still terminates a sequence.
     ]
+    if dtmf_input_enabled:
+        processors.append(DTMFAggregator(timeout=dtmf_input_timeout_secs))
+
+    # Watches the first words of a call for a phone menu. Transcripts pass through
+    # untouched; it only fires a hang-up. After DTMF so a keypad sequence is not
+    # mistaken for speech, before anything that acts on the text.
+    if ivr_detector:
+        processors.append(ivr_detector)
 
     # Screens the caller's words before the agent sees them. After DTMF so a
     # keypad sequence (already a TranscriptionFrame) passes through the same
@@ -124,6 +132,8 @@ def build_realtime_pipeline(
     pipeline_engine_callback_processor,
     pipeline_metrics_aggregator,
     voicemail_detector=None,
+    dtmf_input_enabled=True,
+    dtmf_input_timeout_secs=2.0,
 ):
     """Build a pipeline for realtime (speech-to-speech) LLM services.
 
@@ -155,7 +165,11 @@ def build_realtime_pipeline(
         # See build_pipeline: without this the caller's keypresses are dropped
         # here too. There is no STT to sit behind in this pipeline, so it goes
         # directly after the transport.
-        DTMFAggregator(),
+        *(
+            [DTMFAggregator(timeout=dtmf_input_timeout_secs)]
+            if dtmf_input_enabled
+            else []
+        ),
         user_context_aggregator,
         realtime_llm,
     ]

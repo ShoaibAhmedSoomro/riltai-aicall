@@ -569,6 +569,29 @@ def create_stt_service(
         )
 
 
+def create_tts_services(
+    user_config,
+    audio_config: "AudioConfig",
+    fallback=None,
+    correlation_id: str | None = None,
+) -> list:
+    """The main voice, plus a backup built from ``fallback`` when one is configured.
+
+    A backup that cannot be built is dropped with a log line: it is insurance, and
+    failing to buy insurance must not stop the call.
+    """
+    services = [create_tts_service(user_config, audio_config, correlation_id=correlation_id)]
+    if fallback is not None:
+        try:
+            backup_config = user_config.model_copy(update={"tts": fallback})
+            services.append(
+                create_tts_service(backup_config, audio_config, correlation_id=correlation_id)
+            )
+        except Exception as e:
+            logger.error(f"Backup voice unavailable, continuing without it: {e}")
+    return services
+
+
 @_report_service_factory_failures(ErrorSource.TTS, config_section="tts")
 def create_tts_service(
     user_config, audio_config: "AudioConfig", correlation_id: str | None = None

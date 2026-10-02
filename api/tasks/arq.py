@@ -45,6 +45,7 @@ from api.tasks.campaign_tasks import (
 )
 from api.tasks.contacts_import import process_contact_import
 from api.tasks.alert_evaluation import evaluate_window_alert_rules
+from api.tasks.simulation_tasks import simulate_text_chat
 from api.tasks.data_retention import purge_expired_workflow_runs
 from api.tasks.knowledge_base_processing import process_knowledge_base_document
 from api.tasks.run_integrations import run_integrations_post_workflow_run
@@ -67,6 +68,7 @@ class WorkerSettings:
         complete_inactive_text_chat_session,
         purge_expired_workflow_runs,
         evaluate_window_alert_rules,
+        simulate_text_chat,
         process_contact_import,
     ]
     cron_jobs = [

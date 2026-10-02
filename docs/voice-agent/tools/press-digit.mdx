@@ -1,0 +1,22 @@
+---
+title: "Press Digit"
+description: "Let the agent press fixed keys on the call, such as a phone-menu option or an extension."
+---
+
+The Press Digit tool sends phone keypad tones into the call. Use it when your agent has to get through an automated menu ("press 1 for billing") or enter an extension or code.
+
+## Set it up
+
+1. Open **Tools** and create a tool of type **Press Digit**.
+2. Enter the **keys to press**, in order: digits `0`-`9`, `*` and `#`, up to 32 keys. For example `1`, `0` or `123#`.
+3. Write a **description** that says exactly when to use it, for example *"Press when the menu offers billing as option 1."* This is what the agent reads to decide.
+4. Optionally turn on **Send immediately** to press the keys right away, ahead of anything the agent is still saying.
+5. Attach the tool to the node that needs it.
+
+Make one tool for each different thing the agent may need to press. The keys are fixed in the tool, not chosen by the agent, so it cannot be talked into entering something you did not approve.
+
+## Good to know
+
+- The tones are sent in the call audio. A phone system that only listens for *signalled* keys (rather than tones) may not hear them, so test against the system you are calling.
+- After pressing, the agent carries on and listens for what the menu says next.
+- To end calls that reach a menu you do not want to navigate, use **Hang up on phone menus** in the agent's [Audio and Calls](/voice-agent/audio-and-calls) settings instead.

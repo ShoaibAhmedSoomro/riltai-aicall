@@ -1,6 +1,6 @@
 "use client";
 
-import { Calculator, Cog, Globe, type LucideIcon, PhoneForwarded, PhoneOff, Puzzle } from "lucide-react";
+import { Calculator, Cog, Globe, Grid3x3, type LucideIcon, PhoneForwarded, PhoneOff, Puzzle } from "lucide-react";
 import { type ReactNode } from "react";
 
 import type {
@@ -13,13 +13,14 @@ import type {
     HttpApiToolDefinition,
     McpToolDefinition,
     PresetToolParameter,
+    PressDigitToolDefinition,
     ToolParameter,
     TransferCallConfig,
     TransferCallToolDefinition,
 } from "@/client/types.gen";
 import { createUuid } from "@/lib/uuid";
 
-export type ToolCategory = "http_api" | "end_call" | "transfer_call" | "calculator" | "native" | "integration" | "mcp";
+export type ToolCategory = "http_api" | "end_call" | "transfer_call" | "calculator" | "native" | "integration" | "mcp" | "press_digit";
 
 export type EndCallMessageType = "none" | "custom" | "audio";
 export type TransferDestinationSource = "static" | "dynamic" | "context_mapping";
@@ -156,6 +157,18 @@ export const TOOL_CATEGORIES: ToolCategoryConfig[] = [
         },
     },
     {
+        value: "press_digit",
+        label: "Press Digit",
+        description: "Press phone keys on the call, such as a menu option or an extension",
+        icon: Grid3x3,
+        iconName: "grid-3x3",
+        iconColor: "#0EA5E9",
+        autoFill: {
+            name: "Press Digit",
+            description: "Press the configured keys on the phone keypad when the call needs them",
+        },
+    },
+    {
         value: "mcp",
         label: "MCP Server",
         description: "Connect a customer MCP server; its tools become available to the agent",
@@ -166,7 +179,7 @@ export const TOOL_CATEGORIES: ToolCategoryConfig[] = [
     {
         value: "native",
         label: "Native (Coming Soon)",
-        description: "Built-in tools like call transfer, DTMF input",
+        description: "More built-in tools",
         icon: Cog,
         iconName: "cog",
         iconColor: "#6B7280",
@@ -218,6 +231,8 @@ export function getToolTypeLabel(category: string): string {
             return "Integration Tool";
         case "mcp":
             return "MCP Server Tool";
+        case "press_digit":
+            return "Press Digit Tool";
         default:
             return "Tool";
     }
@@ -244,6 +259,7 @@ export type ToolDefinition =
     | EndCallToolDefinition
     | TransferCallToolDefinition
     | CalculatorToolDefinition
+    | PressDigitToolDefinition
     | McpToolDefinition;
 
 export function createEndCallDefinition(config: EndCallConfig): EndCallToolDefinition {
@@ -302,8 +318,18 @@ export function createMcpDefinition(
     };
 }
 
+export function createPressDigitDefinition(digits: string, urgent: boolean): PressDigitToolDefinition {
+    return {
+        schema_version: 1,
+        type: "press_digit",
+        config: { digits: digits.trim(), urgent },
+    };
+}
+
 export function createToolDefinition(category: ToolCategory): ToolDefinition {
     switch (category) {
+        case "press_digit":
+            return createPressDigitDefinition("1", false);
         case "end_call":
             return createEndCallDefinition(DEFAULT_END_CALL_CONFIG);
         case "transfer_call":

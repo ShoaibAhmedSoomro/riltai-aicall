@@ -1,17 +1,32 @@
 """Shared helper for building audio output mixers used by telephony transports."""
 
-import os
-
 from loguru import logger
 
 from api.constants import APP_ROOT_DIR
 from api.services.pipecat.audio_file_cache import get_cached_ambient_noise_path
+from pipecat.audio.filters.base_audio_filter import BaseAudioFilter
 from pipecat.audio.mixers.silence_mixer import SilenceAudioMixer
 from pipecat.audio.mixers.soundfile_mixer import SoundfileMixer
 
-librnnoise_path = os.path.normpath(
-    str(APP_ROOT_DIR / "native" / "rnnoise" / "librnnoise.so")
-)
+
+async def build_audio_in_filter(denoising_mode: str | None) -> BaseAudioFilter | None:
+    """The filter that cleans the caller's audio before voice detection and STT.
+
+    Only "rnnoise" builds one; anything else, including a value this build does not
+    know, means no filter, so a bad setting can never stop a call. The filter runs
+    AHEAD of voice-activity detection (pipecat base_input), so it changes turn
+    detection as well as transcription. "QQ" is the lowest-latency resampling, kept
+    because every transport here resamples to RNNoise's 48 kHz.
+    """
+    if denoising_mode != "rnnoise":
+        return None
+    try:
+        from pipecat.audio.filters.rnnoise_filter import RNNoiseFilter
+
+        return RNNoiseFilter(resampler_quality="QQ")
+    except Exception as e:
+        logger.error(f"Denoising unavailable, continuing without it: {e}")
+        return None
 
 
 async def build_audio_out_mixer(

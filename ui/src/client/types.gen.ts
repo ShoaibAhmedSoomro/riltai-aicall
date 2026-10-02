@@ -2445,7 +2445,7 @@ export type CreateToolRequest = {
      *
      * Tool category. Must match definition.type.
      */
-    category?: 'http_api' | 'end_call' | 'transfer_call' | 'calculator' | 'native' | 'integration' | 'mcp';
+    category?: 'http_api' | 'end_call' | 'transfer_call' | 'calculator' | 'native' | 'integration' | 'mcp' | 'press_digit';
     /**
      * Icon
      *
@@ -2472,6 +2472,8 @@ export type CreateToolRequest = {
     } & TransferCallToolDefinition) | ({
         type: 'calculator';
     } & CalculatorToolDefinition) | ({
+        type: 'press_digit';
+    } & PressDigitToolDefinition) | ({
         type: 'mcp';
     } & McpToolDefinition);
 };
@@ -4191,6 +4193,22 @@ export type HuggingFaceSttConfiguration = {
      * Request timestamp chunks when supported by the selected provider/model.
      */
     return_timestamps?: boolean;
+};
+
+/**
+ * IVRDetectionConfigurationDefaults
+ *
+ * Hang up when a phone menu answers an outbound call.
+ *
+ * Off by default: it ends calls, so it is something an agent opts into. It uses
+ * the agent's own LLM to classify; there is no separate model or key to set.
+ */
+export type IvrDetectionConfigurationDefaults = {
+    /**
+     * Enabled
+     */
+    enabled?: boolean;
+    [key: string]: unknown;
 };
 
 /**
@@ -5964,6 +5982,54 @@ export type PresignedUploadUrlResponse = {
 };
 
 /**
+ * PressDigitConfig
+ *
+ * Configuration for Press Digit tools: keys the agent presses on the call.
+ *
+ * The keys are fixed here, not chosen by the model. A tool that lets the model
+ * type arbitrary tones could be talked into dialling an extension or entering a
+ * code nobody approved.
+ */
+export type PressDigitConfig = {
+    /**
+     * Digits
+     *
+     * The keys to press, in order, e.g. '1', '0' or '123#'.
+     */
+    digits: string;
+    /**
+     * Urgent
+     *
+     * Send the tones immediately, ahead of any speech already queued.
+     */
+    urgent?: boolean;
+};
+
+/**
+ * PressDigitToolDefinition
+ *
+ * Tool definition for Press Digit tools.
+ */
+export type PressDigitToolDefinition = {
+    /**
+     * Schema Version
+     *
+     * Schema version.
+     */
+    schema_version?: number;
+    /**
+     * Type
+     *
+     * Tool type.
+     */
+    type: 'press_digit';
+    /**
+     * Press Digit configuration.
+     */
+    config: PressDigitConfig;
+};
+
+/**
  * ProcessDocumentRequestSchema
  *
  * Request schema for triggering document processing.
@@ -7117,6 +7183,22 @@ export type SignupRequest = {
      * Invite Token
      */
     invite_token?: string | null;
+};
+
+/**
+ * SimulateTextChatRequest
+ */
+export type SimulateTextChatRequest = {
+    /**
+     * Persona
+     *
+     * Who the pretend caller is and what they want.
+     */
+    persona: string;
+    /**
+     * Max Turns
+     */
+    max_turns?: number;
 };
 
 /**
@@ -8516,6 +8598,8 @@ export type UpdateToolRequest = {
     } & TransferCallToolDefinition) | ({
         type: 'calculator';
     } & CalculatorToolDefinition) | ({
+        type: 'press_digit';
+    } & PressDigitToolDefinition) | ({
         type: 'mcp';
     } & McpToolDefinition) | null;
     /**
@@ -9377,6 +9461,25 @@ export type WorkflowConfigurationDefaults = {
     stt_turn_configuration?: SttTurnConfigurationDefaults;
     knowledge_base_configuration?: KnowledgeBaseConfigurationDefaults;
     governance_configuration?: GovernanceConfigurationDefaults;
+    ivr_detection?: IvrDetectionConfigurationDefaults;
+    /**
+     * Denoising Mode
+     */
+    denoising_mode?: 'none' | 'rnnoise';
+    /**
+     * Tts Fallback
+     */
+    tts_fallback?: {
+        [key: string]: unknown;
+    } | null;
+    /**
+     * Dtmf Input Enabled
+     */
+    dtmf_input_enabled?: boolean;
+    /**
+     * Dtmf Input Timeout Secs
+     */
+    dtmf_input_timeout_secs?: number;
     /**
      * Max Call Duration
      */
@@ -12038,6 +12141,54 @@ export type EndTextChatSessionApiV1WorkflowWorkflowIdTextChatSessionsRunIdEndPos
 };
 
 export type EndTextChatSessionApiV1WorkflowWorkflowIdTextChatSessionsRunIdEndPostResponse = EndTextChatSessionApiV1WorkflowWorkflowIdTextChatSessionsRunIdEndPostResponses[keyof EndTextChatSessionApiV1WorkflowWorkflowIdTextChatSessionsRunIdEndPostResponses];
+
+export type SimulateTextChatSessionApiV1WorkflowWorkflowIdTextChatSessionsRunIdSimulatePostData = {
+    body: SimulateTextChatRequest;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+        /**
+         * Run Id
+         */
+        run_id: number;
+    };
+    query?: never;
+    url: '/api/v1/workflow/{workflow_id}/text-chat/sessions/{run_id}/simulate';
+};
+
+export type SimulateTextChatSessionApiV1WorkflowWorkflowIdTextChatSessionsRunIdSimulatePostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SimulateTextChatSessionApiV1WorkflowWorkflowIdTextChatSessionsRunIdSimulatePostError = SimulateTextChatSessionApiV1WorkflowWorkflowIdTextChatSessionsRunIdSimulatePostErrors[keyof SimulateTextChatSessionApiV1WorkflowWorkflowIdTextChatSessionsRunIdSimulatePostErrors];
+
+export type SimulateTextChatSessionApiV1WorkflowWorkflowIdTextChatSessionsRunIdSimulatePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: WorkflowRunTextSessionResponse;
+};
+
+export type SimulateTextChatSessionApiV1WorkflowWorkflowIdTextChatSessionsRunIdSimulatePostResponse = SimulateTextChatSessionApiV1WorkflowWorkflowIdTextChatSessionsRunIdSimulatePostResponses[keyof SimulateTextChatSessionApiV1WorkflowWorkflowIdTextChatSessionsRunIdSimulatePostResponses];
 
 export type RewindTextChatSessionApiV1WorkflowWorkflowIdTextChatSessionsRunIdRewindPostData = {
     body: RewindTextChatSessionRequest;

@@ -16,7 +16,7 @@ import { useOnboarding } from "@/context/OnboardingContext";
 import { useAuth } from "@/lib/auth";
 import { cn, getRandomId } from "@/lib/utils";
 
-import { AiSimulatorPlaceholder } from "./workflow-tester/AiSimulatorPlaceholder";
+import { AiSimulatorPanel } from "./workflow-tester/AiSimulatorPanel";
 import { EmbeddedVoiceTester } from "./workflow-tester/EmbeddedVoiceTester";
 import { ManualTextChatPanel } from "./workflow-tester/ManualTextChatPanel";
 import { ChatModeToggle, DisabledNotice, EmptyState } from "./workflow-tester/shared";
@@ -269,7 +269,12 @@ export function WorkflowTesterPanel({
                                 onNodeTransition={onRuntimeNodeTransition}
                             />
                         ) : (
-                            <AiSimulatorPlaceholder disabledReason={effectiveDisabledReason} />
+                            <AiSimulatorPanel
+                                workflowId={workflowId}
+                                initialContextVariables={initialContextVariables}
+                                disabled={testerBlocked}
+                                disabledReason={effectiveDisabledReason}
+                            />
                         )}
                     </div>
                 </TabsContent>

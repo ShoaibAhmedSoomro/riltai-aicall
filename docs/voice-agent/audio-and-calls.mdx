@@ -1,0 +1,34 @@
+---
+title: "Audio and Calls"
+description: "Background noise reduction, caller keypad, phone-menu hang-up, a backup voice, and the AI simulator."
+---
+
+These settings are on the agent's **Settings** page under **Audio & Calls**. Like other agent settings they apply when you publish the agent.
+
+## Background noise
+
+**Reduce background noise** cleans the caller's audio before the agent listens. It also changes how the agent decides the caller has started or stopped speaking, so place a test call after turning it on. It is off by default.
+
+## Caller keypad
+
+When a caller presses a key (for example "press 1 to confirm"), the agent hears it as "DTMF: 1". A run of keys is collected until the caller presses `#` or stops for the **wait for more keys** time (2 seconds by default). Pressing a key interrupts the agent. This is on by default; turn it off if keypresses should be ignored.
+
+Keypad input works on Twilio, Plivo, Telnyx, Vonage, Vobiz, Cloudonix and Asterisk (ARI).
+
+## Hang up on phone menus
+
+Turn on **Hang up on phone menus** and an outbound call that is answered by an automated menu ("press 1 for billing") is ended, with the outcome recorded as `ivr_detected` so you can filter for it. Only the first 30 seconds of the call are checked, and it uses the agent's own model. It is off by default because it ends calls.
+
+To navigate a menu instead of hanging up, give the agent a [Press Digit](/voice-agent/tools/press-digit) tool.
+
+## Backup voice
+
+If the voice provider has an outage during a call, the agent can switch to a **backup voice** from another provider instead of going silent. Choose the provider, optionally a voice, and an API key (leave the key empty to reuse your organization's key when the backup is the same provider as the main voice). A call that switched is tagged `tts_failover`.
+
+Without a backup voice, a voice-provider outage behaves as it always has.
+
+## AI simulator
+
+In the agent editor, open the test panel and choose **Simulated**. Describe a pretend caller ("a skeptical prospect who pushes on pricing"), choose how long the conversation may run, and click **Run simulation**. The agent and the pretend caller talk in a text chat while you watch. The run is then scored by the agent's quality checks like any other call, whatever its length.
+
+The pretend caller is played by the agent's own model. A simulation is capped at 20 caller turns.

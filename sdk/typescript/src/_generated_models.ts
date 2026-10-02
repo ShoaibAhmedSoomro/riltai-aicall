@@ -480,7 +480,7 @@ export interface components {
              * @default http_api
              * @enum {string}
              */
-            category: "http_api" | "end_call" | "transfer_call" | "calculator" | "native" | "integration" | "mcp";
+            category: "http_api" | "end_call" | "transfer_call" | "calculator" | "native" | "integration" | "mcp" | "press_digit";
             /**
              * Icon
              * @description Lucide icon identifier.
@@ -497,7 +497,7 @@ export interface components {
              * Definition
              * @description Typed tool definition.
              */
-            definition: components["schemas"]["HttpApiToolDefinition"] | components["schemas"]["EndCallToolDefinition"] | components["schemas"]["TransferCallToolDefinition"] | components["schemas"]["CalculatorToolDefinition"] | components["schemas"]["McpToolDefinition"];
+            definition: components["schemas"]["HttpApiToolDefinition"] | components["schemas"]["EndCallToolDefinition"] | components["schemas"]["TransferCallToolDefinition"] | components["schemas"]["CalculatorToolDefinition"] | components["schemas"]["PressDigitToolDefinition"] | components["schemas"]["McpToolDefinition"];
         };
         /** CreateWorkflowRequest */
         CreateWorkflowRequest: {
@@ -910,6 +910,22 @@ export interface components {
              */
             preset_parameters?: components["schemas"]["PresetToolParameter"][] | null;
         };
+        /**
+         * IVRDetectionConfigurationDefaults
+         * @description Hang up when a phone menu answers an outbound call.
+         *
+         *     Off by default: it ends calls, so it is something an agent opts into. It uses
+         *     the agent's own LLM to classify; there is no separate model or key to set.
+         */
+        IVRDetectionConfigurationDefaults: {
+            /**
+             * Enabled
+             * @default false
+             */
+            enabled: boolean;
+        } & {
+            [key: string]: unknown;
+        };
         /** InitiateCallRequest */
         InitiateCallRequest: {
             /** Workflow Id */
@@ -1138,6 +1154,46 @@ export interface components {
              * @default true
              */
             required: boolean;
+        };
+        /**
+         * PressDigitConfig
+         * @description Configuration for Press Digit tools: keys the agent presses on the call.
+         *
+         *     The keys are fixed here, not chosen by the model. A tool that lets the model
+         *     type arbitrary tones could be talked into dialling an extension or entering a
+         *     code nobody approved.
+         */
+        PressDigitConfig: {
+            /**
+             * Digits
+             * @description The keys to press, in order, e.g. '1', '0' or '123#'.
+             */
+            digits: string;
+            /**
+             * Urgent
+             * @description Send the tones immediately, ahead of any speech already queued.
+             * @default false
+             */
+            urgent: boolean;
+        };
+        /**
+         * PressDigitToolDefinition
+         * @description Tool definition for Press Digit tools.
+         */
+        PressDigitToolDefinition: {
+            /**
+             * Schema Version
+             * @description Schema version.
+             * @default 1
+             */
+            schema_version: number;
+            /**
+             * @description Tool type. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "press_digit";
+            /** @description Press Digit configuration. */
+            config: components["schemas"]["PressDigitConfig"];
         };
         /**
          * PropertyLayoutOptions
@@ -1513,6 +1569,27 @@ export interface components {
             stt_turn_configuration?: components["schemas"]["STTTurnConfigurationDefaults"];
             knowledge_base_configuration?: components["schemas"]["KnowledgeBaseConfigurationDefaults"];
             governance_configuration?: components["schemas"]["GovernanceConfigurationDefaults"];
+            ivr_detection?: components["schemas"]["IVRDetectionConfigurationDefaults"];
+            /**
+             * Denoising Mode
+             * @default none
+             * @enum {string}
+             */
+            denoising_mode: "none" | "rnnoise";
+            /** Tts Fallback */
+            tts_fallback?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Dtmf Input Enabled
+             * @default true
+             */
+            dtmf_input_enabled: boolean;
+            /**
+             * Dtmf Input Timeout Secs
+             * @default 2
+             */
+            dtmf_input_timeout_secs: number;
             /**
              * Max Call Duration
              * @default 300
@@ -1712,6 +1789,7 @@ export type HttpValidationError = components['schemas']['HTTPValidationError'];
 export type HttpApiConfig = components['schemas']['HttpApiConfig'];
 export type HttpApiToolDefinition = components['schemas']['HttpApiToolDefinition'];
 export type HttpTransferResolverConfig = components['schemas']['HttpTransferResolverConfig'];
+export type IvrDetectionConfigurationDefaults = components['schemas']['IVRDetectionConfigurationDefaults'];
 export type InitiateCallRequest = components['schemas']['InitiateCallRequest'];
 export type KnowledgeBaseConfigurationDefaults = components['schemas']['KnowledgeBaseConfigurationDefaults'];
 export type LiveCall = components['schemas']['LiveCall'];
@@ -1724,6 +1802,8 @@ export type NodeSpec = components['schemas']['NodeSpec'];
 export type NodeTypesResponse = components['schemas']['NodeTypesResponse'];
 export type NumberInputOptions = components['schemas']['NumberInputOptions'];
 export type PresetToolParameter = components['schemas']['PresetToolParameter'];
+export type PressDigitConfig = components['schemas']['PressDigitConfig'];
+export type PressDigitToolDefinition = components['schemas']['PressDigitToolDefinition'];
 export type PropertyLayoutOptions = components['schemas']['PropertyLayoutOptions'];
 export type PropertyOption = components['schemas']['PropertyOption'];
 export type PropertyRendererOptions = components['schemas']['PropertyRendererOptions'];

@@ -234,7 +234,8 @@ class ToolCategory(Enum):
     END_CALL = "end_call"  # End call tool
     TRANSFER_CALL = "transfer_call"  # Transfer call to phone number (Twilio only)
     CALCULATOR = "calculator"  # Built-in calculator tool
-    NATIVE = "native"  # Built-in integrations (future: dtmf_input)
+    NATIVE = "native"  # Built-in integrations
+    PRESS_DIGIT = "press_digit"  # Press phone keys on the call (navigate a menu, enter an extension)
     INTEGRATION = "integration"  # Third-party integrations (future: Google Calendar, Salesforce, etc.)
     MCP = "mcp"  # Customer-provided MCP server exposing a tool catalog
 

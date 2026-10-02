@@ -1,7 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
-import { ArrowLeft, BookA, BookOpen, Brain, CalendarIcon, Clipboard, Download, ExternalLink, FileDown, Fingerprint, Loader2, Mic, Pause, PhoneOff, Play, Plus, Rocket, Settings, ShieldCheck, Trash2Icon, Upload, Variable, X } from "lucide-react";
+import { ArrowLeft, AudioLines, BookA, BookOpen, Brain, CalendarIcon, Clipboard, Download, ExternalLink, FileDown, Fingerprint, Loader2, Mic, Pause, PhoneOff, Play, Plus, Rocket, Settings, ShieldCheck, Trash2Icon, Upload, Variable, X } from "lucide-react";
 import Link from "next/link";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -66,6 +66,7 @@ import {
 import { AgentTabs } from "../AgentTabs";
 import { EmbedDialog } from "../components/EmbedDialog";
 import { useWorkflowState } from "../hooks/useWorkflowState";
+import { AudioPipelineSection } from "./AudioPipelineSection";
 import { GovernanceSection } from "./GovernanceSection";
 
 // ---------------------------------------------------------------------------
@@ -103,6 +104,7 @@ const NAV_ITEMS = [
     { id: "variables", label: "Template Variables", icon: Variable },
     { id: "dictionary", label: "Dictionary", icon: BookA },
     { id: "knowledge", label: "Knowledge Base", icon: BookOpen },
+    { id: "audio", label: "Audio & Calls", icon: AudioLines },
     { id: "voicemail", label: "Voicemail Detection", icon: PhoneOff },
     { id: "governance", label: "Data & Safety", icon: ShieldCheck },
     { id: "recordings", label: "Recordings", icon: Mic },
@@ -2051,6 +2053,12 @@ function WorkflowSettingsInner({
                             <DictionarySection dictionary={dictionary} onSave={saveDictionary} />
 
                             <KnowledgeBaseSection
+                                workflowConfigurations={resolvedWorkflowConfigurationsForRender}
+                                workflowName={workflowName}
+                                onSave={saveWorkflowConfigurations}
+                            />
+
+                            <AudioPipelineSection
                                 workflowConfigurations={resolvedWorkflowConfigurationsForRender}
                                 workflowName={workflowName}
                                 onSave={saveWorkflowConfigurations}

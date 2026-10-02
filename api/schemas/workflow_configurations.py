@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import (
     BaseModel,
@@ -27,6 +27,11 @@ DEFAULT_TURN_START_MIN_WORDS = 3
 DEFAULT_PROVISIONAL_VAD_PAUSE_SECS = 1.5
 DEFAULT_TURN_STOP_STRATEGY = "transcription"
 DEFAULT_CONTEXT_COMPACTION_ENABLED = False
+# "none" keeps the caller's audio untouched, as every call has been until now.
+DEFAULT_DENOISING_MODE = "none"
+# The caller's keypad has reached the agent since it was wired, so on stays on.
+DEFAULT_DTMF_INPUT_ENABLED = True
+DEFAULT_DTMF_INPUT_TIMEOUT_SECS = 2.0
 
 # Every constant below equals a literal that is live in the pipeline today, so
 # adding these dials changes nothing until somebody moves one. Sources:
@@ -78,6 +83,18 @@ class AmbientNoiseConfigurationDefaults(BaseModel):
 
     enabled: bool = False
     volume: float = 0.3
+
+
+class IVRDetectionConfigurationDefaults(BaseModel):
+    """Hang up when a phone menu answers an outbound call.
+
+    Off by default: it ends calls, so it is something an agent opts into. It uses
+    the agent's own LLM to classify; there is no separate model or key to set.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    enabled: bool = False
 
 
 class VADConfigurationDefaults(BaseModel):
@@ -233,6 +250,18 @@ class WorkflowConfigurationDefaults(BaseModel):
     )
     governance_configuration: GovernanceConfigurationDefaults = Field(
         default_factory=GovernanceConfigurationDefaults
+    )
+    ivr_detection: IVRDetectionConfigurationDefaults = Field(
+        default_factory=IVRDetectionConfigurationDefaults
+    )
+    denoising_mode: Literal["none", "rnnoise"] = DEFAULT_DENOISING_MODE
+    # The voice to switch to if the main voice provider fails mid-call: {provider,
+    # api_key, ...that provider's voice settings}. Validated and masked on save by
+    # services/configuration/tts_fallback.py; None means no backup.
+    tts_fallback: dict[str, Any] | None = None
+    dtmf_input_enabled: bool = DEFAULT_DTMF_INPUT_ENABLED
+    dtmf_input_timeout_secs: float = Field(
+        default=DEFAULT_DTMF_INPUT_TIMEOUT_SECS, ge=0.5, le=10.0
     )
     max_call_duration: int = Field(
         default=DEFAULT_MAX_CALL_DURATION_SECONDS,

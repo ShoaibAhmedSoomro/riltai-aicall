@@ -39,8 +39,14 @@ _TELEPHONY_DISPOSITIONS: tuple[str, ...] = (
     TelephonyCallStatus.ERROR.value,
 )
 
+# Written by the api's own IVR detection, which lives in this repo rather than in the
+# pipecat fork, so it is not an EndTaskReason member.
+IVR_DETECTED_DISPOSITION = "ivr_detected"
+
 SYSTEM_DISPOSITION_CODES: tuple[str, ...] = (
-    END_TASK_REASON_DISPOSITION_CODES + _TELEPHONY_DISPOSITIONS
+    END_TASK_REASON_DISPOSITION_CODES
+    + _TELEPHONY_DISPOSITIONS
+    + (IVR_DETECTED_DISPOSITION,)
 )
 
 # The codes a transfer actually writes into
