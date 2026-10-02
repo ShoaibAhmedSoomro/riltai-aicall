@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from starlette.websockets import WebSocketDisconnect
 
 from api.db import db_client
+from api.services.contacts.suppression import is_suppressed
 from api.db.models import UserModel
 from api.enums import CallType, WorkflowRunMode, WorkflowRunState
 from api.errors.failure import failure_already_reported
@@ -147,6 +148,14 @@ async def initiate_call(
         raise HTTPException(
             status_code=400,
             detail="Phone number must be provided in request or set in organization preferences",
+        )
+
+    # A test call is still a call. A do-not-call list that staff can walk around by
+    # pressing "test" is not one; to test against a number, take it off the list.
+    if await is_suppressed(user.selected_organization_id, phone_number):
+        raise HTTPException(
+            status_code=403,
+            detail="This number is on the do-not-call list. Remove it from Contacts → Do not call to place a call.",
         )
 
     workflow = await db_client.get_workflow(

@@ -167,8 +167,8 @@ class CircuitBreakerConfigResponse(BaseModel):
 class CreateCampaignRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     workflow_id: int
-    source_type: str = Field(..., pattern="^csv$")
-    source_id: str  # CSV file key
+    source_type: str = Field(..., pattern="^(csv|contact_list)$")
+    source_id: str  # CSV file key, or a contact list's uuid
     # Optional for backwards compatibility. When omitted, the resolver prefers
     # the marked default and then another ready active configuration.
     telephony_configuration_id: Optional[int] = None

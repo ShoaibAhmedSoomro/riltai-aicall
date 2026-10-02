@@ -733,6 +733,9 @@ class WorkflowRunModel(Base):
         # The superadmin listing sorts by date with no workflow predicate, so
         # the composite above cannot serve it.
         Index("idx_workflow_runs_created_at", text("created_at DESC")),
+        # A contact's call history: exact match on the dialled number. The same
+        # expression as the query uses, or the planner cannot serve it.
+        Index("ix_workflow_runs_called_number", text("(initial_context->>'called_number')")),
         # The purge job's scan: only runs with a deadline that are not yet purged.
         Index(
             "idx_workflow_runs_retention_due",
@@ -1676,5 +1679,200 @@ class KnowledgeBaseChunkModel(Base):
             postgresql_using="ivfflat",
             postgresql_with={"lists": 100},  # Adjust based on dataset size
             postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Contacts
+# ---------------------------------------------------------------------------
+
+
+class ContactModel(Base):
+    """A person the organization calls, keyed by phone number.
+
+    ``(organization_id, phone_e164)`` is THE dedupe key: the same person typed as
+    "+14155551234" and "+1 (415) 555-1234" is one row. ``attributes`` is the bag of
+    custom fields (the same choice as knowledge_base_documents.custom_metadata), so
+    a new column in somebody's CSV does not need a migration.
+
+    There is deliberately no ``suppressed`` column. Do-not-call lives in
+    ``contact_suppressions`` so a number can be suppressed without ever having been
+    imported (a regulator's DNC file) and stays suppressed if the contact is
+    deleted. List views LEFT JOIN on (organization_id, phone_e164): one source of
+    truth.
+    """
+
+    __tablename__ = "contacts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    contact_uuid = Column(
+        String(36),
+        unique=True,
+        nullable=False,
+        index=True,
+        default=lambda: str(uuid.uuid4()),
+    )
+    organization_id = Column(
+        Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    # As entered, for display. phone_e164 is what everything matches on.
+    phone_number = Column(String, nullable=False)
+    phone_e164 = Column(String(20), nullable=False)
+    country_code = Column(String(2), nullable=True)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    email = Column(String, nullable=True)
+    attributes = Column(
+        JSON, nullable=False, default=dict, server_default=text("'{}'::json")
+    )
+    last_called_at = Column(DateTime(timezone=True), nullable=True)
+    last_disposition = Column(String, nullable=True)
+    call_count = Column(Integer, nullable=False, default=0, server_default=text("0"))
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+    __table_args__ = (
+        UniqueConstraint("organization_id", "phone_e164", name="uq_contacts_org_phone"),
+        Index("ix_contacts_org_created", "organization_id", "created_at"),
+    )
+
+
+class ContactListModel(Base):
+    """A named, reusable group of contacts. Static: members are added explicitly.
+
+    ponytail: no "dynamic" (filter-defined) lists. Nothing would evaluate the
+    filter, and a column that nothing reads is a control that does nothing.
+    """
+
+    __tablename__ = "contact_lists"
+
+    id = Column(Integer, primary_key=True, index=True)
+    list_uuid = Column(
+        String(36),
+        unique=True,
+        nullable=False,
+        index=True,
+        default=lambda: str(uuid.uuid4()),
+    )
+    organization_id = Column(
+        Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    contact_count = Column(
+        Integer, nullable=False, default=0, server_default=text("0")
+    )
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+    __table_args__ = (
+        UniqueConstraint("organization_id", "name", name="uq_contact_lists_org_name"),
+    )
+
+
+class ContactListMemberModel(Base):
+    __tablename__ = "contact_list_members"
+
+    contact_list_id = Column(
+        Integer, ForeignKey("contact_lists.id", ondelete="CASCADE"), primary_key=True
+    )
+    contact_id = Column(
+        Integer, ForeignKey("contacts.id", ondelete="CASCADE"), primary_key=True
+    )
+    added_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+
+    __table_args__ = (Index("ix_contact_list_members_contact", "contact_id"),)
+
+
+class ContactImportModel(Base):
+    """One CSV import: what was asked for, and what happened to each row."""
+
+    __tablename__ = "contact_imports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    import_uuid = Column(
+        String(36),
+        unique=True,
+        nullable=False,
+        index=True,
+        default=lambda: str(uuid.uuid4()),
+    )
+    organization_id = Column(
+        Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    contact_list_id = Column(
+        Integer, ForeignKey("contact_lists.id", ondelete="SET NULL"), nullable=True
+    )
+    # The uploaded CSV, under campaigns/{org}/... (the existing presigned upload).
+    source_key = Column(String, nullable=False)
+    column_mapping = Column(
+        JSON, nullable=False, default=dict, server_default=text("'{}'::json")
+    )
+    dedupe_strategy = Column(
+        Enum("skip", "update", name="contact_dedupe_strategy"),
+        nullable=False,
+        default="skip",
+        server_default=text("'skip'::contact_dedupe_strategy"),
+    )
+    status = Column(
+        Enum(
+            "pending", "processing", "completed", "failed", name="contact_import_status"
+        ),
+        nullable=False,
+        default="pending",
+        server_default=text("'pending'::contact_import_status"),
+    )
+    total_rows = Column(Integer, nullable=False, default=0, server_default=text("0"))
+    created_count = Column(Integer, nullable=False, default=0, server_default=text("0"))
+    updated_count = Column(Integer, nullable=False, default=0, server_default=text("0"))
+    skipped_count = Column(Integer, nullable=False, default=0, server_default=text("0"))
+    invalid_count = Column(Integer, nullable=False, default=0, server_default=text("0"))
+    # The rejected rows, written back as a CSV so they can be fixed and re-imported.
+    error_report_key = Column(String, nullable=True)
+    processing_error = Column(Text, nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+
+class ContactSuppressionModel(Base):
+    """A number that must not be dialled. Outlives any contact row."""
+
+    __tablename__ = "contact_suppressions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(
+        Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    phone_e164 = Column(String(20), nullable=False)
+    reason = Column(String, nullable=True)
+    source = Column(
+        Enum("manual", "csv", "call_disposition", "api", name="contact_suppression_source"),
+        nullable=False,
+        default="manual",
+        server_default=text("'manual'::contact_suppression_source"),
+    )
+    notes = Column(Text, nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id", "phone_e164", name="uq_suppression_org_phone"
         ),
     )

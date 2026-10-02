@@ -57,6 +57,9 @@ ATTRIBUTE_FIELD_MAPPING = {
     "callTags": "gathered_context.call_tags",
     "callerNumber": "initial_context.caller_number",
     "calledNumber": "initial_context.called_number",
+    # Equality, not LIKE: it is the form ix_workflow_runs_called_number serves. A
+    # contact's history must not scan the biggest table in the schema.
+    "calledNumberExact": "initial_context.called_number_exact",
     "callDirection": "call_type",
     "callChannel": "mode",
     "hasRecording": "recording_url",
@@ -235,6 +238,18 @@ def apply_workflow_run_filters(
                             ),
                             Text,
                         ).contains(phone)
+                    )
+
+            elif filter_type == "text" and field == "initial_context.called_number_exact":
+                phone = value.get("value", "").strip()
+                if phone:
+                    # json ->> text, written exactly as the index is, so the planner
+                    # can use it. (The LIKE branch above casts to JSONB and cannot.)
+                    filter_conditions.append(
+                        WorkflowRunModel.initial_context.op("->>", return_type=Text)(
+                            "called_number"
+                        )
+                        == phone
                     )
 
             elif filter_type == "numberRange":

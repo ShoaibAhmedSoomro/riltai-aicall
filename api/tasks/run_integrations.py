@@ -11,7 +11,10 @@ from pydantic import ValidationError
 
 from api.constants import BACKEND_API_ENDPOINT, DEFAULT_WEBHOOK_DELIVERY_CONFIG
 from api.db import db_client
+from api.services.contacts.phone import to_e164
+from api.services.contacts.suppression import record_suppression
 from api.services.governance.loader import load_governance_policy
+from api.services.organization_preferences import get_organization_preferences
 from api.services.governance.safety_scan import scan_run_safety
 from api.db.models import WorkflowRunModel
 from api.enums import OrganizationConfigurationKey
@@ -132,6 +135,57 @@ async def _run_qa_nodes(
     return results
 
 
+async def _update_contact_after_call(
+    workflow_run, workflow_run_id: int, organization_id: int
+) -> None:
+    """Record the call on the contact, and honour an opt-out outcome.
+
+    Never raises -- post-call bookkeeping must not break the post-call work after
+    it -- but a failure to record an OPT-OUT is logged at ERROR, because that is
+    someone asking not to be called and the system failing to remember it.
+
+    Idempotent: this task can run more than once for a run, and call_count must
+    not double, so a marker on the run says it was done.
+    """
+    try:
+        if (workflow_run.annotations or {}).get("contact_recorded"):
+            return
+        context = workflow_run.initial_context or {}
+        if context.get("direction") != "outbound":
+            return
+        parsed = to_e164(context.get("called_number") or context.get("phone_number"))
+        if not parsed:
+            return
+        e164 = parsed[0]
+        disposition = (workflow_run.gathered_context or {}).get("mapped_call_disposition")
+
+        await db_client.record_contact_call(
+            organization_id, e164, disposition=disposition
+        )
+
+        prefs = await get_organization_preferences(organization_id)
+        if disposition and disposition in set(prefs.do_not_call_dispositions):
+            try:
+                await record_suppression(
+                    organization_id,
+                    e164,
+                    source="call_disposition",
+                    reason=f"Call outcome: {disposition}",
+                )
+            except Exception as exc:
+                logger.error(
+                    f"FAILED to record an opt-out for run {workflow_run_id} "
+                    f"(disposition {disposition}): {exc}"
+                )
+                return  # leave the marker unset so a re-run tries again
+
+        await db_client.update_workflow_run(
+            workflow_run_id, annotations={"contact_recorded": True}
+        )
+    except Exception as exc:
+        logger.error(f"Contact update failed for run {workflow_run_id}: {exc}")
+
+
 async def _run_safety_scan(workflow_run, workflow_run_id: int, organization_id: int) -> None:
     """Write ``annotations["safety"]`` for an agent with guardrails on. Never raises."""
     try:
@@ -203,6 +257,7 @@ async def run_integrations_post_workflow_run(_ctx, workflow_run_id: int):
         # node, webhook or campaign has no other post-call work, and it must
         # still be scanned.
         await _run_safety_scan(workflow_run, workflow_run_id, organization_id)
+        await _update_contact_after_call(workflow_run, workflow_run_id, organization_id)
 
         # Step 3: Extract integration nodes
         nodes = workflow_definition.get("nodes", [])

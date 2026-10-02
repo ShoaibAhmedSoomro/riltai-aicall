@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from api.db import db_client
 from api.enums import TriggerState, WorkflowStatus
+from api.services.contacts.suppression import is_suppressed
 from api.services.call_concurrency import (
     CallConcurrencyLimitError,
     call_concurrency,
@@ -191,6 +192,15 @@ async def _execute_resolved_target(
 ) -> TriggerCallResponse:
     """Shared execution path once the target workflow has been resolved."""
     execution_user_id = _get_execution_user_id(target.workflow)
+
+    # The single shared path for every public trigger endpoint, so one check here
+    # covers them all. Not caught: if the list cannot be read the call is refused
+    # (a 500), never placed.
+    if await is_suppressed(target.organization_id, request.phone_number):
+        raise HTTPException(
+            status_code=403,
+            detail="This number is on the organization's do-not-call list",
+        )
 
     # An explicit config remains authoritative. Legacy callers that omit it
     # get the first active configuration that passes outbound pre-flight.

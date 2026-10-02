@@ -14,3 +14,6 @@ class OrganizationPreferences(BaseModel):
     default_storage_mode: Literal["everything", "except_pii", "basic_only"] = (
         "everything"
     )
+    # Call outcomes (disposition codes) that mean "do not call this person again".
+    # When a call ends with one, the number joins the do-not-call list.
+    do_not_call_dispositions: list[str] = Field(default_factory=list, max_length=50)

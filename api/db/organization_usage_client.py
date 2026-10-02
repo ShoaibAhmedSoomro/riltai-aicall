@@ -31,6 +31,7 @@ USAGE_ALLOWED_FILTERS = frozenset(
         "dispositionCode",
         "callerNumber",
         "calledNumber",
+        "calledNumberExact",
         "runId",
         "workflowId",
         "campaignId",

@@ -1,4 +1,5 @@
 from api.services.campaign.source_sync import CampaignSourceSyncService
+from api.services.campaign.sources.contact_list import ContactListSyncService
 from api.services.campaign.sources.csv import CSVSyncService
 
 
@@ -7,6 +8,7 @@ def get_sync_service(source_type: str) -> CampaignSourceSyncService:
 
     services = {
         "csv": CSVSyncService,
+        "contact_list": ContactListSyncService,
     }
 
     service_class = services.get(source_type)

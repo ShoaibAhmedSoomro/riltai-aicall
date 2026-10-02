@@ -1,6 +1,7 @@
 from api.db.agent_trigger_client import AgentTriggerClient
 from api.db.api_key_client import APIKeyClient
 from api.db.campaign_client import CampaignClient
+from api.db.contacts_client import ContactsClient
 from api.db.embed_token_client import EmbedTokenClient
 from api.db.folder_client import FolderClient
 from api.db.integration_client import IntegrationClient
@@ -51,6 +52,7 @@ class DBClient(
     TelephonyPhoneNumberClient,
     TelephonyTrunkClient,
     FolderClient,
+    ContactsClient,
 ):
     """
     Unified database client that combines all specialized database operations.
@@ -65,6 +67,7 @@ class DBClient(
     - IntegrationClient: handles integration operations
     - WorkflowTemplateClient: handles workflow template operations
     - CampaignClient: handles campaign operations
+    - ContactsClient: handles contacts, lists, CSV imports and the do-not-call list
     - ReportsClient: handles reports and analytics operations
     - APIKeyClient: handles API key operations
     - EmbedTokenClient: handles embed token and session operations

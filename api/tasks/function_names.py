@@ -7,3 +7,4 @@ class FunctionNames:
     DELIVER_WEBHOOK = "deliver_webhook"
     COMPLETE_INACTIVE_TEXT_CHAT_SESSION = "complete_inactive_text_chat_session"
     PURGE_EXPIRED_WORKFLOW_RUNS = "purge_expired_workflow_runs"
+    PROCESS_CONTACT_IMPORT = "process_contact_import"

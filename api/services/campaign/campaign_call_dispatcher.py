@@ -19,6 +19,8 @@ from api.services.campaign.errors import (
     ConcurrentSlotAcquisitionError,
     PhoneNumberPoolExhaustedError,
 )
+from api.services.contacts.phone import to_e164
+from api.services.contacts.suppression import suppressed_among
 from api.services.quota_service import authorize_workflow_run_start
 from api.services.workflow.initial_context import merge_external_initial_context
 from api.services.workflow.run_creation import prepare_workflow_run_inputs
@@ -112,10 +114,36 @@ class CampaignCallDispatcher:
         except Exception as e:
             logger.warning(f"Failed to initialize from_number pool: {e}")
 
+        # The do-not-call list, asked once for the whole batch. THIS is the
+        # authoritative gate (not the sync step): redial campaigns seed their queue
+        # directly and never pass through sync, and a number can be added to the
+        # list after its row was queued. Fails CLOSED -- if the list cannot be read,
+        # nothing in the batch is dialled.
+        try:
+            suppressed_numbers = await suppressed_among(
+                campaign.organization_id,
+                [qr.context_variables.get("phone_number") for qr in queued_runs],
+            )
+        except Exception as e:
+            logger.error(
+                f"Could not read the do-not-call list for campaign {campaign_id}; "
+                f"returning the batch undialled: {e}"
+            )
+            await self._return_unprocessed_claims(
+                queued_runs, set(), reason="suppression_check_failed"
+            )
+            raise
+
         processed_count = 0
         processed_run_ids: set[int] = set()
         for i, queued_run in enumerate(queued_runs):
             try:
+                # Before the rate limiter, a concurrency slot or a caller ID: a
+                # number we will not call must not spend any of them.
+                if queued_run.context_variables.get("phone_number") in suppressed_numbers:
+                    await self._skip_suppressed(campaign, queued_run)
+                    continue
+
                 # Apply rate limiting, i.e lets not initiate more than rate_limit_per_second
                 # calls per second. It is different than concurrency limit.
                 await self.apply_rate_limit(
@@ -219,6 +247,34 @@ class CampaignCallDispatcher:
 
         return processed_count
 
+    async def _skip_suppressed(self, campaign, queued_run: QueuedRunModel) -> None:
+        """Retire a queued call to a number on the do-not-call list.
+
+        Marked failed rather than left queued, so it is never retried (a redial
+        schedule would otherwise keep coming back to it), and logged on the
+        campaign so the operator can see why the count is short.
+        """
+        phone = str(queued_run.context_variables.get("phone_number") or "")
+        await db_client.update_queued_run(
+            queued_run_id=queued_run.id,
+            state="failed",
+            processed_at=datetime.now(UTC),
+        )
+        try:
+            await db_client.append_campaign_log(
+                campaign.id,
+                "warning",
+                "number_suppressed",
+                "Skipped a number on the do-not-call list",
+                # The last four digits only: the log is not a second copy of the list.
+                {"queued_run_id": queued_run.id, "number_ending": phone[-4:]},
+            )
+        except Exception as e:
+            logger.warning(f"Could not log a suppressed number for campaign {campaign.id}: {e}")
+        logger.info(
+            f"Campaign {campaign.id}: skipped queued run {queued_run.id} (do-not-call)"
+        )
+
     async def _return_unprocessed_claims(
         self,
         queued_runs: list[QueuedRunModel],
@@ -302,7 +358,10 @@ class CampaignCallDispatcher:
                 "provider": provider.PROVIDER_NAME,
                 "source_uuid": queued_run.source_uuid,
                 "caller_number": from_number,
-                "called_number": phone_number,
+                # Canonical E.164 when it is one, so a contact's call history (which
+                # matches on that exact string) finds this run. Anything that is not
+                # a plain phone number (a SIP address) is kept as it was.
+                "called_number": (to_e164(phone_number) or (phone_number,))[0],
                 "direction": "outbound",
                 "telephony_configuration_id": campaign.telephony_configuration_id,
             }

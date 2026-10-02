@@ -210,6 +210,60 @@ COUNTRY_CODES = {
     "BE": "32",  # Belgium
     "LU": "352",  # Luxembourg
     "IE": "353",  # Ireland
+    # Added with the contacts feature. A country missing from this table makes a
+    # locally-written number ("050 123 4567") unusable: with no dialling code to
+    # apply it is refused rather than guessed, so the operator's own country has to
+    # be here. Additive; nothing above changed.
+    "AE": "971",  # United Arab Emirates
+    "SA": "966",  # Saudi Arabia
+    "QA": "974",  # Qatar
+    "KW": "965",  # Kuwait
+    "BH": "973",  # Bahrain
+    "OM": "968",  # Oman
+    "JO": "962",  # Jordan
+    "LB": "961",  # Lebanon
+    "IQ": "964",  # Iraq
+    "IL": "972",  # Israel
+    "TR": "90",  # Turkey
+    "EG": "20",  # Egypt
+    "PK": "92",  # Pakistan
+    "BD": "880",  # Bangladesh
+    "LK": "94",  # Sri Lanka
+    "NP": "977",  # Nepal
+    "AF": "93",  # Afghanistan
+    "PH": "63",  # Philippines
+    "ID": "62",  # Indonesia
+    "MY": "60",  # Malaysia
+    "SG": "65",  # Singapore
+    "TH": "66",  # Thailand
+    "VN": "84",  # Vietnam
+    "CN": "86",  # China
+    "JP": "81",  # Japan
+    "KR": "82",  # South Korea
+    "HK": "852",  # Hong Kong
+    "NZ": "64",  # New Zealand
+    "ZA": "27",  # South Africa
+    "NG": "234",  # Nigeria
+    "KE": "254",  # Kenya
+    "GH": "233",  # Ghana
+    "ET": "251",  # Ethiopia
+    "TZ": "255",  # Tanzania
+    "UG": "256",  # Uganda
+    "MA": "212",  # Morocco
+    "DZ": "213",  # Algeria
+    "TN": "216",  # Tunisia
+    "PL": "48",  # Poland
+    "PT": "351",  # Portugal
+    "GR": "30",  # Greece
+    "RU": "7",  # Russia
+    "UA": "380",  # Ukraine
+    "CZ": "420",  # Czechia
+    "RO": "40",  # Romania
+    "HU": "36",  # Hungary
+    "AR": "54",  # Argentina
+    "CL": "56",  # Chile
+    "CO": "57",  # Colombia
+    "PE": "51",  # Peru
 }
 
 # Floor at 1 so a misconfigured env var (0 or negative) can't silently block
