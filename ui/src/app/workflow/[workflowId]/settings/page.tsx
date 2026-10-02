@@ -1,7 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
-import { ArrowLeft, AudioLines, BookA, BookOpen, Brain, CalendarIcon, Clipboard, Download, ExternalLink, FileDown, Fingerprint, Loader2, Mic, Pause, PhoneOff, Play, Plus, Rocket, Settings, ShieldCheck, Trash2Icon, Upload, Variable, X } from "lucide-react";
+import { ArrowLeft, AudioLines, BookA, BookOpen, Brain, CalendarIcon, Clipboard, Download, ExternalLink, FileDown, Fingerprint, Loader2, Mic, Pause, PhoneOff, Play, Plus, Rocket, Settings, ShieldCheck, Trash2Icon, Upload, Variable, Volume2, X } from "lucide-react";
 import Link from "next/link";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -68,6 +68,8 @@ import { EmbedDialog } from "../components/EmbedDialog";
 import { useWorkflowState } from "../hooks/useWorkflowState";
 import { AudioPipelineSection } from "./AudioPipelineSection";
 import { GovernanceSection } from "./GovernanceSection";
+import { agentUsesRealtime } from "./pronunciation";
+import { PronunciationSection } from "./PronunciationSection";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -103,6 +105,7 @@ const NAV_ITEMS = [
     { id: "models", label: "Model Overrides", icon: Brain },
     { id: "variables", label: "Template Variables", icon: Variable },
     { id: "dictionary", label: "Dictionary", icon: BookA },
+    { id: "pronunciation", label: "Pronunciation", icon: Volume2 },
     { id: "knowledge", label: "Knowledge Base", icon: BookOpen },
     { id: "audio", label: "Audio & Calls", icon: AudioLines },
     { id: "voicemail", label: "Voicemail Detection", icon: PhoneOff },
@@ -2051,6 +2054,16 @@ function WorkflowSettingsInner({
 
                             {/* Dictionary */}
                             <DictionarySection dictionary={dictionary} onSave={saveDictionary} />
+
+                            <PronunciationSection
+                                workflowConfigurations={resolvedWorkflowConfigurationsForRender}
+                                workflowName={workflowName}
+                                usesRealtime={agentUsesRealtime(
+                                    resolvedWorkflowConfigurationsForRender,
+                                    organizationModelConfiguration?.effective_configuration as { is_realtime?: boolean } | undefined,
+                                )}
+                                onSave={saveWorkflowConfigurations}
+                            />
 
                             <KnowledgeBaseSection
                                 workflowConfigurations={resolvedWorkflowConfigurationsForRender}

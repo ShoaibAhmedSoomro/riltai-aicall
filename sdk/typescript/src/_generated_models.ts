@@ -1196,6 +1196,26 @@ export interface components {
             config: components["schemas"]["PressDigitConfig"];
         };
         /**
+         * PronunciationOverride
+         * @description Say one piece of text differently. Literal text, never a pattern.
+         */
+        PronunciationOverride: {
+            /** From Text */
+            from_text: string;
+            /** To Text */
+            to_text: string;
+            /**
+             * Whole Word
+             * @default true
+             */
+            whole_word: boolean;
+            /**
+             * Match Case
+             * @default false
+             */
+            match_case: boolean;
+        };
+        /**
          * PropertyLayoutOptions
          * @description Renderer layout hints for a property in the node editor.
          */
@@ -1375,6 +1395,72 @@ export interface components {
             eot_timeout_ms: number;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * SpeechNormalizationDefaults
+         * @description Pipecat's speech formatting (numbers, dates, currency, phone numbers...).
+         *
+         *     Field names are VoiceFormatter's own keyword names, so turning this into a
+         *     formatter is a plain model_dump. Off by default: enabling it changes how an agent
+         *     sounds. The toggles' own defaults equal VoiceFormatter's, so "enabled" with nothing
+         *     else touched is the standard set.
+         */
+        SpeechNormalizationDefaults: {
+            /**
+             * Enabled
+             * @default false
+             */
+            enabled: boolean;
+            /**
+             * Strip Markdown
+             * @default true
+             */
+            strip_markdown: boolean;
+            /**
+             * Expand Phone Numbers
+             * @default true
+             */
+            expand_phone_numbers: boolean;
+            /**
+             * Normalize Acronyms
+             * @default true
+             */
+            normalize_acronyms: boolean;
+            /**
+             * Expand Currency
+             * @default true
+             */
+            expand_currency: boolean;
+            /**
+             * Expand Numbers
+             * @default false
+             */
+            expand_numbers: boolean;
+            /**
+             * Number Digit Cutoff
+             * @default 2025
+             */
+            number_digit_cutoff: number | null;
+            /**
+             * Expand Percentages
+             * @default true
+             */
+            expand_percentages: boolean;
+            /**
+             * Expand Units
+             * @default true
+             */
+            expand_units: boolean;
+            /**
+             * Email To Speech
+             * @default true
+             */
+            email_to_speech: boolean;
+            /**
+             * Normalize Dates
+             * @default true
+             */
+            normalize_dates: boolean;
         };
         /**
          * ToolParameter
@@ -1632,6 +1718,9 @@ export interface components {
              * @default
              */
             dictionary: string;
+            /** Pronunciation Overrides */
+            pronunciation_overrides?: components["schemas"]["PronunciationOverride"][];
+            speech_normalization?: components["schemas"]["SpeechNormalizationDefaults"];
             /**
              * Context Compaction Enabled
              * @default false
@@ -1804,6 +1893,7 @@ export type NumberInputOptions = components['schemas']['NumberInputOptions'];
 export type PresetToolParameter = components['schemas']['PresetToolParameter'];
 export type PressDigitConfig = components['schemas']['PressDigitConfig'];
 export type PressDigitToolDefinition = components['schemas']['PressDigitToolDefinition'];
+export type PronunciationOverride = components['schemas']['PronunciationOverride'];
 export type PropertyLayoutOptions = components['schemas']['PropertyLayoutOptions'];
 export type PropertyOption = components['schemas']['PropertyOption'];
 export type PropertyRendererOptions = components['schemas']['PropertyRendererOptions'];
@@ -1812,6 +1902,7 @@ export type PropertyType = components['schemas']['PropertyType'];
 export type RecordingListResponseSchema = components['schemas']['RecordingListResponseSchema'];
 export type RecordingResponseSchema = components['schemas']['RecordingResponseSchema'];
 export type SttTurnConfigurationDefaults = components['schemas']['STTTurnConfigurationDefaults'];
+export type SpeechNormalizationDefaults = components['schemas']['SpeechNormalizationDefaults'];
 export type ToolParameter = components['schemas']['ToolParameter'];
 export type ToolResponse = components['schemas']['ToolResponse'];
 export type TransferCallConfig = components['schemas']['TransferCallConfig'];

@@ -9,6 +9,7 @@ from api.services.integrations import (
 from api.services.integrations import (
     get_node_data_model as get_integration_node_data_model,
 )
+from api.services.configuration.options.deepgram import DEEPGRAM_LANGUAGES
 from api.services.workflow.node_data import BaseNodeData
 from api.services.workflow.node_specs._base import (
     DisplayOptions,
@@ -158,6 +159,22 @@ class _PromptedNodeDataMixin(BaseModel):
             "When true and a Global node exists, prepends the global prompt to this "
             "node's prompt at runtime."
         ),
+    )
+
+
+class _NodeLanguageMixin(BaseModel):
+    """Speak and listen in another language while the call is in this step."""
+
+    language: Optional[str] = spec_field(
+        default=None,
+        ui_type=PropertyType.options,
+        display_name="Language",
+        description=(
+            "Switch the call to this language while in this step, for both what "
+            "the agent listens for and how it speaks. Leave empty to use the "
+            "agent's own language. Not available with the managed voice."
+        ),
+        options=[PropertyOption(value=code, label=code) for code in DEEPGRAM_LANGUAGES],
     )
 
 
@@ -443,6 +460,7 @@ class StartCallNodeData(
         "name",
         "prompt",
         "allow_interrupt",
+        "language",
         "add_global_prompt",
         "extraction_enabled",
         "extraction_prompt",
@@ -483,6 +501,7 @@ class StartCallNodeData(
 class AgentNodeData(
     BaseNodeData,
     _PromptedNodeDataMixin,
+    _NodeLanguageMixin,
     _ExtractionNodeDataMixin,
     _ToolDocumentRefsMixin,
 ):
@@ -514,6 +533,7 @@ class AgentNodeData(
     property_order=(
         "name",
         "prompt",
+        "language",
         "add_global_prompt",
         "extraction_enabled",
         "extraction_prompt",
@@ -565,6 +585,7 @@ class AgentNodeData(
 class EndCallNodeData(
     BaseNodeData,
     _PromptedNodeDataMixin,
+    _NodeLanguageMixin,
     _ExtractionNodeDataMixin,
 ):
     is_end: bool = spec_field(default=True, spec_exclude=True)

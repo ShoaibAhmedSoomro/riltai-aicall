@@ -61,6 +61,7 @@ from api.services.configuration.tts_fallback import (
     build_runtime_config as build_tts_fallback_config,
 )
 from api.services.pipecat.dtmf_turn_start import DTMFUserTurnStartStrategy
+from api.services.pipecat.text_normalization import build_tts_text_transforms
 from api.services.pipecat.run_event_bus import get_redis
 from api.services.telephony.providers.ari.dtmf_bridge import run_dtmf_bridge
 from api.services.workflow.disposition_codes import IVR_DETECTED_DISPOSITION
@@ -813,6 +814,10 @@ async def _run_pipeline_impl(
             fallback=build_tts_fallback_config(run_configs),
             correlation_id=mps_correlation_id,
         )
+        # One rewrite stage for every voice provider, including the backup.
+        for transform in build_tts_text_transforms(run_configs):
+            for voice in tts_services:
+                voice.add_text_transformer(transform)
         tts, tts_switcher = _wrap_tts_with_failover(tts_services)
         llm = create_llm_service(user_config, correlation_id=mps_correlation_id)
         inference_llm = None
@@ -994,6 +999,19 @@ async def _run_pipeline_impl(
         context_compaction_enabled=context_compaction_enabled,
         kb_chunks_to_retrieve=_kb_config.chunks_to_retrieve,
         kb_min_similarity=_kb_config.min_similarity,
+    )
+
+    # Per-step languages need a separate transcriber and voice to retarget. A
+    # speech-to-speech model has neither, and the managed voice cannot be told a
+    # language mid-call, so both leave the feature off.
+    engine.configure_language_switching(
+        enabled=(
+            not is_realtime
+            and getattr(user_config.tts, "provider", None) != ServiceProviders.RILT.value
+        ),
+        base_language=getattr(user_config.stt, "language", None)
+        if user_config.stt
+        else None,
     )
 
     # Create pipeline components

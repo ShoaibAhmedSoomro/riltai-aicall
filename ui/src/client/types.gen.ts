@@ -5346,6 +5346,12 @@ export type OpenAittsService = {
      */
     voice?: string;
     /**
+     * Speed
+     *
+     * Speed of the voice. 1.0 is normal.
+     */
+    speed?: number;
+    /**
      * Base Url
      *
      * Override only if using an OpenAI-compatible API (e.g. local TTS, proxy).
@@ -6086,6 +6092,30 @@ export type ProfileUpdateRequest = {
      */
     new_password?: string | null;
     profile?: UserProfileFields | null;
+};
+
+/**
+ * PronunciationOverride
+ *
+ * Say one piece of text differently. Literal text, never a pattern.
+ */
+export type PronunciationOverride = {
+    /**
+     * From Text
+     */
+    from_text: string;
+    /**
+     * To Text
+     */
+    to_text: string;
+    /**
+     * Whole Word
+     */
+    whole_word?: boolean;
+    /**
+     * Match Case
+     */
+    match_case?: boolean;
 };
 
 /**
@@ -7381,6 +7411,63 @@ export type SpeachesTtsConfiguration = {
      * Speech speed (0.25 to 4.0).
      */
     speed?: number;
+};
+
+/**
+ * SpeechNormalizationDefaults
+ *
+ * Pipecat's speech formatting (numbers, dates, currency, phone numbers...).
+ *
+ * Field names are VoiceFormatter's own keyword names, so turning this into a
+ * formatter is a plain model_dump. Off by default: enabling it changes how an agent
+ * sounds. The toggles' own defaults equal VoiceFormatter's, so "enabled" with nothing
+ * else touched is the standard set.
+ */
+export type SpeechNormalizationDefaults = {
+    /**
+     * Enabled
+     */
+    enabled?: boolean;
+    /**
+     * Strip Markdown
+     */
+    strip_markdown?: boolean;
+    /**
+     * Expand Phone Numbers
+     */
+    expand_phone_numbers?: boolean;
+    /**
+     * Normalize Acronyms
+     */
+    normalize_acronyms?: boolean;
+    /**
+     * Expand Currency
+     */
+    expand_currency?: boolean;
+    /**
+     * Expand Numbers
+     */
+    expand_numbers?: boolean;
+    /**
+     * Number Digit Cutoff
+     */
+    number_digit_cutoff?: number | null;
+    /**
+     * Expand Percentages
+     */
+    expand_percentages?: boolean;
+    /**
+     * Expand Units
+     */
+    expand_units?: boolean;
+    /**
+     * Email To Speech
+     */
+    email_to_speech?: boolean;
+    /**
+     * Normalize Dates
+     */
+    normalize_dates?: boolean;
 };
 
 /**
@@ -9513,6 +9600,11 @@ export type WorkflowConfigurationDefaults = {
      */
     dictionary?: string;
     /**
+     * Pronunciation Overrides
+     */
+    pronunciation_overrides?: Array<PronunciationOverride>;
+    speech_normalization?: SpeechNormalizationDefaults;
+    /**
      * Context Compaction Enabled
      */
     context_compaction_enabled?: boolean;
@@ -10218,6 +10310,12 @@ export type XaittsConfiguration = {
      * BCP-47 language code for synthesis (e.g. 'en', 'fr', 'de'), or 'auto' for automatic language detection.
      */
     language?: string;
+    /**
+     * Speed
+     *
+     * Speed of the voice. 1.0 is normal.
+     */
+    speed?: number;
 };
 
 export type InitiateCallApiV1TelephonyInitiateCallPostData = {

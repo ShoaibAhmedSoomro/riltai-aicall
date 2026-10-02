@@ -85,6 +85,46 @@ class AmbientNoiseConfigurationDefaults(BaseModel):
     volume: float = 0.3
 
 
+class PronunciationOverride(BaseModel):
+    """Say one piece of text differently. Literal text, never a pattern."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    from_text: str = Field(min_length=1, max_length=100)
+    to_text: str = Field(max_length=200)
+    whole_word: bool = True
+    match_case: bool = False
+
+    @field_validator("from_text", "to_text", mode="before")
+    @classmethod
+    def _strip(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
+
+class SpeechNormalizationDefaults(BaseModel):
+    """Pipecat's speech formatting (numbers, dates, currency, phone numbers...).
+
+    Field names are VoiceFormatter's own keyword names, so turning this into a
+    formatter is a plain model_dump. Off by default: enabling it changes how an agent
+    sounds. The toggles' own defaults equal VoiceFormatter's, so "enabled" with nothing
+    else touched is the standard set.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = False
+    strip_markdown: bool = True
+    expand_phone_numbers: bool = True
+    normalize_acronyms: bool = True
+    expand_currency: bool = True
+    expand_numbers: bool = False
+    number_digit_cutoff: int | None = 2025
+    expand_percentages: bool = True
+    expand_units: bool = True
+    email_to_speech: bool = True
+    normalize_dates: bool = True
+
+
 class IVRDetectionConfigurationDefaults(BaseModel):
     """Hang up when a phone menu answers an outbound call.
 
@@ -279,6 +319,12 @@ class WorkflowConfigurationDefaults(BaseModel):
         DEFAULT_TURN_STOP_STRATEGY
     )
     dictionary: str = ""
+    pronunciation_overrides: list[PronunciationOverride] = Field(
+        default_factory=list, max_length=200
+    )
+    speech_normalization: SpeechNormalizationDefaults = Field(
+        default_factory=SpeechNormalizationDefaults
+    )
     context_compaction_enabled: bool = DEFAULT_CONTEXT_COMPACTION_ENABLED
     text_chat_inactivity_timeout_seconds: int = Field(
         default=TEXT_CHAT_INACTIVITY_TIMEOUT_SECONDS,

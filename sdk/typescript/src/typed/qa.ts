@@ -4,6 +4,40 @@
 // Source of truth: the backend's model-backed node-spec catalog served
 // from `/api/v1/node-types`.
 
+/**
+ * Named values to pull out of the finished call. They land in `gathered_context.extracted_variables` and get one column each in the CSV export. A field the model does not return is left out rather than defaulted.
+ */
+export interface QaQa_extraction_fieldsRow {
+    /**
+     * snake_case identifier used downstream.
+     */
+    name: string;
+    /**
+     * Data type of the extracted value.
+     */
+    type: "string" | "number" | "boolean";
+    /**
+     * Per-variable hint describing what to look for.
+     */
+    prompt?: string;
+}
+/**
+ * Pass/fail questions asked of the call. A failure tags the call `check_failed:<name>`, which is filterable.
+ */
+export interface QaQa_checksRow {
+    /**
+     * snake_case identifier. A failure tags the call `check_failed:<name>`.
+     */
+    name: string;
+    /**
+     * What must be true for this check to pass.
+     */
+    criterion: string;
+    /**
+     * Ask for a 0-100 score alongside the verdict.
+     */
+    scored?: boolean;
+}
 
 /**
  * Run LLM quality analysis on the call transcript.
@@ -24,6 +58,14 @@ export interface Qa {
      * Instructions to the QA reviewer LLM. Supports placeholders: `{node_summary}`, `{previous_conversation_summary}`, `{transcript}`, `{metrics}`.
      */
     qa_system_prompt?: string;
+    /**
+     * Named values to pull out of the finished call. They land in `gathered_context.extracted_variables` and get one column each in the CSV export. A field the model does not return is left out rather than defaulted.
+     */
+    qa_extraction_fields?: Array<QaQa_extraction_fieldsRow>;
+    /**
+     * Pass/fail questions asked of the call. A failure tags the call `check_failed:<name>`, which is filterable.
+     */
+    qa_checks?: Array<QaQa_checksRow>;
     /**
      * Calls shorter than this are skipped.
      */

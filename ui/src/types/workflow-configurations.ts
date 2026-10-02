@@ -114,6 +114,8 @@ type WorkflowConfigurationBase = Omit<
     | "provisional_vad_pause_secs"
     | "turn_stop_strategy"
     | "dictionary"
+    | "pronunciation_overrides"
+    | "speech_normalization"
     | "context_compaction_enabled"
     | "text_chat_inactivity_timeout_seconds"
     | "external_pbx_field_mappings"
@@ -185,6 +187,44 @@ export const DEFAULT_GOVERNANCE_CONFIGURATION: GovernanceConfiguration = {
     guardrails: { input_jailbreak: false, output_categories: [], on_violation: "log_only" },
 };
 
+// Pronunciation and speech formatting. Kept in step with PronunciationOverride and
+// SpeechNormalizationDefaults in api/schemas/workflow_configurations.py. Off by
+// default: enabling formatting changes how an agent sounds.
+export type PronunciationOverride = {
+    from_text: string;
+    to_text: string;
+    whole_word: boolean;
+    match_case: boolean;
+};
+
+export type SpeechNormalization = {
+    enabled: boolean;
+    strip_markdown: boolean;
+    expand_phone_numbers: boolean;
+    normalize_acronyms: boolean;
+    expand_currency: boolean;
+    expand_numbers: boolean;
+    number_digit_cutoff: number | null;
+    expand_percentages: boolean;
+    expand_units: boolean;
+    email_to_speech: boolean;
+    normalize_dates: boolean;
+};
+
+export const DEFAULT_SPEECH_NORMALIZATION: SpeechNormalization = {
+    enabled: false,
+    strip_markdown: true,
+    expand_phone_numbers: true,
+    normalize_acronyms: true,
+    expand_currency: true,
+    expand_numbers: false,
+    number_digit_cutoff: 2025,
+    expand_percentages: true,
+    expand_units: true,
+    email_to_speech: true,
+    normalize_dates: true,
+};
+
 export const DEFAULT_VAD_CONFIGURATION: VADConfiguration = {
     stop_secs: 0.2,
     confidence: 0.7,
@@ -218,6 +258,8 @@ export type WorkflowConfigurations = WorkflowConfigurationBase & {
     provisional_vad_pause_secs: number;  // Seconds to pause bot output while awaiting transcript confirmation
     turn_stop_strategy: TurnStopStrategy;  // Strategy for detecting end of user turn
     dictionary?: string;  // Comma-separated words for voice agent to listen for
+    pronunciation_overrides: PronunciationOverride[];  // Say this text differently
+    speech_normalization: SpeechNormalization;  // Numbers, dates, currency... spoken form
     voicemail_detection?: VoicemailDetectionConfiguration;
     transcript_configuration: TranscriptConfiguration;
     context_compaction_enabled: boolean;  // Summarize context on node transitions to remove stale tool calls
@@ -246,6 +288,8 @@ const FALLBACK_WORKFLOW_CONFIGURATIONS: WorkflowConfigurations = {
     provisional_vad_pause_secs: DEFAULT_PROVISIONAL_VAD_PAUSE_SECS,
     turn_stop_strategy: 'transcription',  // Default to transcription-based detection
     dictionary: '',
+    pronunciation_overrides: [],
+    speech_normalization: DEFAULT_SPEECH_NORMALIZATION,
     transcript_configuration: DEFAULT_TRANSCRIPT_CONFIGURATION,
     context_compaction_enabled: false,
     external_pbx_field_mappings: [],
@@ -321,6 +365,15 @@ export function resolveWorkflowConfigurations(
             configurations?.turn_stop_strategy
             ?? defaults?.turn_stop_strategy
             ?? FALLBACK_WORKFLOW_CONFIGURATIONS.turn_stop_strategy,
+        pronunciation_overrides:
+            (configurations?.pronunciation_overrides as PronunciationOverride[] | undefined)
+            ?? (defaults?.pronunciation_overrides as PronunciationOverride[] | undefined)
+            ?? [],
+        speech_normalization: {
+            ...DEFAULT_SPEECH_NORMALIZATION,
+            ...(defaults?.speech_normalization as Partial<SpeechNormalization> | undefined),
+            ...(configurations?.speech_normalization as Partial<SpeechNormalization> | undefined),
+        },
         dictionary:
             configurations?.dictionary
             ?? defaults?.dictionary

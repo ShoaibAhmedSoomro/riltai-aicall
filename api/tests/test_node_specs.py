@@ -308,6 +308,7 @@ def test_all_registered_node_models_inherit_base_node_data():
                 "name",
                 "prompt",
                 "allow_interrupt",
+                "language",
                 "add_global_prompt",
                 "extraction_enabled",
                 "extraction_prompt",
@@ -321,6 +322,7 @@ def test_all_registered_node_models_inherit_base_node_data():
             [
                 "name",
                 "prompt",
+                "language",
                 "add_global_prompt",
                 "extraction_enabled",
                 "extraction_prompt",

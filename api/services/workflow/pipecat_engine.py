@@ -8,12 +8,14 @@ from pipecat.frames.frames import (
     EndFrame,
     FunctionCallResultProperties,
     LLMContextFrame,
+    STTUpdateSettingsFrame,
     TTSSpeakFrame,
+    TTSUpdateSettingsFrame,
 )
 from pipecat.pipeline.worker import PipelineWorker
 from pipecat.processors.aggregators.llm_context import LLMContext
 from pipecat.services.llm_service import FunctionCallParams
-from pipecat.services.settings import LLMSettings
+from pipecat.services.settings import LLMSettings, STTSettings, TTSSettings
 from pipecat.utils.enums import EndTaskReason
 
 from api.db import db_client
@@ -24,6 +26,7 @@ from api.errors.failure import (
     log_failure,
 )
 from api.services.pipecat.audio_playback import play_audio
+from api.services.workflow.node_language import language_to_apply, to_pipecat_language
 from api.services.workflow.workflow_graph import Node, WorkflowGraph
 
 if TYPE_CHECKING:
@@ -113,6 +116,10 @@ class PipecatEngine:
         self._initialized = False
         self._call_disposed = False
         self._current_node: Optional[Node] = None
+        # Per-step languages are opt-in; see configure_language_switching.
+        self._language_switching_enabled = False
+        self._base_language: Optional[str] = None
+        self._active_language: Optional[str] = None
         self._gathered_context: dict = {}
         self._user_response_timeout_task: Optional[asyncio.Task] = None
         self._pending_extraction_tasks: set[asyncio.Task] = set()
@@ -251,6 +258,45 @@ class PipecatEngine:
 
         return render_template(prompt, self._call_context_vars)
 
+    def configure_language_switching(
+        self, *, enabled: bool, base_language: str | None
+    ) -> None:
+        """Turn on per-step languages. Off for speech-to-speech models (no separate
+        transcriber or voice to retarget) and for the managed voice, which cannot be
+        told a language mid-call; switching only the transcriber there would leave
+        the caller understood in one language and answered in another."""
+        self._language_switching_enabled = enabled
+        self._base_language = base_language
+        self._active_language = base_language
+
+    async def _apply_node_language(self, node: Node) -> None:
+        """Retarget the transcriber and the voice for this node, once per change.
+
+        Idempotent on purpose: switching reconnects the transcriber, which can drop
+        audio for a few seconds, so entering a second step in the same language must
+        cost nothing. Called before a transition line is queued so that line is spoken
+        in the new language.
+        """
+        if not getattr(self, "_language_switching_enabled", False):
+            return
+        target = language_to_apply(
+            node.language, self._base_language, self._active_language
+        )
+        if target is None:
+            return
+        language = to_pipecat_language(target)
+        if language is None:
+            logger.warning(f"No such language to switch to: {target!r}")
+            return
+        self._active_language = target
+        logger.info(f"Switching call language to {target} for node '{node.name}'")
+        await self.task.queue_frame(
+            STTUpdateSettingsFrame(delta=STTSettings(language=language))
+        )
+        await self.task.queue_frame(
+            TTSUpdateSettingsFrame(delta=TTSSettings(language=language))
+        )
+
     async def _create_transition_func(
         self,
         name: str,
@@ -273,6 +319,10 @@ class PipecatEngine:
                     self._current_node,
                     run_in_background=self._run_transition_variable_extraction_in_background,
                 )
+
+                # The language frames go first, so the transition line below is
+                # spoken in the language of the step being entered.
+                await self._apply_node_language(self.workflow.nodes[transition_to_node])
 
                 # Queue transition speech/audio before switching nodes
                 speech_type = transition_speech_type or "text"
@@ -634,6 +684,8 @@ class PipecatEngine:
 
         # Set current node for all nodes (including static ones) so STT mute filter works
         self._current_node = node
+
+        await self._apply_node_language(node)
 
         # Track visited nodes in gathered context for call tags
         nodes_visited = self._gathered_context.setdefault("nodes_visited", [])

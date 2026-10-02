@@ -56,6 +56,13 @@ class EndCall(TypedNode):
     (e.g., 'Successful close', 'Polite decline').
     """
 
+    language: Optional[Literal['multi', 'ar', 'ar-AE', 'ar-SA', 'ar-QA', 'ar-KW', 'ar-SY', 'ar-LB', 'ar-PS', 'ar-JO', 'ar-EG', 'ar-SD', 'ar-TD', 'ar-MA', 'ar-DZ', 'ar-TN', 'ar-IQ', 'ar-IR', 'be', 'bn', 'bs', 'bg', 'ca', 'cs', 'da', 'da-DK', 'de', 'de-CH', 'el', 'en', 'en-US', 'en-AU', 'en-GB', 'en-IN', 'en-NZ', 'es', 'es-419', 'et', 'fa', 'fi', 'fr', 'fr-CA', 'he', 'hi', 'hr', 'hu', 'id', 'it', 'ja', 'kn', 'ko', 'ko-KR', 'lt', 'lv', 'mk', 'mr', 'ms', 'nl', 'nl-BE', 'no', 'pl', 'pt', 'pt-BR', 'pt-PT', 'ro', 'ru', 'sk', 'sl', 'sr', 'sv', 'sv-SE', 'ta', 'te', 'th', 'tl', 'tr', 'uk', 'ur', 'vi', 'zh-CN', 'zh-TW']] = None
+    """
+    Switch the call to this language while in this step, for both what the
+    agent listens for and how it speaks. Leave empty to use the agent's own
+    language. Not available with the managed voice.
+    """
+
     add_global_prompt: bool = False
     """
     When true and a Global node exists, prepends the global prompt to this

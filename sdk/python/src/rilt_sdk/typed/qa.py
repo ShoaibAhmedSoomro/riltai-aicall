@@ -14,6 +14,47 @@ from rilt_sdk.typed._base import TypedNode
 
 
 @dataclass(kw_only=True)
+class Qa_Qa_extraction_fieldsRow:
+    """
+    Named values to pull out of the finished call. They land in
+    `gathered_context.extracted_variables` and get one column each in the
+    CSV export. A field the model does not return is left out rather than
+    defaulted.
+    """
+
+    name: str
+    """
+    snake_case identifier used downstream.
+    """
+    type: Literal['string', 'number', 'boolean'] = 'string'
+    """
+    Data type of the extracted value.
+    """
+    prompt: Optional[str] = None
+    """
+    Per-variable hint describing what to look for.
+    """
+@dataclass(kw_only=True)
+class Qa_Qa_checksRow:
+    """
+    Pass/fail questions asked of the call. A failure tags the call
+    `check_failed:<name>`, which is filterable.
+    """
+
+    name: str
+    """
+    snake_case identifier. A failure tags the call `check_failed:<name>`.
+    """
+    criterion: str
+    """
+    What must be true for this check to pass.
+    """
+    scored: bool = False
+    """
+    Ask for a 0-100 score alongside the verdict.
+    """
+
+@dataclass(kw_only=True)
 class Qa(TypedNode):
     """
     Run LLM quality analysis on the call transcript.  LLM hint: Runs an LLM
@@ -40,6 +81,20 @@ class Qa(TypedNode):
     Instructions to the QA reviewer LLM. Supports placeholders:
     `{node_summary}`, `{previous_conversation_summary}`, `{transcript}`,
     `{metrics}`.
+    """
+
+    qa_extraction_fields: list[Qa_Qa_extraction_fieldsRow] = field(default_factory=list)
+    """
+    Named values to pull out of the finished call. They land in
+    `gathered_context.extracted_variables` and get one column each in the
+    CSV export. A field the model does not return is left out rather than
+    defaulted.
+    """
+
+    qa_checks: list[Qa_Qa_checksRow] = field(default_factory=list)
+    """
+    Pass/fail questions asked of the call. A failure tags the call
+    `check_failed:<name>`, which is filterable.
     """
 
     qa_min_call_duration: float = 15

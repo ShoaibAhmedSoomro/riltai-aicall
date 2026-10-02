@@ -569,6 +569,16 @@ def create_stt_service(
         )
 
 
+def _speed_setting(tts_config) -> dict:
+    """``{"speed": x}`` only when the agent changed it.
+
+    1.0 is the provider's own default, so sending nothing keeps every existing agent
+    byte-for-byte as it was, and a provider that never saw the field never sees it.
+    """
+    speed = getattr(tts_config, "speed", None)
+    return {"speed": speed} if speed and speed != 1.0 else {}
+
+
 def create_tts_services(
     user_config,
     audio_config: "AudioConfig",
@@ -624,7 +634,9 @@ def create_tts_service(
         return OpenAITTSService(
             api_key=user_config.tts.api_key,
             sample_rate=OPENAI_SAMPLE_RATE,
-            settings=OpenAITTSSettings(model=user_config.tts.model),
+            settings=OpenAITTSSettings(
+                model=user_config.tts.model, **_speed_setting(user_config.tts)
+            ),
             text_filters=[xml_function_tag_filter],
             skip_aggregator_types=["recording_router", "recording"],
             silence_time_s=1.0,
@@ -934,6 +946,7 @@ def create_tts_service(
             settings=XAIWebsocketTTSSettings(
                 voice=voice,
                 language=pipecat_language,
+                **_speed_setting(user_config.tts),
             ),
             text_filters=[xml_function_tag_filter],
             skip_aggregator_types=["recording_router", "recording"],

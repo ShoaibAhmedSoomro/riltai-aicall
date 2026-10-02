@@ -1130,6 +1130,12 @@ class OpenAITTSService(BaseTTSConfiguration):
         default="alloy",
         description="OpenAI TTS voice name.",
     )
+    speed: float = Field(
+        default=1.0,
+        ge=0.25,
+        le=4.0,
+        description="Speed of the voice. 1.0 is normal.",
+    )
     base_url: str = Field(
         default="https://api.openai.com/v1",
         description="Override only if using an OpenAI-compatible API (e.g. local TTS, proxy).",
@@ -1480,6 +1486,12 @@ class XAITTSConfiguration(BaseServiceConfiguration):
         default="en",
         description="BCP-47 language code for synthesis (e.g. 'en', 'fr', 'de'), or 'auto' for automatic language detection.",
         json_schema_extra={"allow_custom_input": True},
+    )
+    speed: float = Field(
+        default=1.0,
+        ge=0.7,
+        le=1.5,
+        description="Speed of the voice. 1.0 is normal.",
     )
 
     @computed_field

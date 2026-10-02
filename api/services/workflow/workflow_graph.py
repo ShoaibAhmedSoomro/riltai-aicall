@@ -117,6 +117,7 @@ class Node:
         # node variant in the discriminated union.
         self.prompt = getattr(data, "prompt", None)
         self.allow_interrupt = getattr(data, "allow_interrupt", False)
+        self.language = getattr(data, "language", None) or None
         self.extraction_enabled = getattr(data, "extraction_enabled", False)
         self.extraction_prompt = getattr(data, "extraction_prompt", None)
         self.extraction_variables = getattr(data, "extraction_variables", None)

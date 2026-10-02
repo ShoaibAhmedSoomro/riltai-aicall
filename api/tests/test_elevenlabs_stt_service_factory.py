@@ -196,3 +196,43 @@ def test_elevenlabs_stt_listed_custom_language_maps_to_pipecat_enum():
 
     kwargs = stt_service.call_args.kwargs
     assert kwargs["settings"].language == Language.YUE
+
+
+# -- voice character -----------------------------------------------------------------------------------
+
+
+def _tts_settings(**character):
+    config = _elevenlabs_tts_config("https://api.elevenlabs.io")
+    for key, value in character.items():
+        setattr(config.tts, key, value)
+    with patch("api.services.pipecat.service_factory.ElevenLabsTTSService") as service:
+        create_tts_service(config, _audio_config())
+    return service.call_args.kwargs["settings"]
+
+
+def test_an_agent_that_never_touched_voice_character_sounds_as_it_always_did():
+    from pipecat.services.settings import NOT_GIVEN
+
+    settings = _tts_settings()
+    assert settings.stability == 0.8 and settings.similarity_boost == 0.75
+    assert settings.style is NOT_GIVEN and settings.use_speaker_boost is NOT_GIVEN
+
+
+def test_configured_voice_character_reaches_the_service():
+    settings = _tts_settings(stability=0.3, similarity_boost=0.9, style=0.4, use_speaker_boost=True)
+    assert (settings.stability, settings.similarity_boost) == (0.3, 0.9)
+    assert settings.style == 0.4 and settings.use_speaker_boost is True
+
+
+def test_voice_character_is_bounded_and_defaults_match_the_old_literals():
+    import pytest
+    from pydantic import ValidationError
+
+    from api.services.configuration.registry import ElevenlabsTTSConfiguration
+
+    base = ElevenlabsTTSConfiguration(api_key="k")
+    assert (base.stability, base.similarity_boost, base.style, base.use_speaker_boost) == (0.8, 0.75, None, None)
+    for field in ("stability", "similarity_boost", "style"):
+        for bad in (-0.1, 1.1):
+            with pytest.raises(ValidationError):
+                ElevenlabsTTSConfiguration(api_key="k", **{field: bad})
