@@ -125,6 +125,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workflow/templates/{template_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Workflow Template */
+        get: operations["get_workflow_template_api_v1_workflow_templates__template_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflow/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Workflow Templates
+         * @description Starter templates for the gallery, cheapest shape: no definitions.
+         */
+        get: operations["get_workflow_templates_api_v1_workflow_templates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/credentials/": {
         parameters: {
             query?: never;
@@ -260,6 +297,40 @@ export interface paths {
         };
         /** Get Node Type */
         get: operations["get_node_type_api_v1_node_types__name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/prompting-guide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Prompting Guide */
+        get: operations["list_prompting_guide_api_v1_prompting_guide_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/prompting-guide/{topic_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Prompting Guide Topic */
+        get: operations["get_prompting_guide_topic_api_v1_prompting_guide__topic_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -608,6 +679,40 @@ export interface components {
             destination_field: string;
         };
         /**
+         * GovernanceConfigurationDefaults
+         * @description Per-agent data handling. Versioned with the agent, like every dial here.
+         *
+         *     ``storage_mode`` and ``retention_days`` are None to INHERIT the
+         *     organization default; ``retention_days = 0`` means keep forever on purpose
+         *     (distinct from "inherit", which is what None means).
+         */
+        GovernanceConfigurationDefaults: {
+            /** Storage Mode */
+            storage_mode?: ("everything" | "except_pii" | "basic_only") | null;
+            /** Retention Days */
+            retention_days?: number | null;
+            /**
+             * Record Audio
+             * @default true
+             */
+            record_audio: boolean;
+            /**
+             * Store Transcript
+             * @default true
+             */
+            store_transcript: boolean;
+            /** Redaction Categories */
+            redaction_categories?: ("phone" | "email" | "card" | "national_id" | "address" | "dob")[];
+            /**
+             * Redact Gathered Context
+             * @default false
+             */
+            redact_gathered_context: boolean;
+            guardrails?: components["schemas"]["GuardrailConfigurationDefaults"];
+        } & {
+            [key: string]: unknown;
+        };
+        /**
          * GraphConstraints
          * @description Per-node-type graph rules. WorkflowGraph enforces these at validation.
          */
@@ -624,6 +729,27 @@ export interface components {
             min_instances?: number | null;
             /** Max Instances */
             max_instances?: number | null;
+        };
+        /**
+         * GuardrailConfigurationDefaults
+         * @description What is screened, and what happens when something trips.
+         */
+        GuardrailConfigurationDefaults: {
+            /**
+             * Input Jailbreak
+             * @default false
+             */
+            input_jailbreak: boolean;
+            /** Output Categories */
+            output_categories?: ("hate" | "harassment" | "self_harm" | "sexual_content" | "violence" | "illegal_activity" | "medical_advice" | "legal_advice" | "financial_advice")[];
+            /**
+             * On Violation
+             * @default log_only
+             * @enum {string}
+             */
+            on_violation: "deflect" | "end_call" | "log_only";
+        } & {
+            [key: string]: unknown;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -779,6 +905,24 @@ export interface components {
             telephony_configuration_id?: number | null;
             /** From Phone Number Id */
             from_phone_number_id?: number | null;
+        };
+        /**
+         * KnowledgeBaseConfigurationDefaults
+         * @description How much the agent pulls back from its documents, and how strictly.
+         */
+        KnowledgeBaseConfigurationDefaults: {
+            /**
+             * Chunks To Retrieve
+             * @default 3
+             */
+            chunks_to_retrieve: number;
+            /**
+             * Min Similarity
+             * @default 0
+             */
+            min_similarity: number;
+        } & {
+            [key: string]: unknown;
         };
         /**
          * McpToolConfig
@@ -1100,6 +1244,39 @@ export interface components {
             is_active: boolean;
         };
         /**
+         * STTTurnConfigurationDefaults
+         * @description End-of-turn detection inside the transcriber.
+         *
+         *     Provider-specific by nature: the three eot_* dials reach Deepgram Flux and
+         *     the AICall managed transcriber, endpointing_ms reaches Deepgram Nova, and
+         *     on any other provider they are accepted and ignored -- the same tolerance
+         *     the Dictionary feature already has.
+         */
+        STTTurnConfigurationDefaults: {
+            /**
+             * Endpointing Ms
+             * @default 100
+             */
+            endpointing_ms: number;
+            /**
+             * Eot Threshold
+             * @default 0.7
+             */
+            eot_threshold: number;
+            /**
+             * Eager Eot Threshold
+             * @default 0.5
+             */
+            eager_eot_threshold: number;
+            /**
+             * Eot Timeout Ms
+             * @default 3000
+             */
+            eot_timeout_ms: number;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
          * ToolParameter
          * @description A parameter that the tool accepts from the model at call time.
          */
@@ -1245,6 +1422,33 @@ export interface components {
             } | null;
             workflow_configurations?: components["schemas"]["WorkflowConfigurationDefaults"] | null;
         };
+        /**
+         * VADConfigurationDefaults
+         * @description When the agent decides the caller has stopped talking.
+         *
+         *     Mirrors pipecat's VADParams. min_volume is deliberately not exposed: it is
+         *     the one parameter where a wrong value makes the agent deaf rather than
+         *     merely eager or slow.
+         */
+        VADConfigurationDefaults: {
+            /**
+             * Stop Secs
+             * @default 0.2
+             */
+            stop_secs: number;
+            /**
+             * Confidence
+             * @default 0.7
+             */
+            confidence: number;
+            /**
+             * Start Secs
+             * @default 0.2
+             */
+            start_secs: number;
+        } & {
+            [key: string]: unknown;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -1261,6 +1465,10 @@ export interface components {
         /** WorkflowConfigurationDefaults */
         WorkflowConfigurationDefaults: {
             ambient_noise_configuration?: components["schemas"]["AmbientNoiseConfigurationDefaults"];
+            vad_configuration?: components["schemas"]["VADConfigurationDefaults"];
+            stt_turn_configuration?: components["schemas"]["STTTurnConfigurationDefaults"];
+            knowledge_base_configuration?: components["schemas"]["KnowledgeBaseConfigurationDefaults"];
+            governance_configuration?: components["schemas"]["GovernanceConfigurationDefaults"];
             /**
              * Max Call Duration
              * @default 300
@@ -1342,6 +1550,13 @@ export interface components {
             folder_id?: number | null;
             /** Workflow Uuid */
             workflow_uuid?: string | null;
+            /** Released Version Number */
+            released_version_number?: number | null;
+            /**
+             * Has Unpublished Draft
+             * @default false
+             */
+            has_unpublished_draft: boolean;
         };
         /** WorkflowResponse */
         WorkflowResponse: {
@@ -1380,6 +1595,49 @@ export interface components {
             /** Workflow Uuid */
             workflow_uuid?: string | null;
         };
+        /** WorkflowTemplateDetailResponse */
+        WorkflowTemplateDetailResponse: {
+            /** Id */
+            id: number;
+            /** Slug */
+            slug: string;
+            /** Category */
+            category: string;
+            /** Template Name */
+            template_name: string;
+            /** Template Description */
+            template_description: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Template Json */
+            template_json: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * WorkflowTemplateResponse
+         * @description A gallery card. The full graph is a separate fetch (WorkflowTemplateDetailResponse).
+         */
+        WorkflowTemplateResponse: {
+            /** Id */
+            id: number;
+            /** Slug */
+            slug: string;
+            /** Category */
+            category: string;
+            /** Template Name */
+            template_name: string;
+            /** Template Description */
+            template_description: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -1403,12 +1661,15 @@ export type DocumentResponseSchema = components['schemas']['DocumentResponseSche
 export type EndCallConfig = components['schemas']['EndCallConfig'];
 export type EndCallToolDefinition = components['schemas']['EndCallToolDefinition'];
 export type ExternalPbxFieldMapping = components['schemas']['ExternalPBXFieldMapping'];
+export type GovernanceConfigurationDefaults = components['schemas']['GovernanceConfigurationDefaults'];
 export type GraphConstraints = components['schemas']['GraphConstraints'];
+export type GuardrailConfigurationDefaults = components['schemas']['GuardrailConfigurationDefaults'];
 export type HttpValidationError = components['schemas']['HTTPValidationError'];
 export type HttpApiConfig = components['schemas']['HttpApiConfig'];
 export type HttpApiToolDefinition = components['schemas']['HttpApiToolDefinition'];
 export type HttpTransferResolverConfig = components['schemas']['HttpTransferResolverConfig'];
 export type InitiateCallRequest = components['schemas']['InitiateCallRequest'];
+export type KnowledgeBaseConfigurationDefaults = components['schemas']['KnowledgeBaseConfigurationDefaults'];
 export type McpToolConfig = components['schemas']['McpToolConfig'];
 export type McpToolDefinition = components['schemas']['McpToolDefinition'];
 export type NodeCategory = components['schemas']['NodeCategory'];
@@ -1424,15 +1685,19 @@ export type PropertySpec = components['schemas']['PropertySpec'];
 export type PropertyType = components['schemas']['PropertyType'];
 export type RecordingListResponseSchema = components['schemas']['RecordingListResponseSchema'];
 export type RecordingResponseSchema = components['schemas']['RecordingResponseSchema'];
+export type SttTurnConfigurationDefaults = components['schemas']['STTTurnConfigurationDefaults'];
 export type ToolParameter = components['schemas']['ToolParameter'];
 export type ToolResponse = components['schemas']['ToolResponse'];
 export type TransferCallConfig = components['schemas']['TransferCallConfig'];
 export type TransferCallToolDefinition = components['schemas']['TransferCallToolDefinition'];
 export type UpdateWorkflowRequest = components['schemas']['UpdateWorkflowRequest'];
+export type VadConfigurationDefaults = components['schemas']['VADConfigurationDefaults'];
 export type ValidationError = components['schemas']['ValidationError'];
 export type WorkflowConfigurationDefaults = components['schemas']['WorkflowConfigurationDefaults'];
 export type WorkflowListResponse = components['schemas']['WorkflowListResponse'];
 export type WorkflowResponse = components['schemas']['WorkflowResponse'];
+export type WorkflowTemplateDetailResponse = components['schemas']['WorkflowTemplateDetailResponse'];
+export type WorkflowTemplateResponse = components['schemas']['WorkflowTemplateResponse'];
 export type $defs = Record<string, never>;
 export interface operations {
     initiate_call_api_v1_telephony_initiate_call_post: {
@@ -1629,6 +1894,89 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkflowResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_workflow_template_api_v1_workflow_templates__template_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-API-Key"?: string | null;
+            };
+            path: {
+                template_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowTemplateDetailResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_workflow_templates_api_v1_workflow_templates_get: {
+        parameters: {
+            query?: {
+                /** @description Only templates in this category */
+                category?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+                "X-API-Key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowTemplateResponse"][];
                 };
             };
             /** @description Not found */
@@ -1925,6 +2273,90 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NodeSpec"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_prompting_guide_api_v1_prompting_guide_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-API-Key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_prompting_guide_topic_api_v1_prompting_guide__topic_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-API-Key"?: string | null;
+            };
+            path: {
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Not found */

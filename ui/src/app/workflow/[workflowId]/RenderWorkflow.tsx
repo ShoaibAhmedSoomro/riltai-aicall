@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useOnboarding } from '@/context/OnboardingContext';
+import { isSinglePromptShape } from '@/lib/agentShape';
 import { detailFromError } from '@/lib/apiError';
 import { WorkflowConfigurations } from '@/types/workflow-configurations';
 
@@ -27,6 +28,7 @@ import AddNodePanel from "../../../components/flow/AddNodePanel";
 import CustomEdge from "../../../components/flow/edges/CustomEdge";
 import { GenericNode } from "../../../components/flow/nodes/GenericNode";
 import { PhoneCallDialog } from './components/PhoneCallDialog';
+import { SinglePromptEditor } from './components/SinglePromptEditor';
 import { VersionHistoryPanel } from './components/VersionHistoryPanel';
 import type { WorkflowRuntimeNodeTransition } from './components/workflow-tester/types';
 import { WorkflowEditorHeader } from "./components/WorkflowEditorHeader";
@@ -79,7 +81,11 @@ function RenderWorkflow({
 }: RenderWorkflowProps) {
     const router = useRouter();
     const { specs } = useNodeSpecs();
-    const { hasCompletedAction } = useOnboarding();
+    const { hasCompletedAction, markActionCompleted } = useOnboarding();
+    // Prompt-only view is offered while the graph is one start -> end prompt. It starts
+    // on for such an agent and is chosen per visit, never stored.
+    const [prefersSimple, setPrefersSimple] = useState(() =>
+        isSinglePromptShape(initialFlow?.nodes, initialFlow?.edges));
     const [isPhoneCallDialogOpen, setIsPhoneCallDialogOpen] = useState(false);
     const [isVersionPanelOpen, setIsVersionPanelOpen] = useState(false);
     const [isTesterRailOpen, setIsTesterRailOpen] = useState(true);
@@ -134,6 +140,34 @@ function RenderWorkflow({
         initialWorkflowConfigurations,
         user,
     });
+
+    const shapeIsSimple = isSinglePromptShape(nodes, edges);
+    const isSimpleMode = prefersSimple && shapeIsSimple;
+    const startNode = isSimpleMode ? nodes.find((n) => n.type === NodeType.START_CALL) : undefined;
+
+    const handleSimpleChange = useCallback(
+        (patch: { prompt?: string; greeting?: string }) => {
+            if (!startNode) return;
+            setNodes(
+                nodes.map((n) =>
+                    n.id === startNode.id
+                        ? {
+                              ...n,
+                              data: {
+                                  ...n.data,
+                                  ...patch,
+                                  // A typed greeting is a text greeting.
+                                  ...(patch.greeting !== undefined ? { greeting_type: 'text' } : {}),
+                              },
+                          }
+                        : n,
+                ),
+            );
+            setIsDirty(true);
+            if (patch.prompt !== undefined) markActionCompleted('prompt_edited');
+        },
+        [startNode, nodes, setNodes, setIsDirty, markActionCompleted],
+    );
 
     // Single generic component for every node type. Seed with core node types
     // so the initial render is stable before specs load, then merge in any
@@ -591,11 +625,31 @@ function RenderWorkflow({
                     hasDraft={hasDraft}
                     onPublished={handlePublished}
                     renameWorkflow={renameWorkflow}
+                    simpleMode={
+                        shapeIsSimple
+                            ? { active: isSimpleMode, onToggle: () => setPrefersSimple((v) => !v) }
+                            : undefined
+                    }
                 />
 
                 {/* Workflow Canvas */}
                 <div className="flex-1 min-h-0">
                     <div className="flex h-full min-w-0">
+                        {isSimpleMode && startNode ? (
+                        <div className="relative min-w-0 flex-1">
+                            <SinglePromptEditor
+                                values={{
+                                    prompt: (startNode.data.prompt as string | undefined) ?? '',
+                                    greeting: (startNode.data.greeting as string | undefined) ?? '',
+                                    greetingIsAudio: startNode.data.greeting_type === 'audio',
+                                }}
+                                onChange={handleSimpleChange}
+                                recordings={recordings}
+                                readOnly={isViewingHistoricalVersion}
+                                onSwitchToFlow={() => setPrefersSimple(false)}
+                            />
+                        </div>
+                        ) : (
                         <div className="relative min-w-0 flex-1">
                             <ReactFlow
                                 key={activeVersionId ?? 'current'}
@@ -746,6 +800,7 @@ function RenderWorkflow({
                                 </TooltipProvider>
                             </div>
                         </div>
+                        )}
 
                         {isTesterRailOpen && (
                             <aside className="hidden h-full w-[400px] shrink-0 border-l border-border xl:block">

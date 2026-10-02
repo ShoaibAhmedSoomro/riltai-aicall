@@ -122,6 +122,9 @@ export const useWorkflowState = ({
 }: UseWorkflowStateProps) => {
     const router = useRouter();
     const rfInstance = useRef<ReactFlowInstance<FlowNode, FlowEdge> | null>(null);
+    // Where the canvas was last looking. The prompt-only editor never mounts React Flow,
+    // so a save there has no instance to ask and falls back to this.
+    const lastViewport = useRef(initialFlow?.viewport ?? { x: 0, y: 0, zoom: 1 });
     const [workflowConfigurationDefaults, setWorkflowConfigurationDefaults] =
         useState<WorkflowConfigurationDefaults | null>(null);
     const [textChatInactivityTimeoutConstraints, setTextChatInactivityTimeoutConstraints] =
@@ -367,7 +370,10 @@ export const useWorkflowState = ({
 
     // Save workflow function. Returns version info from the API response.
     const saveWorkflow = useCallback(async (updateWorkflowDefinition: boolean = true): Promise<{ versionNumber?: number; versionStatus?: string } | undefined> => {
-        if (!user?.id || !rfInstance.current) return;
+        if (!user?.id) return;
+        // No canvas is fine (prompt-only editor). No nodes is not: that would save an
+        // empty definition over the real one before the store has loaded.
+        if (!rfInstance.current && useWorkflowStore.getState().nodes.length === 0) return;
         // Read nodes/edges from the Zustand store (synchronously up-to-date)
         // and viewport from the ReactFlow instance to build the flow object.
         // This avoids a race condition where rfInstance.toObject() may return
@@ -391,7 +397,8 @@ export const useWorkflowState = ({
             );
             return;
         }
-        const viewport = rfInstance.current.getViewport();
+        const viewport = rfInstance.current?.getViewport() ?? lastViewport.current;
+        lastViewport.current = viewport;
         const flow = { nodes: currentNodes, edges: currentEdges, viewport };
         let result: { versionNumber?: number; versionStatus?: string } | undefined;
         let saveSucceeded = false;

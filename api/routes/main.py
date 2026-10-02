@@ -13,6 +13,7 @@ from api.routes.credentials import router as credentials_router
 from api.routes.folder import router as folder_router
 from api.routes.knowledge_base import router as knowledge_base_router
 from api.routes.node_types import router as node_types_router
+from api.routes.prompting_guide import router as prompting_guide_router
 from api.routes.organization import router as organization_router
 from api.routes.organization_usage import router as organization_usage_router
 from api.routes.public_agent import router as public_agent_router
@@ -65,6 +66,7 @@ router.include_router(workflow_recording_router)
 router.include_router(folder_router)
 router.include_router(auth_router)
 router.include_router(node_types_router)
+router.include_router(prompting_guide_router)
 router.include_router(agent_stream_router)
 
 for _integration_router in all_routers():

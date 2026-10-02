@@ -9558,13 +9558,21 @@ export type WorkflowSummaryResponse = {
 };
 
 /**
- * WorkflowTemplateResponse
+ * WorkflowTemplateDetailResponse
  */
-export type WorkflowTemplateResponse = {
+export type WorkflowTemplateDetailResponse = {
     /**
      * Id
      */
     id: number;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Category
+     */
+    category: string;
     /**
      * Template Name
      */
@@ -9574,11 +9582,43 @@ export type WorkflowTemplateResponse = {
      */
     template_description: string;
     /**
+     * Created At
+     */
+    created_at: string;
+    /**
      * Template Json
      */
     template_json: {
         [key: string]: unknown;
     };
+};
+
+/**
+ * WorkflowTemplateResponse
+ *
+ * A gallery card. The full graph is a separate fetch (WorkflowTemplateDetailResponse).
+ */
+export type WorkflowTemplateResponse = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Category
+     */
+    category: string;
+    /**
+     * Template Name
+     */
+    template_name: string;
+    /**
+     * Template Description
+     */
+    template_description: string;
     /**
      * Created At
      */
@@ -10965,6 +11005,50 @@ export type UpdateWorkflowApiV1WorkflowWorkflowIdPutResponses = {
 
 export type UpdateWorkflowApiV1WorkflowWorkflowIdPutResponse = UpdateWorkflowApiV1WorkflowWorkflowIdPutResponses[keyof UpdateWorkflowApiV1WorkflowWorkflowIdPutResponses];
 
+export type GetWorkflowTemplateApiV1WorkflowTemplatesTemplateIdGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Template Id
+         */
+        template_id: number;
+    };
+    query?: never;
+    url: '/api/v1/workflow/templates/{template_id}';
+};
+
+export type GetWorkflowTemplateApiV1WorkflowTemplatesTemplateIdGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetWorkflowTemplateApiV1WorkflowTemplatesTemplateIdGetError = GetWorkflowTemplateApiV1WorkflowTemplatesTemplateIdGetErrors[keyof GetWorkflowTemplateApiV1WorkflowTemplatesTemplateIdGetErrors];
+
+export type GetWorkflowTemplateApiV1WorkflowTemplatesTemplateIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: WorkflowTemplateDetailResponse;
+};
+
+export type GetWorkflowTemplateApiV1WorkflowTemplatesTemplateIdGetResponse = GetWorkflowTemplateApiV1WorkflowTemplatesTemplateIdGetResponses[keyof GetWorkflowTemplateApiV1WorkflowTemplatesTemplateIdGetResponses];
+
 export type DuplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePostData = {
     body: DuplicateTemplateRequest;
     headers?: {
@@ -11283,7 +11367,14 @@ export type GetWorkflowTemplatesApiV1WorkflowTemplatesGetData = {
         'X-API-Key'?: string | null;
     };
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Category
+         *
+         * Only templates in this category
+         */
+        category?: string | null;
+    };
     url: '/api/v1/workflow/templates';
 };
 
@@ -18805,6 +18896,97 @@ export type GetNodeTypeApiV1NodeTypesNameGetResponses = {
 };
 
 export type GetNodeTypeApiV1NodeTypesNameGetResponse = GetNodeTypeApiV1NodeTypesNameGetResponses[keyof GetNodeTypeApiV1NodeTypesNameGetResponses];
+
+export type ListPromptingGuideApiV1PromptingGuideGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/prompting-guide';
+};
+
+export type ListPromptingGuideApiV1PromptingGuideGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListPromptingGuideApiV1PromptingGuideGetError = ListPromptingGuideApiV1PromptingGuideGetErrors[keyof ListPromptingGuideApiV1PromptingGuideGetErrors];
+
+export type ListPromptingGuideApiV1PromptingGuideGetResponses = {
+    /**
+     * Response List Prompting Guide Api V1 Prompting Guide Get
+     *
+     * Successful Response
+     */
+    200: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
+export type ListPromptingGuideApiV1PromptingGuideGetResponse = ListPromptingGuideApiV1PromptingGuideGetResponses[keyof ListPromptingGuideApiV1PromptingGuideGetResponses];
+
+export type GetPromptingGuideTopicApiV1PromptingGuideTopicIdGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Topic Id
+         */
+        topic_id: string;
+    };
+    query?: never;
+    url: '/api/v1/prompting-guide/{topic_id}';
+};
+
+export type GetPromptingGuideTopicApiV1PromptingGuideTopicIdGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetPromptingGuideTopicApiV1PromptingGuideTopicIdGetError = GetPromptingGuideTopicApiV1PromptingGuideTopicIdGetErrors[keyof GetPromptingGuideTopicApiV1PromptingGuideTopicIdGetErrors];
+
+export type GetPromptingGuideTopicApiV1PromptingGuideTopicIdGetResponses = {
+    /**
+     * Response Get Prompting Guide Topic Api V1 Prompting Guide  Topic Id  Get
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type GetPromptingGuideTopicApiV1PromptingGuideTopicIdGetResponse = GetPromptingGuideTopicApiV1PromptingGuideTopicIdGetResponses[keyof GetPromptingGuideTopicApiV1PromptingGuideTopicIdGetResponses];
 
 export type HealthApiV1HealthGetData = {
     body?: never;

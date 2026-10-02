@@ -36,6 +36,8 @@ def test_workflow_fetch_list_includes_workflow_uuid():
     with patch("api.routes.workflow.db_client") as mock_db:
         mock_db.get_all_workflows_for_listing = AsyncMock(return_value=[workflow])
         mock_db.get_workflow_run_counts = AsyncMock(return_value={workflow.id: 9})
+        mock_db.get_draft_workflow_ids = AsyncMock(return_value=set())
+        mock_db.get_released_version_numbers = AsyncMock(return_value={})
 
         response = client.get("/workflow/fetch")
 
@@ -49,6 +51,8 @@ def test_workflow_fetch_list_includes_workflow_uuid():
             "total_runs": 9,
             "folder_id": workflow.folder_id,
             "workflow_uuid": workflow.workflow_uuid,
+            "released_version_number": None,
+            "has_unpublished_draft": False,
         }
     ]
 
@@ -62,6 +66,8 @@ def test_workflow_fetch_invalid_status_returns_422_without_db_query():
     with patch("api.routes.workflow.db_client") as mock_db:
         mock_db.get_all_workflows_for_listing = AsyncMock()
         mock_db.get_workflow_run_counts = AsyncMock()
+        mock_db.get_draft_workflow_ids = AsyncMock(return_value=set())
+        mock_db.get_released_version_numbers = AsyncMock(return_value={})
 
         response = client.get("/workflow/fetch?status=published")
 
@@ -78,6 +84,8 @@ def test_workflow_fetch_valid_single_status_passes_through():
     with patch("api.routes.workflow.db_client") as mock_db:
         mock_db.get_all_workflows_for_listing = AsyncMock(return_value=[])
         mock_db.get_workflow_run_counts = AsyncMock(return_value={})
+        mock_db.get_draft_workflow_ids = AsyncMock(return_value=set())
+        mock_db.get_released_version_numbers = AsyncMock(return_value={})
 
         response = client.get("/workflow/fetch?status=active")
 
@@ -94,6 +102,8 @@ def test_workflow_fetch_comma_separated_status_queries_each_value():
     with patch("api.routes.workflow.db_client") as mock_db:
         mock_db.get_all_workflows_for_listing = AsyncMock(return_value=[])
         mock_db.get_workflow_run_counts = AsyncMock(return_value={})
+        mock_db.get_draft_workflow_ids = AsyncMock(return_value=set())
+        mock_db.get_released_version_numbers = AsyncMock(return_value={})
 
         response = client.get("/workflow/fetch?status=active,archived")
 
@@ -113,6 +123,8 @@ def test_workflow_fetch_mixed_valid_and_invalid_status_returns_422():
     with patch("api.routes.workflow.db_client") as mock_db:
         mock_db.get_all_workflows_for_listing = AsyncMock()
         mock_db.get_workflow_run_counts = AsyncMock()
+        mock_db.get_draft_workflow_ids = AsyncMock(return_value=set())
+        mock_db.get_released_version_numbers = AsyncMock(return_value={})
 
         response = client.get("/workflow/fetch?status=active,published")
 
@@ -128,6 +140,8 @@ def test_workflow_fetch_blank_status_token_returns_422_without_db_query(status: 
     with patch("api.routes.workflow.db_client") as mock_db:
         mock_db.get_all_workflows_for_listing = AsyncMock()
         mock_db.get_workflow_run_counts = AsyncMock()
+        mock_db.get_draft_workflow_ids = AsyncMock(return_value=set())
+        mock_db.get_released_version_numbers = AsyncMock(return_value={})
 
         response = client.get("/workflow/fetch", params={"status": status})
 

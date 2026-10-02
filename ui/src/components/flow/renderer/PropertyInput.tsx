@@ -1,4 +1,4 @@
-import { PlusIcon, Trash2Icon } from "lucide-react";
+import { Loader2, PlusIcon, Trash2Icon } from "lucide-react";
 
 import type {
     DocumentResponseSchema,
@@ -17,6 +17,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
+import { offersStarterHandbook } from "../starterHandbook";
+import { useStarterHandbook } from "../useStarterHandbook";
 import { evaluateDisplayOptions } from "./displayOptions";
 import {
     getPropertyColumnSpan,
@@ -31,6 +33,8 @@ export interface RendererContext {
     mcpToolFilters?: Record<string, string[]>;
     /** Persist a new mcp_tool_filters object onto the node form values. */
     onMcpToolFiltersChange?: (next: Record<string, string[]>) => void;
+    /** The node type being edited, for fields that only some nodes offer actions on. */
+    nodeType?: string;
 }
 
 export interface PropertyInputProps {
@@ -82,6 +86,7 @@ export function PropertyInput({ spec, value, onChange, context }: PropertyInputP
                     value={value}
                     onChange={onChange}
                     recordings={context.recordings}
+                    nodeType={context.nodeType}
                 />
             );
         case "tool_refs":
@@ -401,15 +406,41 @@ function MentionWidget({
     value,
     onChange,
     recordings,
-}: WidgetProps & { recordings: RecordingResponseSchema[] }) {
+    nodeType,
+}: WidgetProps & { recordings: RecordingResponseSchema[]; nodeType?: string }) {
+    const { insert, inserting } = useStarterHandbook();
+    const text = (value as string | undefined) ?? "";
+    const isPrompt = spec.name === "prompt";
+
     return (
         <div className="grid gap-2">
-            <StackedLabel spec={spec} />
+            <div className="flex items-end justify-between gap-2">
+                <div className="grid gap-2">
+                    <StackedLabel spec={spec} />
+                </div>
+                {offersStarterHandbook(nodeType, spec.name) && (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => insert(text, onChange)}
+                        disabled={inserting}
+                    >
+                        {inserting && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                        Insert starter handbook
+                    </Button>
+                )}
+            </div>
             <MentionTextarea
-                value={(value as string | undefined) ?? ""}
+                value={text}
                 onChange={onChange}
                 placeholder={spec.placeholder ?? undefined}
-                className="min-h-[100px] max-h-[300px] resize-none overflow-y-auto"
+                // A prompt is long: give it room, and let it scroll inside itself.
+                className={
+                    isPrompt
+                        ? "min-h-[160px] max-h-[50vh] resize-none overflow-y-auto"
+                        : "min-h-[100px] max-h-[300px] resize-none overflow-y-auto"
+                }
                 recordings={recordings}
             />
         </div>

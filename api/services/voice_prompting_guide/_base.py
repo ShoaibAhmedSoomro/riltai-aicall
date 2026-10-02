@@ -100,6 +100,10 @@ class VoicePromptingTopic(BaseModel):
     review_signals: tuple[ReviewSignal, ...] = Field(default_factory=tuple)
     audit_checks: tuple[AuditCheck, ...] = Field(default_factory=tuple)
     cross_refs: tuple[str, ...] = Field(default_factory=tuple)
+    # Ready-to-insert text for a prompt field, when the topic has one. The HTTP
+    # route and the editor read it from here; it is not a second copy of `content`
+    # (content is built from it).
+    starter_template: str | None = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -139,4 +143,6 @@ class VoicePromptingTopic(BaseModel):
             out["applies_to_node_types"] = list(self.applies_to_node_types)
         if self.cross_refs:
             out["cross_refs"] = list(self.cross_refs)
+        if self.starter_template is not None:
+            out["starter_template"] = self.starter_template
         return out

@@ -30,6 +30,24 @@ You'll be asked for:
 
 This description is sent to an LLM to generate a starting workflow. The more specific you are, the better the generated prompts and pathways will be.
 
+### Start from a template
+
+Don't want to describe the agent from scratch? Open **Create Agent → Start from a template** (or go to `/workflow/templates`). Each template is a complete, working call flow you can use as it is or edit:
+
+| Template | What it does |
+| --- | --- |
+| **Front Desk Receptionist** | Answers inbound calls, handles simple questions, takes a clear message. |
+| **Appointment Booking** | Collects name, reason and preferred time, reads the booking back to confirm. |
+| **Customer Support Triage** | Finds the problem, walks through common fixes, and records a ticket summary when it cannot solve it. |
+| **Lead Qualification** | Asks the questions that decide whether an enquiry is worth a salesperson's time. |
+| **Outbound Sales Intro Call** | Asks permission, asks two discovery questions, and books a follow-up. |
+
+Pick one, check the steps in the preview, give your copy a name and click **Use this template**. You land in the editor with your own copy; the template itself is never changed. Templates use the [Prompt Handbook](/voice-agent/prompt-handbook) as their Global prompt and contain no tools, documents or recordings, so there is nothing to reconnect. Replace the sample business name in the prompts with yours, then continue at Step 3.
+
+<Tip>
+A **Blank Canvas** agent starts as a Start Call node joined to an End Call node and opens in a prompt-only editor: a greeting and one prompt. It is the quickest way to try a single idea.
+</Tip>
+
 ## Step 2: Land in the workflow editor
 
 After generation, you're dropped into the [Voice Agent Builder](/voice-agent/introduction) with a graph already built for you — typically a **Start Call** node, one or more **Agent** nodes with prompts for your use case, and an **End Call** node, connected by pathways.

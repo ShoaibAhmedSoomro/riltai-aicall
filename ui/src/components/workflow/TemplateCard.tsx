@@ -1,82 +1,30 @@
-'use client';
+import { Eye } from 'lucide-react';
 
-import { Copy } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
-import { duplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePost } from '@/client/sdk.gen';
-import { Button } from "@/components/ui/button";
-import { useAuth } from '@/lib/auth';
-import logger from '@/lib/logger';
+import { categoryLabel } from './templates';
 
-interface DuplicateWorkflowTemplateProps {
-    id: number;
-    title: string;
+interface TemplateCardProps {
+    name: string;
     description: string;
-    serverAccessToken?: string | null;
+    category: string;
+    onPreview: () => void;
 }
 
-export function DuplicateWorkflowTemplate({ id, title, description, serverAccessToken }: DuplicateWorkflowTemplateProps) {
-    const [isLoading, setIsLoading] = useState(false);
-    const router = useRouter();
-    const { user, getAccessToken } = useAuth();
-
-    const handleDuplicate = async () => {
-        setIsLoading(true);
-        try {
-            // Use server-provided token if available, otherwise try to get from client auth
-            let accessToken = serverAccessToken;
-
-            if (!accessToken) {
-                if (!user) {
-                    logger.error('User not authenticated and no server token provided');
-                    return;
-                }
-                accessToken = await getAccessToken();
-            }
-
-            if (!accessToken) {
-                logger.error('No access token available');
-                return;
-            }
-
-            const response = await duplicateWorkflowTemplateApiV1WorkflowTemplatesDuplicatePost({
-                body: {
-                    template_id: id,
-                    workflow_name: title,
-                },
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                },
-            });
-
-            if (response.data) {
-                logger.info('Workflow created successfully from template');
-                // Redirect to the new workflow
-                router.push(`/workflow/${response.data.id}`);
-            }
-        } catch (error) {
-            logger.error(`Error creating workflow from template: ${error}`);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
+/** One card in the gallery. Presentational: the gallery owns fetching and creating. */
+export function TemplateCard({ name, description, category, onPreview }: TemplateCardProps) {
     return (
-        <div className="bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow p-4">
-            <div>
-                <h3 className="text-lg font-semibold mb-2">{title}</h3>
-                <p className="text-gray-600 mb-4">{description}</p>
-                <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={handleDuplicate}
-                    disabled={isLoading}
-                >
-                    <Copy className="w-4 h-4 mr-2" />
-                    {isLoading ? 'Creating...' : 'Duplicate Workflow Template'}
-                </Button>
-            </div>
+        <div className="flex flex-col rounded-lg border bg-card p-4 text-card-foreground shadow-sm transition-shadow hover:shadow-md">
+            <Badge variant="secondary" className="mb-3 w-fit">
+                {categoryLabel(category)}
+            </Badge>
+            <h3 className="mb-1 text-base font-semibold">{name}</h3>
+            <p className="mb-4 flex-1 text-sm text-muted-foreground">{description}</p>
+            <Button variant="outline" className="w-full" onClick={onPreview}>
+                <Eye className="mr-2 h-4 w-4" />
+                Preview and use
+            </Button>
         </div>
     );
 }

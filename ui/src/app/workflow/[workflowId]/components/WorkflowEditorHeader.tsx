@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactFlowInstance } from "@xyflow/react";
-import { AlertCircle, ArrowLeft, Bot, Clipboard, Copy, Download, Eye, History, LoaderCircle, Menu, MoreVertical, Pencil, Phone, Rocket } from "lucide-react";
+import { AlertCircle, ArrowLeft, Bot, Clipboard, Copy, Download, Eye, History, LoaderCircle, Menu, MoreVertical, Pencil, Phone, Rocket, Workflow } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -29,6 +29,7 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { copyTextToClipboard } from "@/lib/clipboard";
 
 import { agentTabHref, agentTabLabel } from '../agentRoutes';
+import { useWorkflowStore } from "../stores/workflowStore";
 
 interface WorkflowEditorHeaderProps {
     workflowName: string;
@@ -48,6 +49,8 @@ interface WorkflowEditorHeaderProps {
     hasDraft: boolean;
     onPublished: () => void;
     renameWorkflow: (newName: string) => Promise<void>;
+    /** Present only while the agent has the single-prompt shape; see lib/agentShape.ts. */
+    simpleMode?: { active: boolean; onToggle: () => void };
 }
 
 export const WorkflowEditorHeader = ({
@@ -67,6 +70,7 @@ export const WorkflowEditorHeader = ({
     workflowId,
     workflowUuid,
     renameWorkflow,
+    simpleMode,
 }: WorkflowEditorHeaderProps) => {
     const router = useRouter();
     const { toggleSidebar } = useSidebar();
@@ -153,9 +157,14 @@ export const WorkflowEditorHeader = ({
     };
 
     const handleDownloadWorkflow = () => {
-        if (!rfInstance.current) return;
-
-        const workflowDefinition = rfInstance.current.toObject();
+        // The prompt-only editor has no canvas; export from the store instead.
+        const { nodes, edges } = useWorkflowStore.getState();
+        const workflowDefinition = rfInstance.current?.toObject() ?? {
+            nodes,
+            edges,
+            viewport: { x: 0, y: 0, zoom: 1 },
+        };
+        if (workflowDefinition.nodes.length === 0) return;
         const exportData = {
             name: workflowName,
             workflow_definition: workflowDefinition,
@@ -460,6 +469,15 @@ export const WorkflowEditorHeader = ({
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-[#1a1a1a] border-[#3a3a3a]">
+                        {simpleMode && (
+                            <DropdownMenuItem
+                                onClick={simpleMode.onToggle}
+                                className="text-white hover:bg-[#2a2a2a] cursor-pointer"
+                            >
+                                <Workflow className="w-4 h-4 mr-2" />
+                                {simpleMode.active ? "Switch to flow editor" : "Switch to simple editor"}
+                            </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                             onClick={() => router.push(agentTabHref(workflowId, 'history'))}
                             className="text-white hover:bg-[#2a2a2a] cursor-pointer"

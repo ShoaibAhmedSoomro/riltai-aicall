@@ -19,6 +19,8 @@ import type {
     UpdateWorkflowRequest,
     WorkflowListResponse,
     WorkflowResponse,
+    WorkflowTemplateDetailResponse,
+    WorkflowTemplateResponse,
 } from "./_generated_models.js";
 
 export abstract class _GeneratedClient {
@@ -43,9 +45,19 @@ export abstract class _GeneratedClient {
         return this.request<NodeSpec>("GET", `/node-types/${name}`);
     }
 
+    /** Fetch one voice-prompting topic, including its starter_template when it has one. */
+    async getPromptingGuideTopic(topicId: string): Promise<unknown> {
+        return this.request("GET", `/prompting-guide/${topicId}`);
+    }
+
     /** Get a single workflow by ID (returns draft if one exists, else published). */
     async getWorkflow(workflowId: number): Promise<WorkflowResponse> {
         return this.request<WorkflowResponse>("GET", `/workflow/fetch/${workflowId}`);
+    }
+
+    /** Fetch one workflow template with its full definition, for a preview. */
+    async getWorkflowTemplate(templateId: number): Promise<WorkflowTemplateDetailResponse> {
+        return this.request<WorkflowTemplateDetailResponse>("GET", `/workflow/templates/${templateId}`);
     }
 
     /** List webhook credentials available to the authenticated organization. */
@@ -68,6 +80,11 @@ export abstract class _GeneratedClient {
         return this.request<NodeTypesResponse>("GET", "/node-types");
     }
 
+    /** List the voice-prompting guide topics (id and title). */
+    async listPromptingGuideTopics(): Promise<unknown> {
+        return this.request("GET", "/prompting-guide");
+    }
+
     /** List workflow recordings available to the authenticated organization. */
     async listRecordings(opts: { workflowId?: number; ttsProvider?: string; ttsModel?: string; ttsVoiceId?: string } = {}): Promise<RecordingListResponseSchema> {
         const params: Record<string, unknown> = {
@@ -86,6 +103,14 @@ export abstract class _GeneratedClient {
             ...(opts.category !== undefined ? { "category": opts.category } : {}),
         };
         return this.request<ToolResponse[]>("GET", "/tools/", { params });
+    }
+
+    /** List the starter templates (without their definitions), optionally one category. */
+    async listWorkflowTemplates(opts: { category?: string } = {}): Promise<WorkflowTemplateResponse[]> {
+        const params: Record<string, unknown> = {
+            ...(opts.category !== undefined ? { "category": opts.category } : {}),
+        };
+        return this.request<WorkflowTemplateResponse[]>("GET", "/workflow/templates", { params });
     }
 
     /** List all workflows in the authenticated organization. */

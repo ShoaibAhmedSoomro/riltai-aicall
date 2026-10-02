@@ -97,20 +97,6 @@ async function PageContent() {
 function WorkflowsLoading() {
     return (
         <div className="container mx-auto px-4 py-8">
-            {/* Get Started Section Loading */}
-            <div className="mb-12">
-                <div className="h-8 w-48 bg-muted rounded mb-6"></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {Array.from({ length: 3 }, (_, i) => (
-                        <Card key={i}>
-                            <CardContent className="p-0">
-                                <div className="h-40 bg-muted/70" />
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            </div>
-
             {/* Your Workflows Section Loading */}
             <div className="mb-6">
                 <div className="flex justify-between items-center mb-6">

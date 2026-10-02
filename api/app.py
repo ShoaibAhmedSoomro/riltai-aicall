@@ -62,6 +62,14 @@ async def lifespan(app: FastAPI):
         # before any pipeline runs, without per-call DB lookups.
         await load_all_org_langfuse_credentials()
 
+        # Starter templates. A malformed catalog file must never block boot.
+        try:
+            from api.services.workflow.template_catalog import seed_catalog
+
+            logger.info(f"Template catalog: {await seed_catalog()} templates up to date")
+        except Exception as e:
+            logger.warning(f"Template catalog seeding failed: {e}")
+
         # Start cross-worker sync manager so config changes propagate to all workers
         sync_manager = WorkerSyncManager(REDIS_URL)
         sync_manager.register(

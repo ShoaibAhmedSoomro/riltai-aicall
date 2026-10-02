@@ -24,6 +24,8 @@ from rilt_sdk._generated_models import (
     UpdateWorkflowRequest,
     WorkflowListResponse,
     WorkflowResponse,
+    WorkflowTemplateDetailResponse,
+    WorkflowTemplateResponse,
 )
 
 
@@ -45,10 +47,19 @@ class _GeneratedClient:
         data = self._request("GET", f"/node-types/{name}")
         return NodeSpec.model_validate(data)
 
+    def get_prompting_guide_topic(self, topic_id: str) -> Any:
+        """Fetch one voice-prompting topic, including its starter_template when it has one."""
+        return self._request("GET", f"/prompting-guide/{topic_id}")
+
     def get_workflow(self, workflow_id: int) -> WorkflowResponse:
         """Get a single workflow by ID (returns draft if one exists, else published)."""
         data = self._request("GET", f"/workflow/fetch/{workflow_id}")
         return WorkflowResponse.model_validate(data)
+
+    def get_workflow_template(self, template_id: int) -> WorkflowTemplateDetailResponse:
+        """Fetch one workflow template with its full definition, for a preview."""
+        data = self._request("GET", f"/workflow/templates/{template_id}")
+        return WorkflowTemplateDetailResponse.model_validate(data)
 
     def list_credentials(self) -> list[CredentialResponse]:
         """List webhook credentials available to the authenticated organization."""
@@ -71,6 +82,10 @@ class _GeneratedClient:
         """List every registered node type with its spec. Pinned to spec_version."""
         data = self._request("GET", "/node-types")
         return NodeTypesResponse.model_validate(data)
+
+    def list_prompting_guide_topics(self) -> Any:
+        """List the voice-prompting guide topics (id and title)."""
+        return self._request("GET", "/prompting-guide")
 
     def list_recordings(self, *, workflow_id: int | None = None, tts_provider: str | None = None, tts_model: str | None = None, tts_voice_id: str | None = None) -> RecordingListResponseSchema:
         """List workflow recordings available to the authenticated organization."""
@@ -95,6 +110,14 @@ class _GeneratedClient:
             params["category"] = category
         data = self._request("GET", "/tools/", params=params)
         return [ToolResponse.model_validate(x) for x in data]
+
+    def list_workflow_templates(self, *, category: str | None = None) -> list[WorkflowTemplateResponse]:
+        """List the starter templates (without their definitions), optionally one category."""
+        params: dict[str, Any] = {}
+        if category is not None:
+            params["category"] = category
+        data = self._request("GET", "/workflow/templates", params=params)
+        return [WorkflowTemplateResponse.model_validate(x) for x in data]
 
     def list_workflows(self, *, status: str | None = None) -> list[WorkflowListResponse]:
         """List all workflows in the authenticated organization."""

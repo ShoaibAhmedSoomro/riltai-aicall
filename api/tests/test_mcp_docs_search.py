@@ -248,7 +248,7 @@ async def test_search_docs_indexes_only_docs_json_pages(fake_docs_root, authed_u
 
 @pytest.mark.asyncio
 async def test_search_docs_respects_limit(fake_docs_root, authed_user):
-    results = await search_docs("dograh", limit=1)
+    results = await search_docs("AICall", limit=1)
     assert len(results) == 1
 
 

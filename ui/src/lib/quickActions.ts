@@ -7,6 +7,7 @@ import {
     Megaphone,
     PhoneCall,
     SlidersHorizontal,
+    Sparkles,
     Wrench,
 } from 'lucide-react';
 
@@ -14,18 +15,15 @@ import {
  * The create-shaped actions a user can actually complete, in one place, so the
  * top-bar menu and the dashboard panel cannot drift apart.
  *
- * Only three creates in this app are reachable by a plain URL:
- * /workflow/create, /campaigns/new, and /telephony-configurations?add=1 (the one
+ * Only four creates in this app are reachable by a plain URL:
+ * /workflow/create, /workflow/templates, /campaigns/new, and /telephony-configurations?add=1 (the one
  * page that reads a query param to open its own dialog). Everything else lives
  * in a useState dialog inside a specific page with no deep-link support, so
  * those entries navigate to the page and `landsOnPage` marks them as such: the
  * menu says "Open" rather than implying a dialog will appear.
  *
- * Two things a reference dashboard would offer are deliberately absent. There is
- * no "new agent from template": the endpoints exist but the gallery component is
- * rendered nowhere, so it would be a dead end. And "new model configuration" is
- * not a create at all, it is a single org-level save, so it appears as
- * "Configure AI models" instead.
+ * "New model configuration" is deliberately absent: it is not a create at all,
+ * just a single org-level save, so it appears as "Configure AI models" instead.
  */
 export interface QuickAction {
     id: string;
@@ -50,6 +48,14 @@ export const QUICK_ACTIONS: QuickAction[] = [
         description: 'Build a call flow in the visual editor',
         href: '/workflow/create',
         icon: Bot,
+        landsOnPage: false,
+    },
+    {
+        id: 'template',
+        label: 'Agent from a template',
+        description: 'Start from a ready-made receptionist, booking or sales agent',
+        href: '/workflow/templates',
+        icon: Sparkles,
         landsOnPage: false,
     },
     {

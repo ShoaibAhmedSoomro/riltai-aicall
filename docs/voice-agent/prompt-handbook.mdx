@@ -1,0 +1,62 @@
+---
+title: "Prompt Handbook"
+description: "A tested structure for the Global prompt of a phone agent, and how to insert it into your own agent with one click."
+---
+
+Phone calls are not chat. Audio is noisy, transcripts are wrong a few times per call, and people talk in short, imperfect sentences. The **starter handbook** is a ready-made Global prompt written for those conditions. Start from it and change the business details instead of writing the rules from a blank page.
+
+## What it contains
+
+The handbook is one prompt with fixed sections. Keep the headings and their order; change the details inside them.
+
+| Section | What it does |
+| --- | --- |
+| **#goal** | Who the agent is, who it works for, and a reminder that this is a phone call with imperfect transcripts. |
+| **Current Date and Time** | Gives the agent today's date and weekday so it can talk about "tomorrow" or "Thursday" correctly. |
+| **Rules** | Language, short answers, natural filler words, ending turns with a question, not repeating itself, how to say numbers, and never inventing facts. |
+| **Speech Handling** | What to do when it did not hear or understand: ask again briefly, accept yes/yeah/yep, and repeat itself when asked. |
+| **Common Objections** | How to handle "what's this about?", off-topic questions, prompt-injection attempts, and rude callers, then get back to the goal. |
+
+## Insert it into your agent
+
+<Steps>
+  <Step title="Open the Global node">
+    Open the [Global node](/voice-agent/global). The same action is available on the [Start Call node](/voice-agent/start-call) prompt.
+  </Step>
+  <Step title="Click Insert starter handbook">
+    The button sits next to the **Prompt** label. On an empty prompt it fills the field. If you have already written something, your text stays and the handbook is added after it. Clicking twice does not add a second copy.
+  </Step>
+  <Step title="Replace the business details">
+    Change the persona and company in **#goal**, and fill in the blanks in **Common Objections** (what the agent is there to help with). Leave the rest as it is until you have heard a test call.
+  </Step>
+</Steps>
+
+<Tip>
+You can set the time zone the agent reports by using `{{current_time_<TIMEZONE>}}` with an IANA name such as `Asia/Dubai`, instead of UTC.
+</Tip>
+
+## What to change and what to keep
+
+**Change:** the agent's name, the business, the language, the examples of how money is spoken, and anything specific to your policies.
+
+**Keep:** the section headings and their order, the rule to keep turns short, and the objection handling. These are the parts that stop an agent rambling or being talked out of its job.
+
+## Also in the editor
+
+- **Templates already use it.** Every agent in the [template gallery](/getting-started/first-agent#start-from-a-template) has the handbook as its Global prompt, with the business details filled in.
+- **A blank agent can be one prompt.** An agent with only a Start Call node joined to an End Call node opens in a prompt-only editor: a greeting, one large prompt field and the same **Insert starter handbook** button. Use **Switch to the flow editor** when you need steps, branches or tools. Once you add a second step, the prompt-only editor is no longer offered for that agent, because it would not show the whole flow.
+
+## For builders using the API or MCP
+
+The same text is available to code. `GET /api/v1/prompting-guide/common_guidelines` returns the topic, and its `starter_template` field is the ready-to-insert prompt. The MCP tool `get_voice_prompting_guide` with `topic="common_guidelines"` returns the explanation and the template together.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Global Node" href="./global">
+    How the Global prompt is combined with each node's prompt.
+  </Card>
+  <Card title="Your First Agent" href="/getting-started/first-agent">
+    Build and test an agent from a template in five minutes.
+  </Card>
+</CardGroup>

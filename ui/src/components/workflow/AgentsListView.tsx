@@ -1,6 +1,7 @@
 'use client';
 
 import { Archive, FolderInput, RotateCcw, Search, X } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -138,8 +139,11 @@ export function AgentsListView({ workflows, folders }: AgentsListViewProps) {
     if (workflows.length === 0) {
         return (
             <Card>
-                <CardContent className="p-8 text-center text-muted-foreground">
-                    No agents yet. Create your first agent to get started.
+                <CardContent className="flex flex-col items-center gap-4 p-8 text-center text-muted-foreground">
+                    <p>No agents yet. Create your first agent to get started.</p>
+                    <Button asChild variant="outline">
+                        <Link href="/workflow/templates">Browse templates</Link>
+                    </Button>
                 </CardContent>
             </Card>
         );

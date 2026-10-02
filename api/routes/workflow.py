@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from httpx import HTTPStatusError
 from loguru import logger
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from api.constants import DEPLOYMENT_MODE
 from api.db import db_client
@@ -322,11 +322,20 @@ class WorkflowCountResponse(BaseModel):
 
 
 class WorkflowTemplateResponse(BaseModel):
+    """A gallery card. The full graph is a separate fetch (WorkflowTemplateDetailResponse)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
+    slug: str
+    category: str
     template_name: str
     template_description: str
-    template_json: dict
     created_at: datetime
+
+
+class WorkflowTemplateDetailResponse(WorkflowTemplateResponse):
+    template_json: dict
 
 
 class CreateWorkflowRequest(BaseModel):
@@ -1363,6 +1372,24 @@ async def update_workflow(
 # never been reachable: workflow_id="templates" fails int coercion and the
 # caller gets 422, which reads as a broken feature rather than a route order
 # mistake.
+@router.get(
+    "/templates/{template_id}",
+    **sdk_expose(
+        method="get_workflow_template",
+        description="Fetch one workflow template with its full definition, for a preview.",
+    ),
+)
+async def get_workflow_template(
+    template_id: int, user: UserModel = Depends(get_user)
+) -> WorkflowTemplateDetailResponse:
+    template = await WorkflowTemplateClient().get_workflow_template(template_id)
+    if not template:
+        raise HTTPException(
+            status_code=404, detail=f"Workflow template with id {template_id} not found"
+        )
+    return template
+
+
 @router.post("/templates/duplicate")
 async def duplicate_workflow_template(
     request: DuplicateTemplateRequest, user: UserModel = Depends(get_user)
@@ -1728,32 +1755,20 @@ async def download_workflow_report(
     )
 
 
-@router.get("/templates")
+@router.get(
+    "/templates",
+    **sdk_expose(
+        method="list_workflow_templates",
+        description="List the starter templates (without their definitions), optionally one category.",
+    ),
+)
 async def get_workflow_templates(
-    # Reads the templates table with no org scoping and no auth. The UI has
-    # no call site for it (searched), so requiring a session costs nothing
-    # and stops an unauthenticated caller enumerating the table.
+    category: Optional[str] = Query(None, description="Only templates in this category"),
+    # Templates carry full prompts, so a session is required.
     user: UserModel = Depends(get_user),
 ) -> List[WorkflowTemplateResponse]:
-    """
-    Get all available workflow templates.
-
-    Returns:
-        List of workflow templates
-    """
-    template_client = WorkflowTemplateClient()
-    templates = await template_client.get_all_workflow_templates()
-
-    return [
-        {
-            "id": template.id,
-            "template_name": template.template_name,
-            "template_description": template.template_description,
-            "template_json": template.template_json,
-            "created_at": template.created_at,
-        }
-        for template in templates
-    ]
+    """Starter templates for the gallery, cheapest shape: no definitions."""
+    return await WorkflowTemplateClient().get_all_workflow_templates(category)
 
 
 @router.post(

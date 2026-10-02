@@ -633,6 +633,9 @@ class WorkflowTemplates(Base):
     template_name = Column(String, nullable=False, index=True)
     template_description = Column(String, nullable=False, index=True)
     template_json = Column(JSON, nullable=False, default=dict)
+    # Stable identity for the seeded catalog (template_name is display text).
+    slug = Column(String, nullable=False, unique=True)
+    category = Column(String, nullable=False, default="general", server_default="general")
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 

@@ -85,10 +85,12 @@ export const NodeEditDialog = ({
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent
-                className="max-h-[85vh] overflow-y-auto"
+                // Header and footer stay put; only the form scrolls, so Save is
+                // never pushed out of view by a long prompt.
+                className="flex max-h-[85vh] flex-col gap-4 overflow-hidden"
                 style={{ maxWidth: "1200px", width: "95vw" }}
             >
-                <DialogHeader>
+                <DialogHeader className="shrink-0">
                     <div className="flex items-center justify-between">
                         <DialogTitle>{title}</DialogTitle>
                         {documentationUrl && (
@@ -113,16 +115,16 @@ export const NodeEditDialog = ({
                         </div>
                     )}
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
+                <div className="grid min-h-0 flex-1 content-start gap-4 overflow-y-auto py-2">
                     {children}
                 </div>
                 {error && (
-                    <div className="flex items-center gap-2 rounded-md bg-red-50 p-3 text-sm text-red-600 border border-red-200">
+                    <div className="flex shrink-0 items-center gap-2 rounded-md bg-red-50 p-3 text-sm text-red-600 border border-red-200">
                         <AlertCircle className="h-4 w-4 flex-shrink-0" />
                         <span>{error}</span>
                     </div>
                 )}
-                <DialogFooter>
+                <DialogFooter className="shrink-0">
                     <div className="flex items-center gap-2">
                         <Button
                             variant="outline"
