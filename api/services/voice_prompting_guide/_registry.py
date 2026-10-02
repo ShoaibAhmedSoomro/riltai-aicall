@@ -15,7 +15,7 @@ from api.services.voice_prompting_guide._base import (
 )
 from api.services.voice_prompting_guide.topics import (
     call_flow_design,
-    common_guideliines,
+    common_guidelines,
     end_call_logic,
     guardrails,
     instruction_collision,
@@ -37,7 +37,7 @@ def _register(topic: VoicePromptingTopic) -> None:
 
 
 # Registration order is the briefing display order.
-_register(common_guideliines.TOPIC)
+_register(common_guidelines.TOPIC)
 _register(guardrails.TOPIC)
 _register(call_flow_design.TOPIC)
 _register(tool_calls.TOPIC)

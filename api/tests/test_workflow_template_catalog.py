@@ -8,7 +8,7 @@ import json
 
 import pytest
 
-from api.services.voice_prompting_guide.topics.common_guideliines import (
+from api.services.voice_prompting_guide.topics.common_guidelines import (
     GLOBAL_NODE_STARTER,
 )
 from api.services.workflow.dto import ReactFlowDTO
@@ -60,7 +60,7 @@ def test_nothing_organization_scoped(slug):
 
 @pytest.mark.parametrize("slug", sorted(ENTRIES))
 def test_global_node_is_the_handbook(slug):
-    """The drift guard between the catalog and common_guideliines.py."""
+    """The drift guard between the catalog and common_guidelines.py."""
     globals_ = [n for n in ENTRIES[slug]["definition"]["nodes"] if n["type"] == "globalNode"]
     assert len(globals_) == 1
     prompt = globals_[0]["data"]["prompt"]

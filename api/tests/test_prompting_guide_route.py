@@ -11,7 +11,7 @@ from fastapi import HTTPException
 
 from api.routes import prompting_guide as routes
 from api.services.voice_prompting_guide import get_topic
-from api.services.voice_prompting_guide.topics.common_guideliines import (
+from api.services.voice_prompting_guide.topics.common_guidelines import (
     GLOBAL_NODE_STARTER,
 )
 

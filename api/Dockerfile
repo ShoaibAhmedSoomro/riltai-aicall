@@ -116,7 +116,7 @@ RUN groupadd --system rilt \
  && useradd --system --gid rilt --no-log-init --home-dir /app --shell /usr/sbin/nologin rilt \
  && chown rilt:rilt /app
 
-# Static ffmpeg + ffprobe (used by audio_converter, audio_file_cache, etc.)
+# Static ffmpeg + ffprobe (used by audio_file_cache, etc.)
 COPY --from=ffmpeg-static /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 COPY --from=ffmpeg-static /usr/local/bin/ffprobe /usr/local/bin/ffprobe
 

@@ -101,7 +101,7 @@ Turn on **extraction** on an [Agent](/voice-agent/agent) or [End Call](/voice-ag
 | `type` | `string`, `number`, or `boolean` |
 | `prompt` | A natural-language description of what to look for, e.g. *"Did the customer confirm the appointment?"* |
 
-<img src="../images/extracted_variables.png" alt="Extracted variables" style={{border: "1px solid #d1d5db", borderRadius: "8px", maxWidth: "100%"}} />
+<img src="../images/extracted-variables.png" alt="Extracted variables" style={{border: "1px solid #d1d5db", borderRadius: "8px", maxWidth: "100%"}} />
 
 When the conversation reaches that node, the LLM reads the transcript so far and fills in each variable based on its `prompt`. If a value can't be determined from the conversation, the variable is left empty rather than guessed — leave the `prompt` specific enough that the LLM knows exactly what counts as a match.
 

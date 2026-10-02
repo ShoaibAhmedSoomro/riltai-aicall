@@ -41,7 +41,7 @@
 
 <div align="center">
   <a href="https://youtu.be/9gPneyf9M9w">
-    <img src="docs/images/video_thumbnail_1.png" alt="观看 AICall 演示视频" width="70%" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+    <img src="docs/images/video-thumbnail-1.png" alt="观看 AICall 演示视频" width="70%" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
   </a>
 </div>
 
