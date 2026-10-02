@@ -43,6 +43,16 @@ MUST_BE_ADMIN = [
     # Sets the price per minute, so it decides every currency figure the
     # organization sees.
     ("PUT", "/api/v1/organizations/usage/rate-card"),
+    # A webhook channel sends organization data to a URL of the caller's choosing,
+    # and a rule decides who is told what: the same class of change as an
+    # integration. Reading the feed is not privileged (below).
+    ("POST", "/api/v1/alerts/rules"),
+    ("PATCH", "/api/v1/alerts/rules/{rule_uuid}"),
+    ("DELETE", "/api/v1/alerts/rules/{rule_uuid}"),
+    ("POST", "/api/v1/alerts/channels"),
+    ("PATCH", "/api/v1/alerts/channels/{channel_uuid}"),
+    ("DELETE", "/api/v1/alerts/channels/{channel_uuid}"),
+    ("POST", "/api/v1/alerts/channels/{channel_uuid}/test"),
 ]
 
 # Ordinary work. Gating any of these locks real users out of a working product.
@@ -70,6 +80,12 @@ MUST_NOT_BE_ADMIN = [
     # What a call they placed cost is not privileged, and hiding the rate
     # leaves every figure on the usage page unexplainable.
     ("GET", "/api/v1/organizations/usage/rate-card"),
+    # Seeing what went wrong, and saying you have seen it, is everyday work.
+    ("GET", "/api/v1/alerts/events"),
+    ("POST", "/api/v1/alerts/events/{event_uuid}/acknowledge"),
+    # Watching a live call is open to members; listening to its audio is decided
+    # inside the socket by role (see routes/live_monitor.py), not by a dependency.
+    ("GET", "/api/v1/monitor/live-calls"),
 ]
 
 

@@ -20,7 +20,9 @@ rather than being observed here, to ensure precise timing at the moment of
 node changes.
 """
 
+import base64
 import json
+from collections import deque
 from typing import TYPE_CHECKING, Awaitable, Callable, Optional, Set
 
 from loguru import logger
@@ -42,6 +44,7 @@ from api.services.pipecat.realtime_feedback_events import (
 
 if TYPE_CHECKING:
     from api.services.pipecat.in_memory_buffers import InMemoryLogsBuffer
+    from api.services.pipecat.run_event_bus import RunEventBus
     from api.services.pipecat.transcript_log_coordinator import (
         TranscriptLogCoordinator,
     )
@@ -54,9 +57,11 @@ from pipecat.frames.frames import (
     ErrorFrame,
     FunctionCallInProgressFrame,
     FunctionCallResultFrame,
+    InputAudioRawFrame,
     InterimTranscriptionFrame,
     InterruptionFrame,
     MetricsFrame,
+    OutputAudioRawFrame,
     StopFrame,
     TranscriptionFrame,
     TTSSpeakFrame,
@@ -92,17 +97,24 @@ class RealtimeFeedbackObserver(BaseObserver):
         self,
         ws_sender: Callable[[dict], Awaitable[None]],
         logs_buffer: Optional["InMemoryLogsBuffer"] = None,
+        bus: Optional["RunEventBus"] = None,
     ):
         """
         Args:
             ws_sender: Async function to send messages over WebSocket.
                        Expected signature: async def send(message: dict) -> None
             logs_buffer: Optional InMemoryLogsBuffer to persist events for post-call analysis.
+            bus: The run's event bus. Only used to tee audio to a supervisor who has
+                 listen-in switched on; ``ws_sender`` is still how events go out.
         """
         super().__init__()
         self._ws_sender = ws_sender
         self._logs_buffer = logs_buffer
         self._frames_seen: Set[str] = set()
+        self._bus = bus
+        # Audio frames are seen once per processor hop; remember the last few ids so
+        # each is sent once, without keeping 100 ids a second for the whole call.
+        self._recent_audio_ids: deque = deque(maxlen=64)
 
     async def cleanup(self):
         """Clean up resources. Must be called when the observer is no longer needed."""
@@ -113,6 +125,15 @@ class RealtimeFeedbackObserver(BaseObserver):
         frame = data.frame
         frame_direction = data.direction
         source = data.source
+
+        # Listen-in audio. Handled first and returns: audio frames must not enter
+        # the _frames_seen set below (it would grow by ~100 ids a second per call).
+        if self._bus is not None and isinstance(
+            frame, (InputAudioRawFrame, OutputAudioRawFrame)
+        ):
+            if frame_direction == FrameDirection.DOWNSTREAM:
+                await self._tee_audio(frame)
+            return
 
         # Skip already processed frames (frames can be observed multiple times).
         # ErrorFrames are accepted in either direction — push_error() emits them
@@ -291,6 +312,22 @@ class RealtimeFeedbackObserver(BaseObserver):
                     extra_payload=extra_payload or None,
                 )
             )
+
+    async def _tee_audio(self, frame) -> None:
+        """Copy this audio to the monitor stream, only while someone is listening."""
+        if frame.id in self._recent_audio_ids:
+            return
+        self._recent_audio_ids.append(frame.id)
+        # The gate comes first: with nobody listening this costs one dict lookup.
+        if not await self._bus.audio_wanted():
+            return
+        # Output audio is a subclass family (TTS audio included); input is separate.
+        direction = "user" if isinstance(frame, InputAudioRawFrame) else "bot"
+        await self._bus.publish_audio(
+            direction,
+            frame.sample_rate,
+            base64.b64encode(frame.audio).decode("ascii"),
+        )
 
     async def _send_ws(self, message: dict):
         """Send message via WebSocket only, handling errors gracefully."""

@@ -167,6 +167,157 @@ export type ActiveCallsResponse = {
 };
 
 /**
+ * AlertChannelCreate
+ */
+export type AlertChannelCreate = {
+    /**
+     * Name
+     */
+    name: string;
+    type: AlertChannelType;
+    /**
+     * Config
+     */
+    config: {
+        [key: string]: unknown;
+    };
+    /**
+     * Is Active
+     */
+    is_active?: boolean;
+};
+
+/**
+ * AlertChannelResponse
+ */
+export type AlertChannelResponse = {
+    /**
+     * Channel Uuid
+     */
+    channel_uuid: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Type
+     */
+    type: string;
+    /**
+     * Config
+     */
+    config: {
+        [key: string]: unknown;
+    };
+    /**
+     * Is Active
+     */
+    is_active: boolean;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+};
+
+/**
+ * AlertChannelTestResponse
+ */
+export type AlertChannelTestResponse = {
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Error
+     */
+    error?: string | null;
+    /**
+     * Attempts
+     */
+    attempts?: number;
+};
+
+/**
+ * AlertChannelType
+ */
+export type AlertChannelType = 'email' | 'webhook';
+
+/**
+ * AlertChannelUpdate
+ */
+export type AlertChannelUpdate = {
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Config
+     */
+    config?: {
+        [key: string]: unknown;
+    } | null;
+    /**
+     * Is Active
+     */
+    is_active?: boolean | null;
+};
+
+/**
+ * AlertComparator
+ */
+export type AlertComparator = 'gt' | 'gte' | 'lt' | 'lte' | 'eq';
+
+/**
+ * AlertEventResponse
+ */
+export type AlertEventResponse = {
+    /**
+     * Event Uuid
+     */
+    event_uuid: string;
+    /**
+     * Severity
+     */
+    severity: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Detail
+     */
+    detail: {
+        [key: string]: unknown;
+    };
+    /**
+     * Workflow Run Id
+     */
+    workflow_run_id?: number | null;
+    /**
+     * Observed Value
+     */
+    observed_value?: number | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Acknowledged At
+     */
+    acknowledged_at?: string | null;
+};
+
+/**
+ * AlertEventsResponse
+ */
+export type AlertEventsResponse = {
+    /**
+     * Events
+     */
+    events: Array<AlertEventResponse>;
+};
+
+/**
  * AlertItem
  */
 export type AlertItem = {
@@ -191,6 +342,217 @@ export type AlertItem = {
      */
     occurred_at?: string | null;
 };
+
+/**
+ * AlertMetricResponse
+ */
+export type AlertMetricResponse = {
+    /**
+     * Key
+     */
+    key: string;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Trigger
+     */
+    trigger: string;
+    /**
+     * Value Type
+     */
+    value_type: string;
+    /**
+     * Unit
+     */
+    unit?: string | null;
+};
+
+/**
+ * AlertMetricsResponse
+ */
+export type AlertMetricsResponse = {
+    /**
+     * Metrics
+     */
+    metrics: Array<AlertMetricResponse>;
+    /**
+     * Comparators
+     */
+    comparators: Array<string>;
+    /**
+     * Severities
+     */
+    severities: Array<string>;
+};
+
+/**
+ * AlertRuleCreate
+ */
+export type AlertRuleCreate = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Is Active
+     */
+    is_active?: boolean;
+    /**
+     * Scope Workflow Id
+     */
+    scope_workflow_id?: number | null;
+    /**
+     * Metric
+     */
+    metric: string;
+    comparator?: AlertComparator;
+    /**
+     * Threshold
+     */
+    threshold?: number | null;
+    /**
+     * Match Value
+     */
+    match_value?: string | null;
+    /**
+     * Window Minutes
+     */
+    window_minutes?: number | null;
+    severity?: AlertSeverity;
+    /**
+     * Cooldown Minutes
+     */
+    cooldown_minutes?: number;
+    /**
+     * Channel Uuids
+     */
+    channel_uuids?: Array<string>;
+};
+
+/**
+ * AlertRuleResponse
+ */
+export type AlertRuleResponse = {
+    /**
+     * Rule Uuid
+     */
+    rule_uuid: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Is Active
+     */
+    is_active: boolean;
+    /**
+     * Scope Workflow Id
+     */
+    scope_workflow_id?: number | null;
+    /**
+     * Trigger
+     */
+    trigger: string;
+    /**
+     * Metric
+     */
+    metric: string;
+    /**
+     * Comparator
+     */
+    comparator: string;
+    /**
+     * Threshold
+     */
+    threshold?: number | null;
+    /**
+     * Match Value
+     */
+    match_value?: string | null;
+    /**
+     * Window Minutes
+     */
+    window_minutes?: number | null;
+    /**
+     * Severity
+     */
+    severity: string;
+    /**
+     * Cooldown Minutes
+     */
+    cooldown_minutes: number;
+    /**
+     * Channel Uuids
+     */
+    channel_uuids: Array<string>;
+    /**
+     * Last Fired At
+     */
+    last_fired_at?: string | null;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+};
+
+/**
+ * AlertRuleUpdate
+ */
+export type AlertRuleUpdate = {
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Is Active
+     */
+    is_active?: boolean | null;
+    /**
+     * Scope Workflow Id
+     */
+    scope_workflow_id?: number | null;
+    /**
+     * Clear Scope
+     */
+    clear_scope?: boolean;
+    /**
+     * Metric
+     */
+    metric?: string | null;
+    comparator?: AlertComparator | null;
+    /**
+     * Threshold
+     */
+    threshold?: number | null;
+    /**
+     * Match Value
+     */
+    match_value?: string | null;
+    /**
+     * Window Minutes
+     */
+    window_minutes?: number | null;
+    severity?: AlertSeverity | null;
+    /**
+     * Cooldown Minutes
+     */
+    cooldown_minutes?: number | null;
+    /**
+     * Channel Uuids
+     */
+    channel_uuids?: Array<string> | null;
+};
+
+/**
+ * AlertSeverity
+ */
+export type AlertSeverity = 'low' | 'medium' | 'high';
 
 /**
  * AlertsResponse
@@ -4107,6 +4469,54 @@ export type LastPruneResponse = {
      * Error
      */
     error?: string | null;
+};
+
+/**
+ * LiveCall
+ */
+export type LiveCall = {
+    /**
+     * Run Id
+     */
+    run_id: number;
+    /**
+     * Workflow Id
+     */
+    workflow_id: number;
+    /**
+     * Workflow Name
+     */
+    workflow_name: string;
+    /**
+     * Mode
+     */
+    mode: string;
+    /**
+     * Call Type
+     */
+    call_type: string;
+    /**
+     * Number
+     */
+    number?: string | null;
+    /**
+     * Started At
+     */
+    started_at: string;
+    /**
+     * Current Node
+     */
+    current_node?: string | null;
+};
+
+/**
+ * LiveCallsResponse
+ */
+export type LiveCallsResponse = {
+    /**
+     * Calls
+     */
+    calls: Array<LiveCall>;
 };
 
 /**
@@ -18896,6 +19306,656 @@ export type GetNodeTypeApiV1NodeTypesNameGetResponses = {
 };
 
 export type GetNodeTypeApiV1NodeTypesNameGetResponse = GetNodeTypeApiV1NodeTypesNameGetResponses[keyof GetNodeTypeApiV1NodeTypesNameGetResponses];
+
+export type ListLiveCallsApiV1MonitorLiveCallsGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/monitor/live-calls';
+};
+
+export type ListLiveCallsApiV1MonitorLiveCallsGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListLiveCallsApiV1MonitorLiveCallsGetError = ListLiveCallsApiV1MonitorLiveCallsGetErrors[keyof ListLiveCallsApiV1MonitorLiveCallsGetErrors];
+
+export type ListLiveCallsApiV1MonitorLiveCallsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: LiveCallsResponse;
+};
+
+export type ListLiveCallsApiV1MonitorLiveCallsGetResponse = ListLiveCallsApiV1MonitorLiveCallsGetResponses[keyof ListLiveCallsApiV1MonitorLiveCallsGetResponses];
+
+export type ListAlertMetricsApiV1AlertsMetricsGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/alerts/metrics';
+};
+
+export type ListAlertMetricsApiV1AlertsMetricsGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListAlertMetricsApiV1AlertsMetricsGetError = ListAlertMetricsApiV1AlertsMetricsGetErrors[keyof ListAlertMetricsApiV1AlertsMetricsGetErrors];
+
+export type ListAlertMetricsApiV1AlertsMetricsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: AlertMetricsResponse;
+};
+
+export type ListAlertMetricsApiV1AlertsMetricsGetResponse = ListAlertMetricsApiV1AlertsMetricsGetResponses[keyof ListAlertMetricsApiV1AlertsMetricsGetResponses];
+
+export type ListChannelsApiV1AlertsChannelsGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/alerts/channels';
+};
+
+export type ListChannelsApiV1AlertsChannelsGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListChannelsApiV1AlertsChannelsGetError = ListChannelsApiV1AlertsChannelsGetErrors[keyof ListChannelsApiV1AlertsChannelsGetErrors];
+
+export type ListChannelsApiV1AlertsChannelsGetResponses = {
+    /**
+     * Response List Channels Api V1 Alerts Channels Get
+     *
+     * Successful Response
+     */
+    200: Array<AlertChannelResponse>;
+};
+
+export type ListChannelsApiV1AlertsChannelsGetResponse = ListChannelsApiV1AlertsChannelsGetResponses[keyof ListChannelsApiV1AlertsChannelsGetResponses];
+
+export type CreateChannelApiV1AlertsChannelsPostData = {
+    body: AlertChannelCreate;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/alerts/channels';
+};
+
+export type CreateChannelApiV1AlertsChannelsPostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateChannelApiV1AlertsChannelsPostError = CreateChannelApiV1AlertsChannelsPostErrors[keyof CreateChannelApiV1AlertsChannelsPostErrors];
+
+export type CreateChannelApiV1AlertsChannelsPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: AlertChannelResponse;
+};
+
+export type CreateChannelApiV1AlertsChannelsPostResponse = CreateChannelApiV1AlertsChannelsPostResponses[keyof CreateChannelApiV1AlertsChannelsPostResponses];
+
+export type DeleteChannelApiV1AlertsChannelsChannelUuidDeleteData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Channel Uuid
+         */
+        channel_uuid: string;
+    };
+    query?: never;
+    url: '/api/v1/alerts/channels/{channel_uuid}';
+};
+
+export type DeleteChannelApiV1AlertsChannelsChannelUuidDeleteErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteChannelApiV1AlertsChannelsChannelUuidDeleteError = DeleteChannelApiV1AlertsChannelsChannelUuidDeleteErrors[keyof DeleteChannelApiV1AlertsChannelsChannelUuidDeleteErrors];
+
+export type DeleteChannelApiV1AlertsChannelsChannelUuidDeleteResponses = {
+    /**
+     * Response Delete Channel Api V1 Alerts Channels  Channel Uuid  Delete
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type DeleteChannelApiV1AlertsChannelsChannelUuidDeleteResponse = DeleteChannelApiV1AlertsChannelsChannelUuidDeleteResponses[keyof DeleteChannelApiV1AlertsChannelsChannelUuidDeleteResponses];
+
+export type GetChannelApiV1AlertsChannelsChannelUuidGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Channel Uuid
+         */
+        channel_uuid: string;
+    };
+    query?: never;
+    url: '/api/v1/alerts/channels/{channel_uuid}';
+};
+
+export type GetChannelApiV1AlertsChannelsChannelUuidGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetChannelApiV1AlertsChannelsChannelUuidGetError = GetChannelApiV1AlertsChannelsChannelUuidGetErrors[keyof GetChannelApiV1AlertsChannelsChannelUuidGetErrors];
+
+export type GetChannelApiV1AlertsChannelsChannelUuidGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: AlertChannelResponse;
+};
+
+export type GetChannelApiV1AlertsChannelsChannelUuidGetResponse = GetChannelApiV1AlertsChannelsChannelUuidGetResponses[keyof GetChannelApiV1AlertsChannelsChannelUuidGetResponses];
+
+export type UpdateChannelApiV1AlertsChannelsChannelUuidPatchData = {
+    body: AlertChannelUpdate;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Channel Uuid
+         */
+        channel_uuid: string;
+    };
+    query?: never;
+    url: '/api/v1/alerts/channels/{channel_uuid}';
+};
+
+export type UpdateChannelApiV1AlertsChannelsChannelUuidPatchErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateChannelApiV1AlertsChannelsChannelUuidPatchError = UpdateChannelApiV1AlertsChannelsChannelUuidPatchErrors[keyof UpdateChannelApiV1AlertsChannelsChannelUuidPatchErrors];
+
+export type UpdateChannelApiV1AlertsChannelsChannelUuidPatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: AlertChannelResponse;
+};
+
+export type UpdateChannelApiV1AlertsChannelsChannelUuidPatchResponse = UpdateChannelApiV1AlertsChannelsChannelUuidPatchResponses[keyof UpdateChannelApiV1AlertsChannelsChannelUuidPatchResponses];
+
+export type TestChannelApiV1AlertsChannelsChannelUuidTestPostData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Channel Uuid
+         */
+        channel_uuid: string;
+    };
+    query?: never;
+    url: '/api/v1/alerts/channels/{channel_uuid}/test';
+};
+
+export type TestChannelApiV1AlertsChannelsChannelUuidTestPostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TestChannelApiV1AlertsChannelsChannelUuidTestPostError = TestChannelApiV1AlertsChannelsChannelUuidTestPostErrors[keyof TestChannelApiV1AlertsChannelsChannelUuidTestPostErrors];
+
+export type TestChannelApiV1AlertsChannelsChannelUuidTestPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: AlertChannelTestResponse;
+};
+
+export type TestChannelApiV1AlertsChannelsChannelUuidTestPostResponse = TestChannelApiV1AlertsChannelsChannelUuidTestPostResponses[keyof TestChannelApiV1AlertsChannelsChannelUuidTestPostResponses];
+
+export type ListRulesApiV1AlertsRulesGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/alerts/rules';
+};
+
+export type ListRulesApiV1AlertsRulesGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListRulesApiV1AlertsRulesGetError = ListRulesApiV1AlertsRulesGetErrors[keyof ListRulesApiV1AlertsRulesGetErrors];
+
+export type ListRulesApiV1AlertsRulesGetResponses = {
+    /**
+     * Response List Rules Api V1 Alerts Rules Get
+     *
+     * Successful Response
+     */
+    200: Array<AlertRuleResponse>;
+};
+
+export type ListRulesApiV1AlertsRulesGetResponse = ListRulesApiV1AlertsRulesGetResponses[keyof ListRulesApiV1AlertsRulesGetResponses];
+
+export type CreateRuleApiV1AlertsRulesPostData = {
+    body: AlertRuleCreate;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/alerts/rules';
+};
+
+export type CreateRuleApiV1AlertsRulesPostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateRuleApiV1AlertsRulesPostError = CreateRuleApiV1AlertsRulesPostErrors[keyof CreateRuleApiV1AlertsRulesPostErrors];
+
+export type CreateRuleApiV1AlertsRulesPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: AlertRuleResponse;
+};
+
+export type CreateRuleApiV1AlertsRulesPostResponse = CreateRuleApiV1AlertsRulesPostResponses[keyof CreateRuleApiV1AlertsRulesPostResponses];
+
+export type DeleteRuleApiV1AlertsRulesRuleUuidDeleteData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Rule Uuid
+         */
+        rule_uuid: string;
+    };
+    query?: never;
+    url: '/api/v1/alerts/rules/{rule_uuid}';
+};
+
+export type DeleteRuleApiV1AlertsRulesRuleUuidDeleteErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteRuleApiV1AlertsRulesRuleUuidDeleteError = DeleteRuleApiV1AlertsRulesRuleUuidDeleteErrors[keyof DeleteRuleApiV1AlertsRulesRuleUuidDeleteErrors];
+
+export type DeleteRuleApiV1AlertsRulesRuleUuidDeleteResponses = {
+    /**
+     * Response Delete Rule Api V1 Alerts Rules  Rule Uuid  Delete
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type DeleteRuleApiV1AlertsRulesRuleUuidDeleteResponse = DeleteRuleApiV1AlertsRulesRuleUuidDeleteResponses[keyof DeleteRuleApiV1AlertsRulesRuleUuidDeleteResponses];
+
+export type GetRuleApiV1AlertsRulesRuleUuidGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Rule Uuid
+         */
+        rule_uuid: string;
+    };
+    query?: never;
+    url: '/api/v1/alerts/rules/{rule_uuid}';
+};
+
+export type GetRuleApiV1AlertsRulesRuleUuidGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetRuleApiV1AlertsRulesRuleUuidGetError = GetRuleApiV1AlertsRulesRuleUuidGetErrors[keyof GetRuleApiV1AlertsRulesRuleUuidGetErrors];
+
+export type GetRuleApiV1AlertsRulesRuleUuidGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: AlertRuleResponse;
+};
+
+export type GetRuleApiV1AlertsRulesRuleUuidGetResponse = GetRuleApiV1AlertsRulesRuleUuidGetResponses[keyof GetRuleApiV1AlertsRulesRuleUuidGetResponses];
+
+export type UpdateRuleApiV1AlertsRulesRuleUuidPatchData = {
+    body: AlertRuleUpdate;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Rule Uuid
+         */
+        rule_uuid: string;
+    };
+    query?: never;
+    url: '/api/v1/alerts/rules/{rule_uuid}';
+};
+
+export type UpdateRuleApiV1AlertsRulesRuleUuidPatchErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateRuleApiV1AlertsRulesRuleUuidPatchError = UpdateRuleApiV1AlertsRulesRuleUuidPatchErrors[keyof UpdateRuleApiV1AlertsRulesRuleUuidPatchErrors];
+
+export type UpdateRuleApiV1AlertsRulesRuleUuidPatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: AlertRuleResponse;
+};
+
+export type UpdateRuleApiV1AlertsRulesRuleUuidPatchResponse = UpdateRuleApiV1AlertsRulesRuleUuidPatchResponses[keyof UpdateRuleApiV1AlertsRulesRuleUuidPatchResponses];
+
+export type ListEventsApiV1AlertsEventsGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path?: never;
+    query?: {
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Severity
+         */
+        severity?: AlertSeverity | null;
+        /**
+         * Since
+         */
+        since?: string | null;
+    };
+    url: '/api/v1/alerts/events';
+};
+
+export type ListEventsApiV1AlertsEventsGetErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListEventsApiV1AlertsEventsGetError = ListEventsApiV1AlertsEventsGetErrors[keyof ListEventsApiV1AlertsEventsGetErrors];
+
+export type ListEventsApiV1AlertsEventsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: AlertEventsResponse;
+};
+
+export type ListEventsApiV1AlertsEventsGetResponse = ListEventsApiV1AlertsEventsGetResponses[keyof ListEventsApiV1AlertsEventsGetResponses];
+
+export type AcknowledgeEventApiV1AlertsEventsEventUuidAcknowledgePostData = {
+    body?: never;
+    headers?: {
+        /**
+         * Authorization
+         */
+        authorization?: string | null;
+        /**
+         * X-Api-Key
+         */
+        'X-API-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Event Uuid
+         */
+        event_uuid: string;
+    };
+    query?: never;
+    url: '/api/v1/alerts/events/{event_uuid}/acknowledge';
+};
+
+export type AcknowledgeEventApiV1AlertsEventsEventUuidAcknowledgePostErrors = {
+    /**
+     * Not found
+     */
+    404: unknown;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AcknowledgeEventApiV1AlertsEventsEventUuidAcknowledgePostError = AcknowledgeEventApiV1AlertsEventsEventUuidAcknowledgePostErrors[keyof AcknowledgeEventApiV1AlertsEventsEventUuidAcknowledgePostErrors];
+
+export type AcknowledgeEventApiV1AlertsEventsEventUuidAcknowledgePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: AlertEventResponse;
+};
+
+export type AcknowledgeEventApiV1AlertsEventsEventUuidAcknowledgePostResponse = AcknowledgeEventApiV1AlertsEventsEventUuidAcknowledgePostResponses[keyof AcknowledgeEventApiV1AlertsEventsEventUuidAcknowledgePostResponses];
 
 export type ListPromptingGuideApiV1PromptingGuideGetData = {
     body?: never;

@@ -365,6 +365,8 @@ def _fake_delivery(**overrides):
         delivery_uuid="uuid-1",
         workflow_run_id=9,
         organization_id=7,
+        transport="http",
+        destination=None,
         webhook_name="Final Webhook",
         endpoint_url="https://example.com/hook",
         http_method="POST",

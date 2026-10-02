@@ -739,6 +739,13 @@ class WorkflowRunModel(Base):
         # A contact's call history: exact match on the dialled number. The same
         # expression as the query uses, or the planner cannot serve it.
         Index("ix_workflow_runs_called_number", text("(initial_context->>'called_number')")),
+        # "Which calls are live": the few rows in state 'running'.
+        Index(
+            "idx_workflow_runs_live",
+            "workflow_id",
+            text("created_at DESC"),
+            postgresql_where=text("state = 'running'"),
+        ),
         # The purge job's scan: only runs with a deadline that are not yet purged.
         Index(
             "idx_workflow_runs_retention_due",
@@ -1281,30 +1288,43 @@ class WebhookDeliveryModel(Base):
         default=lambda: str(uuid.uuid4()),
     )
 
+    # NULL for deliveries that are not about one call (an alert about a window of
+    # calls, a test alert).
     workflow_run_id = Column(
         Integer,
         ForeignKey("workflow_runs.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
     )
     organization_id = Column(
         Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
     )
 
+    # How the payload leaves: "http" (the webhook) or "email" (an alert). The retry,
+    # backoff and dead-letter machinery is the same for both, which is why alerts
+    # ride this table instead of growing a second loop. VARCHAR so a new transport
+    # needs no migration.
+    transport = Column(String(16), nullable=False, default="http", server_default="http")
+    # Email: {"recipients": [...]}. Unused by http.
+    destination = Column(JSON, nullable=True)
+
     # Frozen request definition. The payload is rendered once at enqueue time so
     # retries are deterministic. Secrets are NOT stored here: the auth header is
     # re-resolved from ``credential_uuid`` at send time (honours rotation/revocation).
     webhook_name = Column(String, nullable=True)
-    endpoint_url = Column(String, nullable=False)
+    endpoint_url = Column(String, nullable=True)
     http_method = Column(String, nullable=False, default="POST")
     payload = Column(JSON, nullable=False, default=dict)
     custom_headers = Column(JSON, nullable=True)
     credential_uuid = Column(String(36), nullable=True)
 
-    # Workflow node that produced this delivery. Combined with workflow_run_id it
-    # is the per-run/per-node idempotency key, so a retried run_integrations does
-    # not create (and send) a duplicate delivery for the same node. Non-nullable:
-    # a NULL would be distinct under the unique constraint and defeat the dedupe.
-    webhook_node_id = Column(String, nullable=False)
+    # Workflow node that produced this delivery, kept for history and display.
+    # Idempotency is ``idempotency_key`` below; this is no longer part of it.
+    webhook_node_id = Column(String, nullable=True)
+
+    # One delivery per key per organization, so a retried producer does not create
+    # (and send) a duplicate. Webhook nodes use "run:<run id>:<node id>"; alerts use
+    # "alert:<event uuid>:<channel uuid>".
+    idempotency_key = Column(String, nullable=False)
 
     status = Column(
         Enum(
@@ -1343,12 +1363,126 @@ class WebhookDeliveryModel(Base):
         # The alerts feed counts failures per organization; this table had no
         # index on organization_id at all.
         Index("idx_webhook_deliveries_org_status", "organization_id", "status"),
-        # Per-run/per-node idempotency: one delivery per webhook node per run.
         UniqueConstraint(
-            "workflow_run_id",
-            "webhook_node_id",
-            name="uq_webhook_deliveries_run_node",
+            "organization_id",
+            "idempotency_key",
+            name="uq_webhook_deliveries_org_idempotency",
         ),
+    )
+
+
+class AlertChannelModel(Base):
+    """Where an alert is sent: an email list or a webhook endpoint.
+
+    ``config`` is {recipients: [str]} for email and {endpoint_url, http_method,
+    custom_headers, credential_uuid} for webhook; the webhook shape resolves its
+    credential exactly as the webhook node does, so no secret lives on this row.
+    """
+
+    __tablename__ = "alert_channels"
+
+    id = Column(Integer, primary_key=True, index=True)
+    channel_uuid = Column(
+        String(36), unique=True, nullable=False, index=True,
+        default=lambda: str(uuid.uuid4()),
+    )
+    organization_id = Column(
+        Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    name = Column(String, nullable=False)
+    # VARCHAR rather than a Postgres ENUM so a new channel type needs no migration;
+    # api/enums.py AlertChannelType is the value set and the API validates it.
+    type = Column(String(16), nullable=False)
+    config = Column(JSON, nullable=False, default=dict)
+    is_active = Column(Boolean, nullable=False, default=True, server_default=text("true"))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+    __table_args__ = (
+        UniqueConstraint("organization_id", "name", name="uq_alert_channels_org_name"),
+    )
+
+
+class AlertRuleModel(Base):
+    """A condition worth telling someone about, and who to tell."""
+
+    __tablename__ = "alert_rules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    rule_uuid = Column(
+        String(36), unique=True, nullable=False, index=True,
+        default=lambda: str(uuid.uuid4()),
+    )
+    organization_id = Column(
+        Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    name = Column(String, nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True, server_default=text("true"))
+    # NULL means every agent. CASCADE, not SET NULL: a rule scoped to a deleted
+    # agent must go with it, not quietly widen to the whole organization.
+    scope_workflow_id = Column(
+        Integer, ForeignKey("workflows.id", ondelete="CASCADE"), nullable=True
+    )
+    trigger = Column(String(16), nullable=False)
+    metric = Column(String(64), nullable=False)
+    comparator = Column(String(8), nullable=False, default="gt")
+    threshold = Column(Float, nullable=True)
+    # For metrics that compare text (a disposition, a QA tag) rather than a number.
+    match_value = Column(String, nullable=True)
+    window_minutes = Column(Integer, nullable=True)
+    severity = Column(String(8), nullable=False, default="medium")
+    cooldown_minutes = Column(Integer, nullable=False, default=60, server_default=text("60"))
+    channel_uuids = Column(JSON, nullable=False, default=list)
+    last_fired_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+    __table_args__ = (
+        UniqueConstraint("organization_id", "name", name="uq_alert_rules_org_name"),
+        Index("idx_alert_rules_org_active", "organization_id", "is_active"),
+    )
+
+
+class AlertEventModel(Base):
+    """One time a rule fired. The feed the overview panel and /alerts read."""
+
+    __tablename__ = "alert_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    event_uuid = Column(
+        String(36), unique=True, nullable=False, index=True,
+        default=lambda: str(uuid.uuid4()),
+    )
+    organization_id = Column(
+        Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    # SET NULL: deleting a rule keeps the history of what it caught.
+    alert_rule_id = Column(
+        Integer, ForeignKey("alert_rules.id", ondelete="SET NULL"), nullable=True
+    )
+    severity = Column(String(8), nullable=False)
+    title = Column(String, nullable=False)
+    detail = Column(JSON, nullable=False, default=dict)
+    workflow_run_id = Column(
+        Integer, ForeignKey("workflow_runs.id", ondelete="SET NULL"), nullable=True
+    )
+    observed_value = Column(Float, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    acknowledged_at = Column(DateTime(timezone=True), nullable=True)
+    acknowledged_by = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+
+    __table_args__ = (
+        Index("idx_alert_events_org_created", "organization_id", text("created_at DESC")),
     )
 
 

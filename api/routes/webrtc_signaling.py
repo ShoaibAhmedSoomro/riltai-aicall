@@ -52,10 +52,7 @@ from api.services.call_concurrency import (
     call_concurrency,
 )
 from api.services.pipecat.run_pipeline import run_pipeline_smallwebrtc
-from api.services.pipecat.ws_sender_registry import (
-    register_ws_sender,
-    unregister_ws_sender,
-)
+from api.services.pipecat.run_event_bus import get_or_create_bus, unsubscribe
 from api.services.quota_service import authorize_workflow_run_start
 from api.services.workflow.embed_session_service import validate_embed_origin
 
@@ -311,6 +308,8 @@ class SignalingManager:
         self._connections: Dict[str, WebSocket] = {}
         self._peer_connections: Dict[str, SmallWebRTCConnection] = {}
         self._connection_peer_ids: Dict[str, Set[str]] = {}
+        # connection -> its subscription on the run's event bus
+        self._bus_tokens: Dict[str, int] = {}
         self._peer_connection_owners: Dict[str, str] = {}
         # The pipeline runs detached, so without a done callback nothing ever
         # retrieves its exception and asyncio reports it through the loop
@@ -457,8 +456,11 @@ class SignalingManager:
             self._connections.pop(connection_key, None)
             peer_ids = list(self._connection_peer_ids.pop(connection_key, set()))
 
-            # Unregister WebSocket sender for real-time feedback
-            unregister_ws_sender(workflow_run_id)
+            # Leave the run's event bus. Only this connection's subscription goes:
+            # a participant leaving must not blind supervisors watching the run.
+            token = self._bus_tokens.pop(connection_key, None)
+            if token is not None:
+                unsubscribe(workflow_run_id, token)
 
             # Clean up peer connections owned by this WebSocket.
             # Note: In a WebSocket-based signaling approach (vs HTTP PATCH),
@@ -684,7 +686,9 @@ class SignalingManager:
                     if ws.application_state == WebSocketState.CONNECTED:
                         await ws.send_json(message)
 
-                register_ws_sender(workflow_run_id, ws_sender)
+                self._bus_tokens[connection_key] = get_or_create_bus(
+                    workflow_run_id
+                ).subscribe(ws_sender)
 
                 # Setup closed handler
                 @pc.event_handler("closed")

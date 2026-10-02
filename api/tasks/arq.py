@@ -44,6 +44,7 @@ from api.tasks.campaign_tasks import (
     sync_campaign_source,
 )
 from api.tasks.contacts_import import process_contact_import
+from api.tasks.alert_evaluation import evaluate_window_alert_rules
 from api.tasks.data_retention import purge_expired_workflow_runs
 from api.tasks.knowledge_base_processing import process_knowledge_base_document
 from api.tasks.run_integrations import run_integrations_post_workflow_run
@@ -65,6 +66,7 @@ class WorkerSettings:
         deliver_webhook,
         complete_inactive_text_chat_session,
         purge_expired_workflow_runs,
+        evaluate_window_alert_rules,
         process_contact_import,
     ]
     cron_jobs = [
@@ -88,6 +90,9 @@ class WorkerSettings:
         # Daily, off-peak. Not at startup: a deploy should not trigger a bulk
         # delete as a side effect. A run with no deadline is never selected.
         cron(purge_expired_workflow_runs, hour=2, minute=45, second=0),
+        # Alert rules over the last N minutes of calls. Offset from the webhook
+        # sweeper (second=0) so the two do not start together.
+        cron(evaluate_window_alert_rules, minute=set(range(0, 60, 5)), second=15),
     ]
     redis_settings = REDIS_SETTINGS
     max_jobs = 10

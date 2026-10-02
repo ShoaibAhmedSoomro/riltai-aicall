@@ -1050,8 +1050,9 @@ async def test_dead_letter_deliveries_are_counted_per_org(db_session, async_sess
                 organization_id=organization.id,
                 endpoint_url="https://example.invalid/hook",
                 # Distinct per row: there is a unique constraint on
-                # (workflow_run_id, webhook_node_id).
+                # (organization_id, idempotency_key).
                 webhook_node_id=f"node-{node}",
+                idempotency_key=f"run:{run.id}:node-{node}",
                 status=status,
             )
         )

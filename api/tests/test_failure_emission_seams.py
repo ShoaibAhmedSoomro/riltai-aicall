@@ -136,6 +136,8 @@ def _delivery(*, attempt_count):
         id=1,
         workflow_run_id=88,
         organization_id=42,
+        transport="http",
+        destination=None,
         attempt_count=attempt_count,
         max_attempts=5,
         http_method="POST",

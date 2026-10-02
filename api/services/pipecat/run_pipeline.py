@@ -37,6 +37,7 @@ from api.services.pipecat.event_handlers import (
 )
 from api.services.pipecat.in_memory_buffers import InMemoryLogsBuffer
 from api.services.governance.loader import load_governance_policy
+from api.services.governance.monitor import allows_listen_in, monitor_view_for
 from api.services.pipecat.guardrail_processor import GuardrailProcessor
 from api.services.pipecat.pipeline_builder import (
     build_pipeline,
@@ -75,7 +76,7 @@ from api.services.pipecat.tracing_config import (
 from api.services.pipecat.transcript_log_coordinator import TranscriptLogCoordinator
 from api.services.pipecat.transport_setup import create_webrtc_transport
 from api.services.pipecat.worker_runner import run_pipeline_worker
-from api.services.pipecat.ws_sender_registry import get_ws_sender
+from api.services.pipecat.run_event_bus import get_or_create_bus, release_bus
 from api.services.telephony import registry as telephony_registry
 from api.services.workflow.dto import ReactFlowDTO
 from api.services.workflow.initial_context import merge_external_initial_context
@@ -824,7 +825,20 @@ async def _run_pipeline_impl(
     in_memory_logs_buffer = InMemoryLogsBuffer(workflow_run_id)
 
     # Create node transition callback (always logs to buffer, optionally streams to WS)
-    ws_sender = get_ws_sender(workflow_run_id)
+    # One bus per run: the caller's browser (WebRTC) and any supervisors are
+    # subscribers, and every event also goes to the monitor stream. Telephony runs
+    # have no browser, but they publish all the same.
+    bus = get_or_create_bus(workflow_run_id)
+    bus.set_monitor_filter(monitor_view_for(governance))
+    if not allows_listen_in(governance):
+        bus.forbid_listening()
+    await bus.publish_meta(
+        {
+            "listen_in": allows_listen_in(governance),
+            "transcript": bool(governance.store_transcript),
+        }
+    )
+    ws_sender = bus.publish
 
     async def send_node_transition(
         node_id: str,
@@ -1179,6 +1193,7 @@ async def _run_pipeline_impl(
     feedback_observer = RealtimeFeedbackObserver(
         ws_sender=ws_sender,
         logs_buffer=in_memory_logs_buffer,
+        bus=bus,
     )
     task.add_observer(feedback_observer)
 
@@ -1262,4 +1277,5 @@ async def _run_pipeline_impl(
         # whereas engine.cleanup() runs in a pipecat event-handler task.
         await engine.close_mcp_sessions()
         await feedback_observer.cleanup()
+        release_bus(workflow_run_id)
         logger.debug(f"Cleaned up context providers for workflow run {workflow_run_id}")

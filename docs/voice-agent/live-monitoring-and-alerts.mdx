@@ -1,0 +1,49 @@
+---
+title: "Live Calls and Alerts"
+description: "Watch calls as they happen, listen in, and get told when something goes wrong."
+---
+
+## Live Calls
+
+Open **Monitor → Live Calls** to see every call running now in your organization: the agent, whether it is inbound or outbound, the other party's number, the step the call is in, and how long it has run. The list refreshes every few seconds.
+
+Click **Watch** to follow one call. You see the same live transcript the person testing in the browser sees: what the caller says, what the agent says, tool calls, and each step change. If you open a call that started a while ago, the transcript so far is filled in first.
+
+Any member of the organization can watch a call. A call that has ended, or whose agent crashed without finishing, is not listed.
+
+### Listen in
+
+Organization admins also get a **Listen in** button on a call. It plays the caller and the agent in your browser, a fraction of a second behind. Nothing is recorded by listening, and audio is only sent while the button is on.
+
+Listen-in is **off** for a call when its agent's data policy withholds audio or redacts what is said (see [Data governance](/configurations/data-governance)), because live audio cannot be redacted. In that case the transcript is also governed by the same policy: an agent set to *basic only* shows its steps but not its words.
+
+## Alerts
+
+An alert rule watches your calls and tells you when something needs attention. Open **Monitor → Alerts**.
+
+- **Alerts** is the feed of what your rules have caught. Acknowledge an alert to mark it seen.
+- **Rules** say what to watch for.
+- **Channels** say where to send alerts besides the feed: an email list or a webhook.
+
+### What a rule can watch
+
+| When | Metric |
+| --- | --- |
+| A call finishes | A call failed · Call duration · Call outcome is *(value)* · Call has tag *(value)* · Safety violation |
+| Over a period | Calls in the window · Failure rate in the window · Average duration in the window |
+
+Period rules look at the last *N* minutes and are checked every five minutes. A failure **rate** needs at least five finished calls in the period before it is judged, so two calls with one failure does not raise a 50% alert. To be told when calls stop coming in, use *Calls in the window* **is below** 1.
+
+A rule can cover every agent or one. After it fires, it stays quiet for its **wait between alerts** (one hour by default), so a problem that persists does not send a message every five minutes.
+
+### Channels
+
+An **email** channel needs email to be set up on your deployment (the same setup as password reset emails). Without it, the channel cannot be created and the page says so. A **webhook** channel sends a JSON message to your URL, with optional authentication from your saved credentials. Use **Send test** on a channel to send a sample alert through the real path and see whether it arrived.
+
+Failed deliveries are retried a few times with increasing delays, then parked; they appear in the failed-delivery count on the Reports page.
+
+Alert messages say what happened, which agent, and link to the call. They do not include caller numbers or what was said.
+
+<Note>
+Creating rules and channels needs an organization admin. Everyone can read and acknowledge alerts.
+</Note>

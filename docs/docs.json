@@ -68,6 +68,7 @@
               "voice-agent/introduction",
               "voice-agent/editing-a-workflow",
               "voice-agent/prompt-handbook",
+              "voice-agent/live-monitoring-and-alerts",
               "voice-agent/pre-recorded-audio",
               "voice-agent/template-variables",
               "voice-agent/pre-call-data-fetch",

@@ -52,7 +52,7 @@ async def _offer(
             "api.routes.webrtc_signaling.filter_outbound_sdp",
             MagicMock(side_effect=lambda sdp: sdp),
         ),
-        patch("api.routes.webrtc_signaling.register_ws_sender", MagicMock()),
+        patch("api.routes.webrtc_signaling.get_or_create_bus", MagicMock()),
         patch(
             "api.routes.webrtc_signaling.run_pipeline_smallwebrtc",
             AsyncMock(return_value=None),

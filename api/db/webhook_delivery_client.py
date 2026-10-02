@@ -36,7 +36,7 @@ class WebhookDeliveryClient(BaseDBClient):
     ) -> Tuple[WebhookDeliveryModel, bool]:
         """Get-or-create the ``pending`` delivery for this run + webhook node.
 
-        Idempotent on ``(workflow_run_id, webhook_node_id)``: a retried
+        Idempotent on ``run:<run id>:<node id>``: a retried
         ``run_integrations`` returns the existing row instead of creating (and
         sending) a duplicate. Returns ``(delivery, created)`` so the caller only
         enqueues a send for a freshly-created row.
@@ -62,9 +62,52 @@ class WebhookDeliveryClient(BaseDBClient):
                     f"{run_organization_id}, not {organization_id}"
                 )
 
+        return await self.create_delivery(
+            organization_id=organization_id,
+            idempotency_key=f"run:{workflow_run_id}:{webhook_node_id}",
+            payload=payload,
+            max_attempts=max_attempts,
+            workflow_run_id=workflow_run_id,
+            webhook_name=webhook_name,
+            webhook_node_id=webhook_node_id,
+            endpoint_url=endpoint_url,
+            http_method=http_method,
+            custom_headers=custom_headers,
+            credential_uuid=credential_uuid,
+            scheduled_for=scheduled_for,
+        )
+
+    async def create_delivery(
+        self,
+        *,
+        organization_id: int,
+        idempotency_key: str,
+        payload: dict,
+        max_attempts: int,
+        transport: str = "http",
+        workflow_run_id: Optional[int] = None,
+        webhook_name: Optional[str] = None,
+        webhook_node_id: Optional[str] = None,
+        endpoint_url: Optional[str] = None,
+        http_method: str = "POST",
+        custom_headers: Optional[list] = None,
+        credential_uuid: Optional[str] = None,
+        destination: Optional[dict] = None,
+        scheduled_for: Optional[datetime] = None,
+    ) -> Tuple[WebhookDeliveryModel, bool]:
+        """Get-or-create the ``pending`` delivery for this idempotency key.
+
+        Unique on ``(organization_id, idempotency_key)``. Returns
+        ``(delivery, created)`` so the producer only enqueues a send for a row it
+        just created.
+        """
+        async with self.async_session() as session:
             delivery = WebhookDeliveryModel(
                 workflow_run_id=workflow_run_id,
                 organization_id=organization_id,
+                idempotency_key=idempotency_key,
+                transport=transport,
+                destination=destination,
                 webhook_name=webhook_name,
                 webhook_node_id=webhook_node_id,
                 endpoint_url=endpoint_url,
@@ -84,14 +127,14 @@ class WebhookDeliveryClient(BaseDBClient):
                 await session.rollback()
                 existing = await session.execute(
                     select(WebhookDeliveryModel).where(
-                        WebhookDeliveryModel.workflow_run_id == workflow_run_id,
-                        WebhookDeliveryModel.webhook_node_id == webhook_node_id,
+                        WebhookDeliveryModel.organization_id == organization_id,
+                        WebhookDeliveryModel.idempotency_key == idempotency_key,
                     )
                 )
                 row = existing.scalar_one_or_none()
                 if row is not None:
                     return row, False
-                # The violation was not the run+node uniqueness -- re-raise.
+                # The violation was not the idempotency key -- re-raise.
                 raise
             await session.refresh(delivery)
             return delivery, True

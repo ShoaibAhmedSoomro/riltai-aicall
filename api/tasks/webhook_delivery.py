@@ -206,7 +206,8 @@ async def _build_headers(delivery: WebhookDeliveryModel, attempt: int) -> dict:
 
     # Stable idempotency signal so the receiver can dedupe retried deliveries.
     headers["X-Rilt-Delivery-Id"] = delivery.delivery_uuid
-    headers["X-Rilt-Workflow-Run-Id"] = str(delivery.workflow_run_id)
+    if delivery.workflow_run_id is not None:
+        headers["X-Rilt-Workflow-Run-Id"] = str(delivery.workflow_run_id)
     headers["X-Rilt-Delivery-Attempt"] = str(attempt)
     return headers
 
@@ -273,11 +274,16 @@ async def deliver_webhook(_ctx, delivery_id: int) -> None:
         )
         return
 
-    set_current_run_id(str(delivery.workflow_run_id))
+    if delivery.workflow_run_id is not None:
+        set_current_run_id(str(delivery.workflow_run_id))
     set_current_org_id(delivery.organization_id)
     attempt = delivery.attempt_count + 1
     method = (delivery.http_method or "POST").upper()
     timeout = DEFAULT_WEBHOOK_DELIVERY_CONFIG["timeout_seconds"]
+
+    if delivery.transport == "email":
+        await _deliver_email(delivery, attempt)
+        return
 
     try:
         headers = await _build_headers(delivery, attempt)
@@ -379,6 +385,38 @@ async def deliver_webhook(_ctx, delivery_id: int) -> None:
             f"Webhook '{delivery.webhook_name}' delivery {delivery.id} was "
             f"delivered ({response.status_code}) but recording success failed; "
             f"leaving it for the sweeper to reconcile after the lease expires: {e!r}"
+        )
+
+
+async def _deliver_email(delivery: WebhookDeliveryModel, attempt: int) -> None:
+    """One attempt at an email delivery, through the same retry/dead-letter rules."""
+    from api.services.alerting.email_channel import EmailDeliveryError, send_alert_email
+
+    recipients = list((delivery.destination or {}).get("recipients") or [])
+    try:
+        await send_alert_email(recipients=recipients, payload=delivery.payload or {})
+    except EmailDeliveryError as e:
+        if e.transient:
+            await _handle_transient_failure(delivery, attempt, str(e), None)
+        else:
+            await db_client.mark_webhook_delivery_dead_letter(
+                delivery.id, attempt, str(e), None
+            )
+        return
+    except Exception as e:
+        # A bug, not an outage: park it rather than loop on it.
+        await db_client.mark_webhook_delivery_dead_letter(
+            delivery.id, attempt, repr(e), None
+        )
+        return
+
+    try:
+        await db_client.mark_webhook_delivery_succeeded(delivery.id, attempt, None)
+        logger.info(f"Alert email delivery {delivery.id} sent to {len(recipients)} recipient(s)")
+    except Exception as e:
+        logger.error(
+            f"Alert email delivery {delivery.id} was sent but recording success failed; "
+            f"the sweeper will reconcile it: {e!r}"
         )
 
 

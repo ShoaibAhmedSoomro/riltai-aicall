@@ -55,7 +55,7 @@ describe('AppSidebar', () => {
             ['Phone Numbers', '/phone-numbers'], ['Telephony', '/telephony-configurations'],
             ['Contacts', '/contacts'], ['Campaigns', '/campaigns'],
             ['Call History', '/usage'], ['Chat History', '/usage?channel=chat'],
-            ['Reports', '/reports'], ['Billing', '/billing'], ['Settings', '/settings'], ['Developers', '/api-keys'],
+            ['Live Calls', '/live'], ['Alerts', '/alerts'], ['Reports', '/reports'], ['Billing', '/billing'], ['Settings', '/settings'], ['Developers', '/api-keys'],
         ]) {
             expect(screen.getByRole('link', { name: label }).getAttribute('href'), label).toBe(href);
         }

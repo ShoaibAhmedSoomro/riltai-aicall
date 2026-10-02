@@ -5,6 +5,7 @@ from api.services.workflow_run_billing import (
     report_completed_workflow_run_platform_usage,
 )
 from api.tasks.run_integrations import run_integrations_post_workflow_run
+from api.services.alerting.evaluate import evaluate_run_alerts
 
 
 async def process_workflow_completion(
@@ -31,6 +32,13 @@ async def process_workflow_completion(
         await run_integrations_post_workflow_run(_ctx, workflow_run_id)
     except Exception as e:
         logger.error(f"Error running integrations for workflow {workflow_run_id}: {e}")
+
+    # Alert rules, after integrations so QA tags and the safety scan are in place.
+    # evaluate_run_alerts never raises, but the guard is cheap and billing must run.
+    try:
+        await evaluate_run_alerts(workflow_run_id)
+    except Exception as e:
+        logger.error(f"Error evaluating alerts for workflow {workflow_run_id}: {e}")
 
     # Notify MPS after completion. MPS owns credit accounting.
     try:

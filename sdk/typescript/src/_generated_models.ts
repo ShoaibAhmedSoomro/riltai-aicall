@@ -305,6 +305,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/monitor/live-calls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Live Calls */
+        get: operations["list_live_calls_api_v1_monitor_live_calls_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/prompting-guide": {
         parameters: {
             query?: never;
@@ -923,6 +940,33 @@ export interface components {
             min_similarity: number;
         } & {
             [key: string]: unknown;
+        };
+        /** LiveCall */
+        LiveCall: {
+            /** Run Id */
+            run_id: number;
+            /** Workflow Id */
+            workflow_id: number;
+            /** Workflow Name */
+            workflow_name: string;
+            /** Mode */
+            mode: string;
+            /** Call Type */
+            call_type: string;
+            /** Number */
+            number?: string | null;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** Current Node */
+            current_node?: string | null;
+        };
+        /** LiveCallsResponse */
+        LiveCallsResponse: {
+            /** Calls */
+            calls: components["schemas"]["LiveCall"][];
         };
         /**
          * McpToolConfig
@@ -1670,6 +1714,8 @@ export type HttpApiToolDefinition = components['schemas']['HttpApiToolDefinition
 export type HttpTransferResolverConfig = components['schemas']['HttpTransferResolverConfig'];
 export type InitiateCallRequest = components['schemas']['InitiateCallRequest'];
 export type KnowledgeBaseConfigurationDefaults = components['schemas']['KnowledgeBaseConfigurationDefaults'];
+export type LiveCall = components['schemas']['LiveCall'];
+export type LiveCallsResponse = components['schemas']['LiveCallsResponse'];
 export type McpToolConfig = components['schemas']['McpToolConfig'];
 export type McpToolDefinition = components['schemas']['McpToolDefinition'];
 export type NodeCategory = components['schemas']['NodeCategory'];
@@ -2273,6 +2319,45 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NodeSpec"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_live_calls_api_v1_monitor_live_calls_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-API-Key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveCallsResponse"];
                 };
             };
             /** @description Not found */

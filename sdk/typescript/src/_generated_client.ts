@@ -12,6 +12,7 @@ import type {
     CredentialResponse,
     DocumentListResponseSchema,
     InitiateCallRequest,
+    LiveCallsResponse,
     NodeSpec,
     NodeTypesResponse,
     RecordingListResponseSchema,
@@ -73,6 +74,11 @@ export abstract class _GeneratedClient {
             ...(opts.offset !== undefined ? { "offset": opts.offset } : {}),
         };
         return this.request<DocumentListResponseSchema>("GET", "/knowledge-base/documents", { params });
+    }
+
+    /** List the calls running right now in the authenticated organization. */
+    async listLiveCalls(): Promise<LiveCallsResponse> {
+        return this.request<LiveCallsResponse>("GET", "/monitor/live-calls");
     }
 
     /** List every registered node type with its spec. Pinned to spec_version. */

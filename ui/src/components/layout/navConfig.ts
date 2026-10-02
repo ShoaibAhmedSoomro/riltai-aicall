@@ -1,5 +1,6 @@
 import {
   AudioLines,
+  Bell,
   Brain,
   CircleDollarSign,
   Database,
@@ -12,6 +13,7 @@ import {
   MessageSquare,
   Phone,
   PhoneIncoming,
+  Radio,
   Settings,
   Users,
   Workflow,
@@ -77,7 +79,11 @@ export const NAV_SECTIONS: SidebarNavSection[] = [
   },
   {
     label: "MONITOR",
-    items: [{ title: "Reports", url: "/reports", icon: FileText }],
+    items: [
+      { title: "Live Calls", url: "/live", icon: Radio },
+      { title: "Alerts", url: "/alerts", icon: Bell },
+      { title: "Reports", url: "/reports", icon: FileText },
+    ],
   },
   {
     label: "ACCOUNT",

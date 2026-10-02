@@ -266,3 +266,29 @@ class PostHogEvent(str, Enum):
     ORGANIZATION_USER_ASSOCIATED = "organization_user_associated"
     # usage_* events track orgs hitting capacity/limit boundaries
     USAGE_CONCURRENT_CALL_LIMIT_REACHED = "usage_concurrent_call_limit_reached"
+
+
+class AlertChannelType(str, Enum):
+    EMAIL = "email"
+    WEBHOOK = "webhook"
+
+
+class AlertTrigger(str, Enum):
+    # Evaluated once, when a call finishes and its post-call work is done.
+    RUN_COMPLETED = "run_completed"
+    # Evaluated every few minutes over the last `window_minutes` of calls.
+    WINDOW = "window"
+
+
+class AlertComparator(str, Enum):
+    GT = "gt"
+    GTE = "gte"
+    LT = "lt"
+    LTE = "lte"
+    EQ = "eq"
+
+
+class AlertSeverity(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"

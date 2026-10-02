@@ -662,6 +662,7 @@ export function AlertsPanel({ alerts, loading }: { alerts: AlertItem[] | null; l
     return (
         <Panel
             title="Alerts"
+            action={{ label: 'View all', href: '/alerts' }}
             bodyClassName="p-0"
             loading={loading && alerts === null}
             empty={
@@ -670,7 +671,7 @@ export function AlertsPanel({ alerts, loading }: { alerts: AlertItem[] | null; l
                     : // An empty list is a real answer, and a different one from
                       // a failed fetch. The panel this replaced could say neither.
                       alerts && alerts.length === 0
-                      ? 'Nothing needs attention.'
+                      ? 'Nothing needs attention. Create a rule to be notified when a call fails or a metric moves.'
                       : undefined
             }
         >

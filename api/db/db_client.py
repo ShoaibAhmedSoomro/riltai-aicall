@@ -1,3 +1,4 @@
+from api.db.alert_client import AlertClient
 from api.db.agent_trigger_client import AgentTriggerClient
 from api.db.api_key_client import APIKeyClient
 from api.db.campaign_client import CampaignClient
@@ -45,6 +46,7 @@ class DBClient(
     AgentTriggerClient,
     WebhookCredentialClient,
     WebhookDeliveryClient,
+    AlertClient,
     ToolClient,
     KnowledgeBaseClient,
     WorkflowRecordingClient,
@@ -74,6 +76,7 @@ class DBClient(
     - AgentTriggerClient: handles agent trigger operations for API-based call triggering
     - WebhookCredentialClient: handles webhook credential operations
     - WebhookDeliveryClient: handles durable outbound webhook delivery records
+    - AlertClient: handles alert channels, rules and events
     - ToolClient: handles tool operations for reusable HTTP API tools
     - KnowledgeBaseClient: handles knowledge base document and vector search operations
     - FolderClient: handles folder operations for grouping workflows (agents)

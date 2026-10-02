@@ -17,6 +17,7 @@ from rilt_sdk._generated_models import (
     CredentialResponse,
     DocumentListResponseSchema,
     InitiateCallRequest,
+    LiveCallsResponse,
     NodeSpec,
     NodeTypesResponse,
     RecordingListResponseSchema,
@@ -77,6 +78,11 @@ class _GeneratedClient:
             params["offset"] = offset
         data = self._request("GET", "/knowledge-base/documents", params=params)
         return DocumentListResponseSchema.model_validate(data)
+
+    def list_live_calls(self) -> LiveCallsResponse:
+        """List the calls running right now in the authenticated organization."""
+        data = self._request("GET", "/monitor/live-calls")
+        return LiveCallsResponse.model_validate(data)
 
     def list_node_types(self) -> NodeTypesResponse:
         """List every registered node type with its spec. Pinned to spec_version."""

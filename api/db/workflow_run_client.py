@@ -19,12 +19,22 @@ from api.db.models import (
     WorkflowModel,
     WorkflowRunModel,
 )
-from api.enums import CallType, OrganizationConfigurationKey, StorageBackend
+from api.enums import (
+    CallType,
+    OrganizationConfigurationKey,
+    StorageBackend,
+    WorkflowRunState,
+)
 from api.schemas.organization_preferences import OrganizationPreferences
 from api.schemas.workflow import WorkflowRunResponseSchema
 from api.services.governance.policy import resolve_governance_policy, retention_deadline
 from api.services.workflow.run_usage_response import format_public_cost_info
 from api.utils.recording_artifacts import get_recording_storage_key
+
+
+# Matches RateLimiter.stale_call_timeout (services/call_concurrency/rate_limiter.py):
+# a run older than this has lost its concurrency slot, so it is not "live".
+LIVE_RUN_MAX_AGE_SECONDS = 1200
 
 
 class WorkflowRunClient(BaseDBClient):
@@ -335,6 +345,39 @@ class WorkflowRunClient(BaseDBClient):
                 )
 
             return formatted_runs, total_count
+
+    async def get_live_workflow_runs(
+        self, organization_id: int, limit: int = 100
+    ) -> list[dict]:
+        """Runs in state 'running' for one organization, newest first.
+
+        A run is only listed if it started within LIVE_RUN_MAX_AGE_SECONDS. A pipeline
+        that died without writing state='completed' would otherwise sit in the live
+        list forever; that window is the call-concurrency limiter's own stale-call
+        timeout, so "live" here means the same as "holds a slot" there.
+        """
+        cutoff = datetime.now(UTC) - timedelta(seconds=LIVE_RUN_MAX_AGE_SECONDS)
+        async with self.async_session() as session:
+            result = await session.execute(
+                select(
+                    WorkflowRunModel.id,
+                    WorkflowRunModel.workflow_id,
+                    WorkflowModel.name.label("workflow_name"),
+                    WorkflowRunModel.mode,
+                    WorkflowRunModel.call_type,
+                    WorkflowRunModel.created_at,
+                    WorkflowRunModel.initial_context,
+                )
+                .join(WorkflowModel, WorkflowModel.id == WorkflowRunModel.workflow_id)
+                .where(
+                    WorkflowModel.organization_id == organization_id,
+                    WorkflowRunModel.state == WorkflowRunState.RUNNING.value,
+                    WorkflowRunModel.created_at > cutoff,
+                )
+                .order_by(WorkflowRunModel.created_at.desc())
+                .limit(limit)
+            )
+            return [dict(row._mapping) for row in result.all()]
 
     async def get_workflow_run(
         self, run_id: int, user_id: int = None, organization_id: int = None

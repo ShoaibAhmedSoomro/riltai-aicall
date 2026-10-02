@@ -12,6 +12,8 @@ from api.routes.contacts import router as contacts_router
 from api.routes.credentials import router as credentials_router
 from api.routes.folder import router as folder_router
 from api.routes.knowledge_base import router as knowledge_base_router
+from api.routes.alerting import router as alerting_router
+from api.routes.live_monitor import router as live_monitor_router
 from api.routes.node_types import router as node_types_router
 from api.routes.prompting_guide import router as prompting_guide_router
 from api.routes.organization import router as organization_router
@@ -66,6 +68,8 @@ router.include_router(workflow_recording_router)
 router.include_router(folder_router)
 router.include_router(auth_router)
 router.include_router(node_types_router)
+router.include_router(live_monitor_router)
+router.include_router(alerting_router)
 router.include_router(prompting_guide_router)
 router.include_router(agent_stream_router)
 

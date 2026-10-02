@@ -14,9 +14,11 @@ import {
     getUsageSeriesApiV1OrganizationsUsageSeriesGet,
     getUsageSummaryApiV1OrganizationsUsageSummaryGet,
     getWorkflowCountApiV1WorkflowCountGet,
+    listEventsApiV1AlertsEventsGet,
     listTelephonyConfigurationsApiV1OrganizationsTelephonyConfigsGet,
 } from '@/client/sdk.gen';
 import type {
+    AlertEventResponse,
     AlertItem,
     CurrentUsageResponse,
     LiveUsageResponse,
@@ -29,6 +31,8 @@ import type {
 } from '@/client/types.gen';
 import { useAuth } from '@/lib/auth';
 import { getLocalTimezone } from '@/lib/dateTime';
+
+import { mergeAlertFeeds } from './alertFeed';
 
 /**
  * Every number the dashboard renders, and nothing it cannot prove.
@@ -187,7 +191,8 @@ export function useDashboardData(timezoneOverride?: string | null): DashboardDat
     const [summary, setSummary] = useState<UsageSummaryResponse | null>(null);
     const [series, setSeries] = useState<UsageSeriesResponse | null>(null);
     const [queue, setQueue] = useState<QueueSummaryResponse | null>(null);
-    const [alerts, setAlerts] = useState<AlertItem[] | null>(null);
+    const [failureAlerts, setFailureAlerts] = useState<AlertItem[] | null>(null);
+    const [ruleAlerts, setRuleAlerts] = useState<AlertEventResponse[] | null>(null);
 
     const today = useMemo(() => isoDateInZone(timezone, 0, now), [timezone, now]);
 
@@ -371,7 +376,17 @@ export function useDashboardData(timezoneOverride?: string | null): DashboardDat
         jobs.push(
             guarded(async () => {
                 const r = await getAlertsApiV1OrganizationsReportsAlertsGet();
-                if (!cancelled && !r.error && r.data) setAlerts(r.data.items);
+                if (!cancelled && !r.error && r.data) setFailureAlerts(r.data.items);
+                return null;
+            }),
+        );
+
+        // Alerts raised by the organization's own rules. Independent of the feed
+        // above: either failing must not blank the other.
+        jobs.push(
+            guarded(async () => {
+                const r = await listEventsApiV1AlertsEventsGet({ query: { limit: 20 } });
+                if (!cancelled && !r.error && r.data) setRuleAlerts(r.data.events);
                 return null;
             }),
         );
@@ -432,7 +447,7 @@ export function useDashboardData(timezoneOverride?: string | null): DashboardDat
         summary,
         series,
         queue,
-        alerts,
+        alerts: mergeAlertFeeds(failureAlerts, ruleAlerts),
         telephony,
         apiKeyCount,
         dayVolume,
