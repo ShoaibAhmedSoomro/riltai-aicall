@@ -114,20 +114,44 @@ See the [MCP guide](https://docs.rilt.ai/integrations/mcp) to connect your assis
 ### Voice Agent Builder
 
 - Visual workflow builder with start nodes, agent nodes, global instructions, tools, transitions, and end-call outcomes
-- Test Agent panel with **Test Audio** for browser voice testing and **Test Chat** for fast prompt iteration
-- QA node, knowledge bases, webhooks, embeds, and tool calling for production workflows
+- Template gallery, a handbook starter, and a prompt-only editor for writing agents without the canvas
+- Test Agent panel with **Test Audio** for browser voice testing, **Test Chat** for fast prompt iteration, and an **AI caller simulator** that plays a persona against your agent
+- QA node with post-call analysis, knowledge bases, webhooks, embeds, and tool calling (including a **Press Digit** tool for phone menus)
 
 ### Voice & Telephony
 
 - Built-in telephony integrations including Twilio, Vonage, Telnyx, Plivo, Vobiz, Cloudonix, and Asterisk ARI
 - Human handoff with call transfer on supported telephony providers
 - Bring your own LLM, TTS, STT, and telephony providers; store artifacts in bundled MinIO or AWS/S3-compatible storage
+- Speech controls: pronunciation overrides, number/date/currency formatting, per-step language, and voice speed
+- Audio controls: optional noise suppression, keypad (DTMF) input, IVR menu hang-up, and a backup voice if the primary voice fails
+
+### Operations & Governance
+
+- **Live call monitor** with listen-in, plus alerting on call and agent conditions
+- Contacts with do-not-call enforcement, and cost tracking per call
+- Data governance: retention, redaction, opt-out, and guardrails
+- Organisation roles (admin and member), email verification and password reset
 
 ### Developer Experience
 
 - One-command Docker setup for self-hosting
 - Python backend and modular provider architecture for customization
 - Python and Node SDKs for programmatic agent creation and outbound calls
+
+## Repository Layout
+
+| Path | What lives there |
+|---|---|
+| `api/` | FastAPI backend, database models and migrations, telephony and pipeline services |
+| `ui/` | Next.js 15 / React 19 frontend |
+| `sdk/` | Python and TypeScript SDKs (generated clients plus typed helpers) |
+| `docs/` | Product and developer documentation (Mintlify) |
+| `deploy/` | Helm chart and hosting templates |
+| `scripts/` | Local-development and operations helpers |
+| `evals/` | Speech-to-text evaluation tooling |
+| `logo-rilt/` | Brand logo masters |
+| `pipecat/` | Pipecat framework (pinned git submodule) |
 
 ## Deployment Options
 
